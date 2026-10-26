@@ -293,15 +293,15 @@ const busyMessage = (n: number) => {
     : n > 1 ? `The engine update is ready, but ${n} profiles are still running on the current engine. Close them and try again.`
       : "The engine update is ready, but 1 browser process is still running from the engine folder. Close it (or restart the computer) and try again.";
   return kind === "untracked" && n > 0
-    ? `${said} If ShardBrowser shows none running, one is left from an earlier session: end it in Task Manager (Activity Monitor on a Mac) or restart the computer.`
+    ? `${said} If Octopus Agent shows none running, one is left from an earlier session: end it in Task Manager (Activity Monitor on a Mac) or restart the computer.`
     : said;
 };
 const ENGINE_STOPS: Record<Exclude<EngineStage, "busy">, string> = {
-  space: "Not enough free disk space to update the ShardBrowser engine: it needs about 1460 MB, and 312 MB is free on the disk with /Users/you/Library/Application Support/octopus-agent/runtime. Free up space and try again; the engine you have was not touched.",
+  space: "Not enough free disk space to update the browser engine: it needs about 1460 MB, and 312 MB is free on the disk with /Users/you/Library/Application Support/octopus-agent/runtime. Free up space and try again; the engine you have was not touched.",
   download: "Downloading the engine failed (error decoding response body). The engine you have was not touched.",
   extract: "Unpacking the engine update failed (invalid zip header). The engine you have was not touched.",
   verify: "The unpacked engine update is missing ShardX.app/Contents/MacOS/ShardX; an antivirus may have removed it. Allow the engine folder and try again. The engine you have was not touched.",
-  swap: "The engine folder is in use and could not be replaced (Access is denied. (os error 5)). Close every browser window that ShardBrowser opened, and any program that has that folder open, then try again. The update is kept.",
+  swap: "The engine folder is in use and could not be replaced (Access is denied. (os error 5)). Close every browser window that Octopus Agent opened, and any program that has that folder open, then try again. The update is kept.",
 };
 
 const DATA_ROOT = "/Users/you/Library/Application Support/octopus-agent";
@@ -328,7 +328,7 @@ function resetPlan(state: MockState) {
   const stamp = new Date().toISOString().slice(0, 19).replace("T", "-").replace(/:/g, "");
   return {
     id: `${stamp}.${Object.values(counts).join("-")}`,
-    backups: [`${DATA_ROOT.replace(/\/[^/]+$/, "")}/shardx-launcher-backup-${stamp}`],
+    backups: [`${DATA_ROOT.replace(/\/[^/]+$/, "")}/octopus-agent-backup-${stamp}`],
     counts,
     total_bytes: counts.profiles * 48 * 1024 * 1024 + counts.extensions * 1_200_000,
     entries: [`${DATA_ROOT}/profiles`, `${DATA_ROOT}/settings.json`],
@@ -445,7 +445,7 @@ export const handlers: Record<string, Handler> = {
     ctx.emit("runtime:done");
     return handlers.runtime_status({}, ctx);
   },
-  launcher_update_check: () => ({ current: "2.0.3", latest: "2.0.3", update_available: false, release_url: "https://github.com/ProxyShard/ShardBrowser/releases/latest" }),
+  launcher_update_check: () => ({ current: "2.0.3", latest: "2.0.3", update_available: false, release_url: "https://github.com/harindujayakody/octopus-agent/releases/latest" }),
   host_platform: () => hostPlatform(),
   // `window.__shardxMockHostScreen = [w, h, dpr]` (or null: no monitor) stands in for the real one.
   host_screen: () => {
@@ -1119,7 +1119,7 @@ export const handlers: Record<string, Handler> = {
 
   // ---- Tauri plugins ------------------------------------------------------------
   "plugin:app|version": () => "2.0.3",
-  "plugin:app|name": () => "ShardBrowser Launcher",
+  "plugin:app|name": () => "Octopus Agent",
   "plugin:app|tauri_version": () => "2.5.0",
   "plugin:dialog|open": ({ options }) => {
     const o = options ?? {};

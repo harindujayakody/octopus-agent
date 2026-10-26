@@ -245,7 +245,7 @@
   "commands.openFolders": "Open folders 1 to 9",
   "commands.openPalette": "Open the command palette",
   "commands.openPeek": "Open in Peek",
-  "commands.openWebsite": "Open shardbrowser.com",
+  "commands.openWebsite": "Open the GitHub page",
   "commands.paletteActions": "Show a result’s actions",
   "commands.paletteClose": "Close",
   "commands.paletteMove": "Move through the results",

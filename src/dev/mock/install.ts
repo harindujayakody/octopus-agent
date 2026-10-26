@@ -224,7 +224,7 @@ function install(): void {
   // e2e tests raise toasts without a flow that makes one (e2e/toasts.spec.ts).
   (window as any).__shardxToast = toast;
 
-  console.info("%c[mock] ShardBrowser Tauri IPC shim active. Reset: __shardxMock.reset() or ?mock=reset", "color:#535efd;font-weight:600");
+  console.info("%c[mock] Octopus Agent Tauri IPC shim active. Reset: __shardxMock.reset() or ?mock=reset", "color:#535efd;font-weight:600");
 }
 
 install();

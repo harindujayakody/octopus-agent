@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { openApp } from "./support/app";
+import { pickOption } from "./support/select";
 
 // CRAFT-28: titles first; a body opens on demand.
 const open = async (page: Page, lang: "en" | "zh" = "en") => {
@@ -12,8 +13,8 @@ const open = async (page: Page, lang: "en" | "zh" = "en") => {
 
 test("every entry opens collapsed, as a row with its lead", async ({ page }) => {
   const dialog = await open(page);
-  const entries = dialog.locator("[data-entry]");
-  expect(await entries.count()).toBeGreaterThan(5);
+  // The newest release, 2.2.0, has five.
+  await expect(dialog.locator("[data-entry]")).toHaveCount(5);
   await expect(dialog.locator("[data-entry-body]")).toHaveCount(0);
   for (const b of await dialog.locator("[data-entry] button[aria-expanded]").all()) await expect(b).toHaveAttribute("aria-expanded", "false");
 });
@@ -36,6 +37,11 @@ test("first focus is the panel, not the release picker (plan ruling 23)", async 
 
 test("entries are grouped by what changed, with counts", async ({ page }) => {
   const dialog = await open(page);
+  // 2.2.0 changed the launcher only: no Browser group.
+  await expect(dialog.locator("[data-scope-group='launcher'] h3")).toHaveText(/^Launcher\s*5$/);
+  await expect(dialog.locator("[data-scope-group='browser']")).toHaveCount(0);
+  // 2.1.2 changed both.
+  await pickOption(dialog, "Release", /^v2\.1\.2/);
   await expect(dialog.locator("[data-scope-group='launcher'] h3")).toHaveText(/^Launcher\s*\d+$/);
   await expect(dialog.locator("[data-scope-group='browser'] h3")).toHaveText(/^Browser\s*\d+$/);
 });

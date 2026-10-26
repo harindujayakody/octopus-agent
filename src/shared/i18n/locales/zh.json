@@ -245,7 +245,7 @@
   "commands.openFolders": "打开第 1 到 9 个文件夹",
   "commands.openPalette": "打开命令面板",
   "commands.openPeek": "在预览中打开",
-  "commands.openWebsite": "打开网站 shardbrowser.com",
+  "commands.openWebsite": "打开 GitHub 页面",
   "commands.paletteActions": "显示结果的操作",
   "commands.paletteClose": "关闭",
   "commands.paletteMove": "在结果中移动",

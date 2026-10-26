@@ -245,7 +245,7 @@
   "commands.openFolders": "Открыть папки с 1 по 9",
   "commands.openPalette": "Открыть палитру команд",
   "commands.openPeek": "Быстрый просмотр",
-  "commands.openWebsite": "Открыть сайт shardbrowser.com",
+  "commands.openWebsite": "Открыть сайт на GitHub",
   "commands.paletteActions": "Показать действия для выбранного",
   "commands.paletteClose": "Закрыть",
   "commands.paletteMove": "Перемещаться по результатам",

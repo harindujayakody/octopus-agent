@@ -17,7 +17,7 @@ type Mock = {
   };
 };
 
-const BACKUP = "/Users/you/Library/Application Support/shardx-launcher-backup-2026-09-01-120000";
+const BACKUP = "/Users/you/Library/Application Support/octopus-agent-backup-2026-09-01-120000";
 
 const storage = async (page: Page) => {
   await openApp(page, { section: "settings" });

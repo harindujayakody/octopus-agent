@@ -35,7 +35,7 @@ test("a sentence with a bold word renders as one sentence", async ({ page }) => 
 });
 
 type Fmt = {
-  fmtCount(n: number): string; fmtMoney(c: number): string; fmtBytes(b: number): string;
+  fmtCount(n: number): string; fmtBytes(b: number): string;
   fmtBytesProgress(d: number, t: number): string; fmtDuration(ms: number): string;
 };
 const NB = " ";
@@ -48,7 +48,6 @@ async function formats(page: import("@playwright/test").Page, lang: "en" | "zh")
     const f = (window as unknown as { __f: Fmt }).__f;
     return {
       counts: [0, 1, 1283, 2000].map((n) => f.fmtCount(n)),
-      money: [0, 1250, 123450].map((c) => f.fmtMoney(c)),
       bytes: [0, 1023, 1024, 20027801, 1099511627776].map((b) => f.fmtBytes(b)),
       progress: f.fmtBytesProgress(5033165, 20027801),
       durations: [45_000, 14 * 60_000, 2 * 3_600_000 + 14 * 60_000, 212 * 3_600_000].map((ms) => f.fmtDuration(ms)),
@@ -56,20 +55,18 @@ async function formats(page: import("@playwright/test").Page, lang: "en" | "zh")
   });
 }
 
-test("numbers, money, sizes and durations in English", async ({ page }) => {
+test("numbers, sizes and durations in English", async ({ page }) => {
   expect(await formats(page, "en")).toEqual({
     counts: ["0", "1", "1,283", "2,000"],
-    money: ["$0.00", "$12.50", "$1,234.50"],
     bytes: [`0${NB}B`, `1,023${NB}B`, `1${NB}KB`, `19.1${NB}MB`, `1${NB}TB`],
     progress: `4.8 of 19.1${NB}MB`,
     durations: [`45${NB}s`, `14${NB}min`, `2${NB}h 14${NB}min`, `8${NB}d 20${NB}h`],
   });
 });
 
-test("numbers, money, sizes and durations in Chinese", async ({ page }) => {
+test("numbers, sizes and durations in Chinese", async ({ page }) => {
   expect(await formats(page, "zh")).toEqual({
     counts: ["0", "1", "1,283", "2,000"],
-    money: ["$0.00", "$12.50", "$1,234.50"],
     bytes: [`0${NB}B`, `1,023${NB}B`, `1${NB}KB`, `19.1${NB}MB`, `1${NB}TB`],
     progress: `4.8 / 19.1${NB}MB`,
     durations: [`45${NB}秒`, `14${NB}分钟`, `2${NB}小时 14${NB}分钟`, `8${NB}天 20${NB}小时`],
