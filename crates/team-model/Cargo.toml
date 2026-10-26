@@ -1,0 +1,17 @@
+[package]
+name = "team-model"
+version = "0.1.0"
+description = "The team rights model, shared by the Octopus Agent launcher and its team server."
+authors = ["Harindu Jayakody"]
+edition = "2021"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+# Only for the test that pins the wire shape both sides parse.
+serde_json = "1"

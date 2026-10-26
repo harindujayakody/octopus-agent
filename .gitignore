@@ -1,0 +1,63 @@
+node_modules
+
+# build output — regenerated, keeps diffs readable
+dist/
+__pycache__/
+*.pyc
+/src-tauri/gen/schemas/
+/team-server/target/
+/crates/*/target/
+# The team server's own state: the SQLite file holds the admin secret and the
+# permission signing key. Never something to commit, from any checkout.
+/team-server/data/
+ui-kit/dist/
+ui-kit/node_modules/
+/src-tauri/target
+
+# test and preview output
+test-results/
+playwright-report/
+blob-report/
+dist-mock/
+dist-mock-e2e/
+coverage/
+.pytest_cache/
+*.egg-info/
+*.tsbuildinfo
+*.log
+
+# macOS leaves one of these in every folder it has been looked at in.
+.DS_Store
+# ...and these on disks that are not APFS; Windows has its own.
+._*
+Thumbs.db
+
+# Editor state and swap files.
+.idea/
+*.swp
+*.swo
+*~
+
+# Local secrets for a dev run.
+.env
+.env.*
+!.env.example
+
+# Screenshot baselines: per machine and per OS, remade by
+# `playwright test --update-snapshots`, and a few hundred PNGs besides.
+e2e/__screenshots__/
+
+# What a patch or a merge leaves behind when a hunk does not apply.
+*.rej
+*.orig
+# Hand-made backups and temp copies.
+*.bak
+*.keep
+*.tmp
+*.rs.bk
+
+# Working material from the interface rework: dated notes and the screenshots
+# that went with each round of corrections. Kept on disk, not in the history.
+# The decisions themselves live in docs/adr and stay.
+docs/ui-redesign/
+docs/handoff/

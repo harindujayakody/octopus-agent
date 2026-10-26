@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      // Before any stylesheet or script: the stored theme goes on <html>, so a
+      // dark user's first frame is dark (PERF-08). Same key and values as the
+      // kit's ThemeProvider, which takes over once React runs. Tauri adds this
+      // script's hash to the page's CSP by itself (backend B6).
+      (function () {
+        try {
+          var stored = localStorage.getItem("shardx-ui-kit-theme");
+          var dark = stored === "dark" || (stored !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          var root = document.documentElement;
+          root.setAttribute("data-theme", dark ? "dark" : "light");
+          root.style.colorScheme = dark ? "dark" : "light";
+        } catch (e) {}
+        // The launcher window opens hidden (tauri.conf.json) and the app
+        // shows it once its first screen is painted (app/showWindow.ts).
+        // Should the app's code never run, the window shows anyway.
+        try {
+          var tauri = window.__TAURI_INTERNALS__;
+          if (tauri && !/[?&](syncPanel|helperPanel|fleet)=/.test(location.hash)) {
+            setTimeout(function () {
+              tauri.invoke("plugin:window|show", { label: "main" }).catch(function () {});
+            }, 4000);
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="icon" type="image/png" href="/octopus.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Octopus Agent</title>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/app/index.tsx"></script>
+  </body>
+</html>

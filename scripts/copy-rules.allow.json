@@ -1,0 +1,22 @@
+{
+  "sentence-case": [
+    "en:blockPicker.about.trafficObserve",
+    "en:folderModal.namePlaceholder",
+    "en:inlineEditor.dntLabel",
+    "en:palette.press.modifiers.hint",
+    "en:palette.text.headers.hint",
+    "en:palette.trafficEditResponse.responseheaders.hint",
+    "en:palette.trafficFulfill.responseheaders.hint",
+    "en:palette.trafficSetHeaders.headers.hint",
+    "en:settings.trayHelp",
+    "en:sidebar.apiNameOther",
+    "en:sidebar.apiOnLabel"
+  ],
+  "error-in-title": [
+    "en:modulesCard.loadFailed"
+  ],
+  "straight-quote": [
+    "en:palette.dbExec.sql.hint",
+    "en:palette.dbQuery.sql.hint"
+  ]
+}

@@ -1,0 +1,438 @@
+/* App-level CSS that cannot be expressed as inline Tailwind utilities:
+   keyframes, pseudo-elements, compound selectors, responsive grid layouts. */
+@reference "./index.css";
+/* ===== Keyframes ===== */
+
+/* ===== Peek's way in and out (FEEL-02, PC-054) =====
+   It comes in from 8 px right on the kit's spring, fading in, and leaves the
+   way it came, 4 px and faster. Transitions, not keyframes: a close in the
+   middle of the way in (or an open in the middle of the way out) turns
+   around from where the panel is, never from an end (craft item 6).
+   Reduce motion zeroes the shift and the nudge: a fade in place. Only
+   opacity and translate move. `data-starting-style` and `data-ending-style` come from `usePresence`. */
+.peek-panel {
+  transition:
+    opacity var(--motion-slow) var(--ease-out),
+    translate var(--motion-spring) var(--ease-spring);
+  &[data-starting-style] {
+    opacity: 0;
+    translate: var(--motion-shift) 0;
+  }
+  &[data-ending-style] {
+    opacity: 0;
+    translate: var(--motion-nudge) 0;
+    transition-duration: var(--motion-base);
+    transition-timing-function: var(--ease-out);
+  }
+}
+
+/* ===== The top of the Profiles list beside Peek (merge point 4 ruling,
+   kept by the owner's overview redesign) =====
+   CONTINUE and NEEDS YOU sit in the list's column (Peek starts under the
+   page header), as wide as the list's whole row (`--row-w`, read from the
+   row) less the room a pushing Peek takes (`--peek-space`). The room moves
+   on Peek's own path: in on the spring beside Peek's slide, out on its
+   faster exit, a transition, so a turn midway starts from where the room
+   is. While it moves the block reaches past the column, under Peek as Peek
+   fades; a pushing Peek takes its whole width from the column at once, so
+   nothing else waits. The room kept from last time (`min-height`, while the
+   list and the cards' reads come in) gives way on the spring too. Reduce
+   motion changes the room at once. An engine without registered properties
+   changes the room at once too. */
+@property --peek-space {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+.overview {
+  width: calc(var(--row-w) - var(--peek-space));
+  transition-property: min-height, --peek-space;
+  transition-duration: var(--motion-spring);
+  transition-timing-function: var(--ease-spring);
+  &:not([data-peek-open]) {
+    transition-duration: var(--motion-spring), var(--motion-base);
+    transition-timing-function: var(--ease-spring), var(--ease-out);
+  }
+  @variant reduced {
+    transition: none;
+  }
+}
+
+/* One piece of it that opens and closes (`Fold`): the height moves from where
+   it is on the spring and the content fades; closed, it turns hidden once the
+   move is over, so nothing in it is seen, reached or read. Held (the cards'
+   reads are still coming in) it takes its room unseen. The page's first
+   paint and Reduce motion move nothing. */
+.overview-fold {
+  overflow: clip;
+  transition-property: height, opacity, visibility;
+  transition-duration: var(--motion-spring), var(--motion-base), 0s;
+  transition-timing-function: var(--ease-spring), var(--ease-out), linear;
+  &:not([data-open]) {
+    opacity: 0;
+    visibility: hidden;
+    transition-delay: 0s, 0s, var(--motion-spring);
+  }
+  &[data-hold] {
+    opacity: 0;
+  }
+  &[data-instant] {
+    transition: none;
+  }
+  @variant reduced {
+    transition-property: opacity, visibility;
+    transition-duration: var(--motion-base), 0s;
+    &:not([data-open]) {
+      transition-delay: 0s, var(--motion-base);
+    }
+  }
+}
+
+/* A Continue tile and a problem card each answer a click anywhere on them;
+   the keyboard's stop is the name's or the title's button, and the card
+   draws that button's focus ring (one ring, the focus ring's, never cut:
+   the fold keeps room). */
+:is(.continue-tile, .problem-card):has(:is([data-tile-main], [data-card-main]):focus-visible) {
+  outline: var(--focus-width) solid var(--focus-color, var(--focus));
+  outline-offset: 2px;
+}
+
+/* The page title takes the focus from code when a page opens with nothing
+   focused (focusPageStart). After a click it has no ring: it is marked
+   `data-pointer-focus` for as long as it holds that focus. After a key the
+   ring shows, as every stop draws it. */
+[data-page-title][data-pointer-focus]:focus-visible {
+  outline: none;
+}
+
+/* ===== Pseudo-elements ===== */
+
+/* ===== Compound selectors ===== */
+
+/* ===== Complex responsive grid layouts ===== */
+
+/* Drag ghost chip (created via JS in the profile row's onDragStart) */
+.drag-chip {
+  position: absolute;
+  top: -1000px;
+  left: -1000px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--color-primary-base);
+  color: var(--color-static-white);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+}
+
+/* Proxy bulk-importer preview rows: check, type, host, status, action */
+.import-cols {
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  grid-template-columns: 20px 72px minmax(0, 1fr) auto 32px;
+}
+
+/* ===== A list wider than its card (owner decision 2026-09-26) ===== */
+
+/* Every chosen column stays; when they are wider than the list's card, the
+   list scrolls sideways inside it (the page never does), the header row
+   stays on top, and three parts stay pinned: the select box and Name at the
+   card's left, the row actions at its right. Offsets: the rows' padding
+   (`--spacing-cell`; a selecting row's starts 10 px short of it,
+   `list-select-row`), the select column (`--list-select`: the 28 px box
+   and its gap, in every state, the kit's tokens.css) and
+   `gap-[10px]` (PROFILE_TABLE, PROXY_TABLE). `--list-row-inset`: the 4 px a
+   header-carrying list tile moves from its sides onto its rows (tokens.css),
+   so a pinned cell sticks where it sits at rest. Name pins only inside a list
+   with `data-pin-first` (TableLayout.pinFirst). The markup stretches each
+   pinned cell to its row's height (`self-stretch`), so its fill covers the
+   row. */
+.list-pin-check,
+.list-pin-end,
+[data-pin-first] .list-pin-name {
+  position: sticky;
+  z-index: 2;
+}
+.list-pin-check {
+  left: calc(var(--list-row-inset, 0px) + var(--spacing-cell) - 10px);
+}
+[data-pin-first] .list-pin-name {
+  left: calc(var(--list-row-inset, 0px) + var(--spacing-cell) + var(--list-select));
+}
+.list-pin-end {
+  right: calc(var(--list-row-inset, 0px) + var(--spacing-cell));
+}
+
+/* Each pinned cell paints its row's fill under itself, reaching over the
+   row's side padding or the gap beside it, so what scrolls passes under
+   it: the select box's from the row's left edge to Name, Name's over the
+   gap after it, the row actions' to the row's right edge. The fill is the
+   row's own token, `--row-fill` (the kit's `row-fill-*` set it on the row
+   for each state, and the row paints it: one value, owner item 20), else
+   at rest the list's own surface (`--list-fill`: the tile's color on a kit
+   `list-tile`, which a tile holding a table paints too; the card's white
+   otherwise). */
+.list-pin-check::before,
+.list-pin-end::before,
+[data-pin-first] .list-pin-name::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--row-fill, var(--list-fill, var(--color-bg-white-0)));
+}
+.list-pin-check::before {
+  left: calc(10px - var(--spacing-cell));
+  right: -10px;
+}
+.list-pin-name::before {
+  left: 0;
+  right: -10px;
+}
+.list-pin-end::before {
+  left: 0;
+  right: calc(var(--spacing-cell) * -1);
+}
+/* A list that selects nothing (a kit DataList without a select box) has no
+   28 px box before Name: Name pins at the card's left and its fill reaches
+   over the row's side padding, as the box's does (F24, from Pair 31). */
+[data-pin-first][data-no-lead] .list-pin-name {
+  left: calc(var(--list-row-inset, 0px) + var(--spacing-cell));
+}
+[data-pin-first][data-no-lead] .list-pin-name::before {
+  left: calc(var(--spacing-cell) * -1);
+}
+/* While columns pass under them, the fills also cover the tile's inset past the row's ends. */
+[data-x-more] .list-pin-end::before {
+  right: calc(-1 * (var(--spacing-cell) + var(--list-row-inset, 0px)));
+}
+[data-x-scrolled] .list-pin-check::before {
+  left: calc(10px - var(--spacing-cell) - var(--list-row-inset, 0px));
+}
+[data-x-scrolled][data-pin-first][data-no-lead] .list-pin-name::before {
+  left: calc(-1 * (var(--spacing-cell) + var(--list-row-inset, 0px)));
+}
+
+/* The header row is a translucent material (Live layer, spec 7, ListHeader):
+   its pinned cells let it through, so rows passing under read the same
+   across the whole header, and turn solid only while columns pass under
+   them: the select box and Name once the list is scrolled from its start,
+   the row actions while columns wait past the right edge (`useSideScroll`).
+   Then they hide those columns' titles, a pane with the rows' pinned cells
+   below it. Solid in the header's own color (`--list-head-fill`: the kit's
+   `list-head` sets it to the list's surface), else the list's. After the
+   rule above, which it replaces for the header. */
+[data-list-header] > :is(.list-pin-check, .list-pin-name, .list-pin-end)::before {
+  background: transparent;
+}
+[data-x-scrolled] [data-list-header] > :is(.list-pin-check, .list-pin-name)::before,
+[data-x-more] [data-list-header] > .list-pin-end::before {
+  background: var(--list-head-fill, var(--list-fill, var(--color-bg-white-0)));
+}
+
+/* A new row's tint (the kit's slide-in, the row's ::before) and a started
+   row's flash (the kit's row-flash on a layer of its own, the row's first
+   child) lie over the row: above its pinned cells (z-index 2) and the hover
+   strip, so the tint runs unbroken across the row; the flash over the
+   tint, so a row that arrives and starts within its second shows both (L3
+   review, N4); both under the row's own hairline (the ::after, z-index 3,
+   last in the row). 3 also keeps them under the list's sticky header
+   (--layer-raised, 10): a tinted row that scrolls under it goes under it.
+   While a tint lies over a row, its soft gray text takes the sub gray, so
+   gray text stays at 4.5:1 at the tint's peak on every row state
+   (`check:contrast`); it eases back once the tint is gone. */
+[role="row"].slide-in::before,
+[role="row"] > .row-flash {
+  z-index: 3;
+}
+[role="row"]:is(.slide-in, :has(> .row-flash)) {
+  --color-text-soft-400: var(--color-text-sub-600);
+}
+[role="row"] .text-text-soft-400 {
+  transition: color var(--motion-base) var(--ease-out);
+}
+[role="row"]:is(.slide-in, :has(> .row-flash)) .text-text-soft-400 {
+  transition: none;
+}
+/* Windows contrast themes: a selected row is the system's Highlight
+   (`forced-selected`), and its pinned cells' fills follow, or the system
+   would paint them Canvas, a band across the row. So does the backing of
+   the row actions, which covers the Notes text under it. Highlight over
+   Canvas is the row's own color even where Highlight is translucent (a
+   second coat of it alone showed as a darker patch). */
+@media (forced-colors: active) {
+  [role="row"][aria-selected="true"] > :is(.list-pin-check, .list-pin-name, .list-pin-end)::before,
+  [role="row"][aria-selected="true"][data-active] > :is(.list-pin-check, .list-pin-name, .list-pin-end)::before,
+  [role="row"][aria-selected="true"] [data-row-backing] {
+    forced-color-adjust: none;
+    background: linear-gradient(Highlight, Highlight), Canvas;
+  }
+}
+
+/* The line between rows (ProfileRow, ProxyListRow, and the plain lists:
+   Settings' Tags and Views, a dialog's or a tile's hand-rolled rows) is
+   the kit's `row-line` (tokens.css), the one divider every list uses. It
+   takes no layout: a bottom border left 35 px for the content, which
+   centred it on a half pixel (the Phase B paper cut). */
+
+/* A keyboard-focused row's ring runs whole over its pinned cells: the
+   kit's `row-line` draws it on the row's line layer, above them (tokens.css). */
+
+/* Focus not obscured (WCAG 2.4.11, merge point 1): a control focused in a
+   column that scrolls (a cell's edit button, a column header) is brought
+   clear of the pinned parts. The browser brings a focused control into view
+   inside the scroll box's padding, and the padding is the pinned parts:
+   --pin-start the select box and Name (when it pins), --pin-end the row
+   actions and what the list draws beside them (ProfileTable). Only while
+   such a control has focus: a pinned control is always in view, and with
+   the padding a click on the select box or Stop would scroll the columns
+   under the pointer. `data-focus-scrolls` marks such a focus
+   (pinScrollFocus.ts): a `:has()` here restyled the list for every row a
+   scroll added. */
+.list-pin-scroll[data-focus-scrolls] {
+  scroll-padding-inline: var(--pin-start, 0px) var(--pin-end, 0px);
+}
+
+/* Where columns pass under a pinned part, a soft neutral shadow says so:
+   past Name (or past the select box, when Name scrolls) while the list is
+   scrolled from its start (`useSideScroll`). A shadow, never an accent
+   stripe. The row actions draw none (owner bug 2026-09-28): with Peek open
+   the list waits past the card's right edge from the start, and that edge
+   read as a dark band over every resting row and the header, while the
+   hover actions covered it on the hovered row and the row in Peek. The
+   clipped column under them already says more is there. */
+[data-x-scrolled][data-pin-first] .list-pin-name::after,
+[data-x-scrolled]:not([data-pin-first]) .list-pin-check::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  z-index: -1;
+  width: 8px;
+  pointer-events: none;
+  right: -18px;
+  background: linear-gradient(to right, var(--list-pin-shadow), transparent);
+}
+:root {
+  --list-pin-shadow: rgb(10 13 20 / 0.06);
+}
+
+/* A one-column page (`width="form"`) grows with a wide window, never past a
+   readable line (owner, 2026-10-23); Team and Settings take the window's width. */
+:root {
+  --page-form-width: clamp(760px, calc((var(--viewport-w) - 280px) * 0.75), 1000px);
+}
+[data-theme="dark"] {
+  --list-pin-shadow: rgb(0 0 0 / 0.32);
+}
+
+/* A column drag or resize owns the cursor until it ends (owner feature
+   2026-09-26): on its way the pointer crosses buttons and rows that would
+   show their own. */
+html[data-column-gesture="drag"],
+html[data-column-gesture="drag"] * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+html[data-column-gesture="resize"],
+html[data-column-gesture="resize"] * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
+/* The header's search opens in place: the field's right edge slides out from
+   the button's width on the kit's base motion, and snaps under reduced motion.
+   A clip, not a width, so nothing around it reflows frame by frame and the
+   focus ring is never clipped once it has ended. */
+@keyframes search-open {
+  from { clip-path: inset(-4px calc(100% - 30px) -4px -4px); }
+}
+@utility search-open {
+  animation: search-open var(--motion-base) var(--ease-out);
+  @variant reduced {
+    animation: none;
+  }
+}
+
+/* A header too narrow for its actions' words (PageHeader `data-compact`,
+   measured in compact.ts): a button keeps only its icon, square at the
+   header's 30 px control height. The secondary ones first ("1"), then the
+   primary ("2"). The label stays in the button, unseen, so its name is read
+   and a `whenTruncated` tooltip still shows it; a right icon goes. At the
+   last level ("3") the title's count and info button go as well. */
+header[data-compact] [data-collapse="1"],
+header:is([data-compact="2"], [data-compact="3"]) [data-collapse="2"] {
+  inline-size: 30px;
+  padding-inline: 0;
+  > :nth-child(2) {
+    position: absolute;
+    inset-inline-start: 0;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  > :nth-child(3) {
+    display: none;
+  }
+}
+header[data-compact="3"] [data-title-block] > :not([data-page-title]) {
+  display: none;
+}
+
+/* Peek's header too narrow for its name and state (PeekHeader `data-compact`):
+   Edit keeps only its icon, square at the header's 24 px controls; its word
+   stays in the button, unseen, so its name is read. */
+[data-peek-header][data-compact] [data-peek-extra] button {
+  inline-size: 24px;
+  padding-inline: 0;
+  > :nth-child(2) {
+    position: absolute;
+    inset-inline-start: 0;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* The welcome's blocks come in one after another (onboarding spec 5.4): each
+   rises --motion-shift and fades in over 200 ms, 50 ms after the one before
+   (--welcome-i is its place in the screen). Under Reduce motion nothing
+   moves (--motion-shift is 0) and nothing waits for its turn: the blocks fade
+   in together over 150 ms (spec 5.4). Only transform and opacity animate. */
+@keyframes welcome-in {
+  from { transform: translateY(var(--motion-shift)); opacity: 0; }
+}
+.welcome-in {
+  animation: welcome-in var(--motion-slow) var(--ease-out) backwards;
+  animation-delay: calc(var(--welcome-i, 0) * 50ms);
+  @variant reduced {
+    animation-duration: var(--motion-base);
+    animation-delay: 0s;
+  }
+}
+
+/* Scrollbars (owner, 2026-10-02: "scrollbar need to hide after activity and
+   be a bit thiner"): every scroll box gets a thin overlay-style bar that
+   shows only while it scrolls and 700 ms after (`data-scroll-active`, set by
+   shared/lib/scrollActivity.ts). The 8 px track holds a 4 px thumb: a 2 px
+   transparent border, clipped. Unlayered, so it wins over the kit's
+   `.scrollbar` and `.scrollbar-on-scroll` helpers; `.scrollbar-hidden` boxes
+   stay hidden through `scrollbar-width: none`. */
+::-webkit-scrollbar { width: 8px; height: 8px; background: transparent; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 100vh;
+}
+[data-scroll-active]::-webkit-scrollbar-thumb { background-color: var(--scrollbar-thumb); }
+/* A pointer on the (hidden) thumb shows it, so it can still be grabbed. */
+::-webkit-scrollbar-thumb:hover { background-color: var(--scrollbar-thumb-hover, var(--scrollbar-thumb)); }

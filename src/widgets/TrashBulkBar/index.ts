@@ -1,0 +1,1 @@
+export { TrashBulkBar } from "./TrashBulkBar";

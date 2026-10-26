@@ -1,0 +1,61 @@
+{
+  "name": "@harindujayakody/octopus-agent",
+  "version": "2.1.2",
+  "description": "Self-contained Node SDK for the Octopus Agent anti-detect browser — downloads the engine + Widevine + fingerprint library on first use, launches isolated profiles.",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "tsc && node --test test/*.test.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "anti-detect",
+    "browser",
+    "fingerprint",
+    "chromium",
+    "scraping",
+    "multi-accounting",
+    "automation",
+    "playwright",
+    "cdp"
+  ],
+  "author": "Harindu Jayakody",
+  "license": "MIT",
+  "homepage": "https://github.com/harindujayakody/octopus-agent",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/harindujayakody/octopus-agent.git",
+    "directory": "sdks/node"
+  },
+  "bugs": "https://github.com/harindujayakody/octopus-agent/issues",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "adm-zip": "^0.6.1",
+    "patchright": "^1.49.0",
+    "socks-proxy-agent": "^8.0.4",
+    "undici": "^6.19.0"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
+    "@types/node": "^20",
+    "typescript": "^5.4"
+  }
+}

@@ -1,0 +1,687 @@
+# Build the Tauri launcher for macOS arm64, Windows x64 and Linux x64
+# on free GitHub-hosted runners, then attach every bundle to a GitHub
+# Release.
+#
+# Why three runners instead of cross-compiling from Linux?  Tauri's
+# bundlers are platform-native — .dmg needs `hdiutil`/`codesign` (mac
+# only), .msi needs WiX (Windows only); cross-compiling the Rust
+# binary is possible but the bundling step then fails.  GitHub's
+# hosted runners are free for public repos (and have a generous free
+# tier for private ones), so this is cost-free for the maintainer and
+# avoids any self-hosted-runner setup.
+#
+# Triggers:
+#   * pushing a tag like `v1.2.3`  → release named "Octopus Agent v1.2.3"
+#   * manual dispatch via the Actions tab (handy for ad-hoc builds)
+#
+# Artifacts attached to the Release:
+#   * macOS arm64 — .dmg + .app.tar.gz
+#   * Windows x64 — .msi installer + portable .exe
+#   * Linux x64   — .AppImage + .deb
+#   * the team server — octopus-agent-team-server-{linux-x64,linux-arm64,macos-arm64}.tar.gz
+#     and octopus-agent-team-server.exe (Windows x64), each holding the program
+#     under the name the launcher's guide runs; its image goes to
+#     ghcr.io/harindujayakody/octopus-agent-team-server. Separate jobs: a failure
+#     there never holds the launcher's release back. Whatever of it built is
+#     attached and named in the notes; :latest moves only on a pushed vX.Y.Z tag.
+#
+# Automatic updates: every build is signed for the Tauri updater with
+# TAURI_SIGNING_PRIVATE_KEY (and _PASSWORD, empty for a key made without one),
+# repository secrets that hold the private half of the key whose public half is
+# `plugins.updater.pubkey` in tauri.conf.json. The release job writes
+# latest.json from the signatures; the app reads it at
+# releases/latest/download/latest.json and offers Install and restart.
+#
+# No Apple Developer ID / Authenticode cert in this repo, so the bundles are
+# unsigned / not notarized.  macOS users clear the quarantine flag
+# (`xattr -dr com.apple.quarantine`) on first launch; README + the release
+# notes document the Gatekeeper / SmartScreen steps.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish (e.g. v0.1.0). Required for manual runs.'
+        required: true
+
+permissions:
+  contents: write   # needed to create / attach assets to releases
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14            # Apple Silicon (M-series) runner — free, ARM-only
+            target: aarch64-apple-darwin
+            label: mac-arm64
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            label: linux-x64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            label: win-x64
+
+    runs-on: ${{ matrix.os }}
+    name: build (${{ matrix.label }})
+    # The Apple signing secrets live in an environment of this name, and an
+    # environment's secrets reach a job only when the job names it — without
+    # this line they read back as empty strings and the build goes out unsigned.
+    # If protection rules are ever added to it, every run here waits for
+    # approval, including the Linux and Windows legs.
+    environment: APPLE_CERTIFICATE
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          # 22, not 20: @tailwindcss/oxide (pulled in by the vendored ui-kit)
+          # declares engines node >= 20, so 20 sits exactly on the boundary.
+          # Below it npm SILENTLY skips the platform-specific native binary and
+          # the ui-kit build dies with "Cannot find module
+          # tailwindcss-oxide.<platform>.node" — an error that reads like a
+          # broken dependency rather than a wrong Node.
+          node-version: 22
+          cache: npm
+          # The ui-kit is a file: dependency built by the root `prebuild` hook,
+          # and its install pulls ~300 more packages. Without its lockfile in
+          # the cache key, changing it would not invalidate the npm cache.
+          cache-dependency-path: |
+            package-lock.json
+            ui-kit/package-lock.json
+
+      - name: Set up Rust (stable, ${{ matrix.target }})
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache Cargo registry + build target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ matrix.label }}-cargo-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.label }}-cargo-
+
+      # Tauri needs WebKitGTK + a few X libs on Linux; nothing extra on
+      # mac / windows runners.
+      - name: Install Linux build deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libssl-dev \
+            patchelf
+
+      - name: npm install
+        run: npm ci
+
+      # Secrets cannot be read in an `if:` directly, so the answer is turned
+      # into a step output first.
+      - name: Signing available?
+        id: signing
+        shell: bash
+        env:
+          CERT: ${{ secrets.APPLE_CERTIFICATE }}
+          CERT_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          API_KEY: ${{ secrets.APPLE_API_KEY }}
+          API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          API_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        run: |
+          # Presence only — never the values, which the log would keep.
+          missing=""
+          for name in CERT CERT_PASSWORD IDENTITY API_KEY API_ISSUER API_P8; do
+            if [ -n "${!name}" ]; then
+              echo "$name: set"
+            else
+              echo "$name: MISSING"
+              missing="$missing $name"
+            fi
+          done
+          if [ -z "$missing" ]; then
+            echo "apple=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "apple=no" >> "$GITHUB_OUTPUT"
+            echo "::warning::building unsigned — no value for:$missing (Settings → Secrets and variables → Actions → Repository secrets)"
+          fi
+
+      # Gatekeeper wants three things and accepts no two of them: a Developer ID
+      # signature, the hardened runtime, and notarization. Tauri does all three
+      # when these are set — it makes a temporary keychain from APPLE_CERTIFICATE,
+      # signs with the hardened runtime, then submits and staples.
+      # Signed here, notarized in the next step. Tauri notarizes each bundle it
+      # produces, and `targets: all` produces two on macOS — the .app and the
+      # .dmg — so a build queued twice behind Apple's notary service and ran
+      # past the job's six-hour limit. Only the credentials for SIGNING are
+      # given here; without the API key Tauri signs and leaves notarization
+      # alone.
+      - name: Build Tauri bundle (signed)
+        if: runner.os == 'macOS' && steps.signing.outputs.apple == 'yes'
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        shell: bash
+        run: npx tauri build --target ${{ matrix.target }}
+
+      # One submission, for the file people actually download. The .app inside
+      # the image carries the same signature, and stapling the image is what
+      # lets Gatekeeper clear it without asking Apple at open time.
+      - name: Notarize the disk image
+        if: runner.os == 'macOS' && steps.signing.outputs.apple == 'yes'
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          # Outside the checkout: a later step that globs the workspace must not
+          # be able to sweep the notarization key into an artifact.
+          APPLE_API_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        shell: bash
+        run: |
+          # Through the environment, not interpolated into the command line,
+          # which `ps` on the runner would show.
+          printf '%s' "$APPLE_API_KEY_P8" > "$APPLE_API_KEY_PATH"
+          chmod 600 "$APPLE_API_KEY_PATH"
+          trap 'rm -f "$APPLE_API_KEY_PATH"' EXIT
+
+          dmg=$(find "src-tauri/target/${{ matrix.target }}/release/bundle/dmg" \
+                  -name '*.dmg' -print -quit)
+          [ -n "$dmg" ] || { echo "::error::no .dmg to notarize"; exit 1; }
+          echo "submitting $dmg"
+
+          creds=(--key "$APPLE_API_KEY_PATH" --key-id "$APPLE_API_KEY"
+                 --issuer "$APPLE_API_ISSUER" --output-format json)
+          field() { python3 -c 'import json,sys; print(json.load(sys.stdin).get(sys.argv[1],""))' "$1"; }
+
+          # Submitted ONCE. `--wait` was doing the polling itself, and a single
+          # poll that times out (-1001) takes the whole command down with it —
+          # after which a retry uploads the package again and joins the back of
+          # Apple's queue, having thrown away a place that was already waiting.
+          # So: submit, keep the id, and do the waiting here, where one failed
+          # request is just a request to make again.
+          for attempt in 1 2 3; do
+            id=$(xcrun notarytool submit "$dmg" "${creds[@]}" | field id) && [ -n "$id" ] && break
+            echo "::warning::submit attempt $attempt failed; retrying in 60s"
+            sleep 60
+          done
+          [ -n "$id" ] || { echo "::error::could not submit for notarization"; exit 1; }
+          echo "submission $id — waiting for Apple"
+
+          # No deadline of our own: the first submission from this team sat in
+          # the queue for two hours and was then accepted, so a cutoff would
+          # fail builds that were going to pass. The job's own limit ends it.
+          while true; do
+            sleep 60
+            info=$(xcrun notarytool info "$id" "${creds[@]}" 2>/dev/null) || {
+              echo "status request failed — asking again in a minute"
+              continue
+            }
+            status=$(printf '%s' "$info" | field status)
+            case "$status" in
+              Accepted)
+                xcrun stapler staple "$dmg"
+                xcrun stapler validate "$dmg"
+                exit 0 ;;
+              Invalid|Rejected)
+                echo "::error::Apple rejected the package"
+                xcrun notarytool log "$id" --key "$APPLE_API_KEY_PATH" \
+                  --key-id "$APPLE_API_KEY" --issuer "$APPLE_API_ISSUER" || true
+                exit 1 ;;
+              *)
+                echo "  $status" ;;
+            esac
+          done
+
+      - name: Build Tauri bundle (unsigned)
+        if: runner.os != 'macOS' || steps.signing.outputs.apple != 'yes'
+        # The Tauri bundler skips codesign / signtool only when the signing env
+        # vars are UNSET — an empty string makes it import a cert and crash — so
+        # this step sets no signing vars at all. Users clear the quarantine flag by
+        # hand (`xattr -dr com.apple.quarantine`, see the release notes).
+        # The updater key is not a platform signing var: it is always given.
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npx tauri build --target ${{ matrix.target }}
+
+      - name: Collect bundles
+        shell: bash
+        run: |
+          mkdir -p staging
+          # Grab every distributable Tauri produced — paths differ per OS —
+          # and the updater's .sig beside each. Spaces become dashes: GitHub
+          # renames them on upload, and latest.json must name the file as the
+          # release has it.
+          find src-tauri/target/${{ matrix.target }}/release/bundle \
+            -type f \
+            \( -name '*.dmg' -o -name '*.app.tar.gz' \
+               -o -name '*.msi' -o -name '*.exe' \
+               -o -name '*.AppImage' -o -name '*.deb' -o -name '*.rpm' -o -name '*.sig' \) \
+            -print0 | while IFS= read -r -d '' f; do
+              name=$(basename "$f"); cp -v "$f" "staging/${name// /-}"
+            done
+          ls -la staging/
+
+      # The raw compiled binary (one level above bundle/) is a standalone,
+      # installer-free executable — no MSI/NSIS, no admin, just run it. It uses
+      # the system's Evergreen WebView2 (preinstalled on Windows 10/11). Ship it
+      # as the portable build alongside the installers.
+      - name: Collect Windows portable binary
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          rel="src-tauri/target/${{ matrix.target }}/release"
+          # Tauri renames the binary to the product name when it bundles; the
+          # raw target binary keeps the cargo package name. Read that name from
+          # Cargo.toml instead of spelling it here, so renaming the package
+          # cannot silently break the portable build again.
+          pkg=$(sed -n 's/^name *= *"\(.*\)"/\1/p' src-tauri/Cargo.toml | head -1)
+          src=""
+          for cand in "$rel/Octopus Agent.exe" "$rel/$pkg.exe"; do
+            if [ -f "$cand" ]; then src="$cand"; break; fi
+          done
+          if [ -z "$src" ]; then
+            echo "no launcher binary in $rel (cargo package: $pkg); it holds:" >&2
+            ls -la "$rel" >&2
+            exit 1
+          fi
+          cp -v "$src" "staging/Octopus-Agent-portable-${{ matrix.label }}.exe"
+          ls -la staging/
+
+      - name: Upload to workflow artifacts (intermediate)
+        uses: actions/upload-artifact@v4
+        with:
+          name: octopus-agent-${{ matrix.label }}
+          path: staging/*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    name: publish release
+    steps:
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # The launcher's own: the team server's jobs upload artifacts to this run too.
+      - name: Download every per-platform artifact
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: octopus-agent-*
+          merge-multiple: true
+
+      - name: List collected bundles
+        run: ls -la dist/
+
+      # The updater's manifest: per platform, the file the app installs and
+      # its signature. Windows takes the NSIS installer, macOS the .app.tar.gz,
+      # Linux the AppImage. The .sig files are read here and not published.
+      - name: Write latest.json for the updater
+        shell: bash
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          REPO: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          import json, os, glob, datetime
+          tag = os.environ["TAG"]
+          base = f"https://github.com/{os.environ['REPO']}/releases/download/{tag}/"
+          pick = {
+              "windows-x86_64": "*-setup.exe",
+              "darwin-aarch64": "*.app.tar.gz",
+              "linux-x86_64": "*.AppImage",
+          }
+          platforms = {}
+          for key, pattern in pick.items():
+              for f in sorted(glob.glob(os.path.join("dist", pattern))):
+                  sig = f + ".sig"
+                  if os.path.exists(sig):
+                      platforms[key] = {"signature": open(sig).read().strip(), "url": base + os.path.basename(f)}
+                      break
+          if not platforms:
+              raise SystemExit("no signed bundle: set the TAURI_SIGNING_PRIVATE_KEY secret")
+          manifest = {
+              "version": tag.lstrip("v"),
+              "notes": f"Octopus Agent {tag}",
+              "pub_date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+              "platforms": platforms,
+          }
+          json.dump(manifest, open("dist/latest.json", "w"), indent=2)
+          print(json.dumps(manifest, indent=2))
+          PY
+          rm -f dist/*.sig
+
+      - name: Create / update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Octopus Agent ${{ steps.tag.outputs.tag }}
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+          body: |
+            ## Install
+
+            * **macOS** (Apple Silicon — M1/M2/M3/M4) — download the `.dmg` and drag *Octopus Agent.app* to Applications.  The build isn't notarized (no Apple Developer ID), so macOS blocks it on first launch — clear the quarantine flag in Terminal, then open it normally: `xattr -dr com.apple.quarantine "/Applications/Octopus Agent.app"`  (alternative: *System Settings → Privacy & Security → Open Anyway*).
+            * **Windows** — `.msi` installer, or the installer-free **portable** `Octopus-Agent-portable-win-x64.exe` (just run it — needs the Evergreen WebView2 runtime, preinstalled on Windows 10/11).  SmartScreen will warn: *More info* → *Run anyway* (the build isn't signed with Authenticode).
+            * **Linux** — `.AppImage` (`chmod +x` and run) or `.deb` (`sudo apt install ./...deb`).
+
+            Already installed? Octopus Agent updates itself: it finds this release within six hours, or at once from *Settings → About*.
+
+            On first launch the launcher downloads the patched browser engine (published by ShardBrowser), Widevine CDM and a starter library of 170 device profiles.  After that it boots straight to the workspace.
+          files: dist/*
+
+  # ---- the team server ----
+
+  team-server:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # musl: one static file that runs on any Linux, whatever its glibc.
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-musl
+            label: linux-x64
+          - os: ubuntu-22.04-arm
+            target: aarch64-unknown-linux-musl
+            label: linux-arm64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            label: windows-x64
+          - os: macos-14
+            target: aarch64-apple-darwin
+            label: macos-arm64
+
+    runs-on: ${{ matrix.os }}
+    name: team server (${{ matrix.label }})
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Rust (stable, ${{ matrix.target }})
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache Cargo registry + build target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            team-server/target
+          key: team-server-${{ matrix.label }}-cargo-${{ hashFiles('team-server/Cargo.lock') }}
+          restore-keys: |
+            team-server-${{ matrix.label }}-cargo-
+
+      # The C in it (SQLite, ring) is compiled against musl too, not the runner's glibc.
+      - name: Install musl
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+
+      - name: Build
+        working-directory: team-server
+        env:
+          CC_x86_64_unknown_linux_musl: musl-gcc
+          CC_aarch64_unknown_linux_musl: musl-gcc
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      # The guide runs ./octopus-agent-team-server or .\octopus-agent-team-server.exe,
+      # so each archive holds the program under that name; Windows gets the .exe itself.
+      - name: Package
+        shell: bash
+        env:
+          COPYFILE_DISABLE: 1   # no ._ files from macOS tar
+        run: |
+          mkdir -p staging
+          rel="team-server/target/${{ matrix.target }}/release"
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            cp -v "$rel/octopus-agent-team-server.exe" staging/octopus-agent-team-server.exe
+          else
+            tar -czvf "staging/octopus-agent-team-server-${{ matrix.label }}.tar.gz" \
+              -C "$rel" octopus-agent-team-server
+          fi
+          ls -la staging/
+
+      - name: Upload to workflow artifacts (intermediate)
+        uses: actions/upload-artifact@v4
+        with:
+          name: team-server-bin-${{ matrix.label }}
+          path: staging/*
+          if-no-files-found: error
+
+  # Onto the release the launcher's job made, so the two never race to create it.
+  # What built is attached even when another build failed; the notes name only that.
+  team-server-release:
+    needs: [release, team-server, team-server-manifest]
+    if: ${{ !cancelled() && needs.release.result == 'success' }}
+    runs-on: ubuntu-latest
+    name: attach the team server
+    steps:
+      - name: Resolve tag
+        id: tag
+        shell: bash
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            echo "tag=$INPUT_TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download the team server builds
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: team-server-bin-*
+          merge-multiple: true
+
+      - name: Attach them and name them in the notes
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+          IMAGE: ghcr.io/harindujayakody/octopus-agent-team-server
+          IMAGE_TAGGED: ${{ needs.team-server-manifest.result == 'success' }}
+          IMAGE_VERSION: ${{ needs.team-server-manifest.outputs.version }}
+          IMAGE_LATEST: ${{ needs.team-server-manifest.outputs.latest }}
+        run: |
+          mkdir -p dist
+          ls -la dist/
+          shopt -s nullglob
+          files=(dist/*)
+          if [ ${#files[@]} -gt 0 ]; then
+            gh release upload "$TAG" "${files[@]}" --clobber --repo "$GITHUB_REPOSITORY"
+          fi
+
+          programs=""
+          for f in linux-x64:"Linux x64" linux-arm64:"Linux arm64" macos-arm64:"macOS arm64"; do
+            name="octopus-agent-team-server-${f%%:*}.tar.gz"
+            if [ -e "dist/$name" ]; then programs="$programs  * \`$name\` — ${f#*:}"$'\n'; fi
+          done
+          if [ -e dist/octopus-agent-team-server.exe ]; then
+            programs="$programs  * \`octopus-agent-team-server.exe\` — Windows x64"$'\n'
+          fi
+          if [ "$IMAGE_TAGGED" != "true" ] && [ -z "$programs" ]; then
+            echo "::warning::no team server build made it: the notes do not mention one"
+            exit 0
+          fi
+
+          {
+            echo "## Team server"
+            echo
+            echo "*Create a team* in the launcher shows how to run it and join as its admin."
+            echo
+            if [ "$IMAGE_TAGGED" = "true" ]; then
+              also=""
+              if [ "$IMAGE_LATEST" = "yes" ]; then also=", also tagged \`:latest\`"; fi
+              echo "* **Docker** (Linux x64, arm64) — \`$IMAGE:$IMAGE_VERSION\`$also."
+            fi
+            if [ -n "$programs" ]; then
+              echo "* **Program** — unpack an archive with \`tar -xzf\`.  It is not signed: on macOS run \`xattr -d com.apple.quarantine ./octopus-agent-team-server\` once; Windows SmartScreen warns as for the launcher."
+              printf '%s' "$programs"
+            fi
+            printf '%s' "* Lost the admin invite? \`octopus-agent-team-server --print-invite\` prints a new one"
+            if [ "$IMAGE_TAGGED" = "true" ]; then
+              printf '%s' " (Docker: \`docker exec octopus-agent-team octopus-agent-team-server --print-invite\`)"
+            fi
+            echo "."
+          } > notes.md
+
+          # A re-run replaces the section an earlier one wrote.
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body --jq .body \
+            | awk '/^## Team server$/ { exit } { print }' > body.md
+          { echo; cat notes.md; } >> body.md
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file body.md
+
+  # Each architecture built on its own kind of runner, pushed by digest, then
+  # tagged together below: no emulation.
+  team-server-image:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: linux/amd64
+            arch: amd64
+          - os: ubuntu-22.04-arm
+            platform: linux/arm64
+            arch: arm64
+
+    runs-on: ${{ matrix.os }}
+    name: team server image (${{ matrix.arch }})
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/harindujayakody/octopus-agent-team-server
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: team-server/Dockerfile
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+
+      - name: Keep the digest
+        shell: bash
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+
+      - name: Upload the digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: team-server-digest-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # Tagged once the release is out, so the tags match what a release says.
+  team-server-manifest:
+    needs: [team-server-image, release]
+    runs-on: ubuntu-latest
+    name: team server image (tags)
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/harindujayakody/octopus-agent-team-server
+    outputs:
+      version: ${{ steps.tags.outputs.version }}
+      latest: ${{ steps.tags.outputs.latest }}
+
+    steps:
+      - name: Download the digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: team-server-digest-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # v2.1.0 → :2.1.0 and :latest, both naming the two architectures.
+      # A manual run or a pre-release (v2.2.0-beta) leaves :latest, which the guide pulls, alone.
+      - name: Tag both architectures as one image
+        id: tags
+        shell: bash
+        working-directory: ${{ runner.temp }}/digests
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then tag="$INPUT_TAG"; else tag="${GITHUB_REF#refs/tags/}"; fi
+          version="${tag#v}"
+          case "$version" in
+            ''|*[!A-Za-z0-9_.-]*) echo "::error::not usable as an image tag: $tag"; exit 1 ;;
+          esac
+          tags=(-t "$IMAGE:$version")
+          latest=no
+          if [ "$EVENT" = "push" ] && [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            tags+=(-t "$IMAGE:latest")
+            latest=yes
+          fi
+          ls -la
+          docker buildx imagetools create "${tags[@]}" \
+            $(printf "$IMAGE@sha256:%s " *)
+          docker buildx imagetools inspect "$IMAGE:$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"

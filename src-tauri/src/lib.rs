@@ -1,0 +1,2779 @@
+// Octopus Agent — Tauri backend.
+
+mod profile_icon;
+mod api;
+mod fingerprints;
+mod gpu_caps;
+mod launch;
+mod engines;
+mod mcp_setup;
+mod migrate;
+mod process;
+mod runtime;
+mod settings;
+mod store;
+mod sync_bus;
+mod cdp;
+mod requests;
+mod db;
+mod modguard;
+mod runner;
+mod wasm;
+mod reset;
+mod team;
+mod space;
+mod ext_updates;
+// A live end-to-end check against a real team server and engine, run by hand (macOS, Linux).
+#[cfg(all(test, unix))]
+mod live_e2e;
+
+use serde_json::Value;
+
+/// App handle set in `run()` setup; lets the axum API reach a webview window.
+static APP_HANDLE: std::sync::OnceLock<tauri::AppHandle> = std::sync::OnceLock::new();
+
+pub fn app_handle() -> Option<&'static tauri::AppHandle> {
+    APP_HANDLE.get()
+}
+
+/// Launcher's own webview window (for monitor queries); None when headless.
+pub fn main_window() -> Option<tauri::WebviewWindow> {
+    use tauri::Manager;
+    let app = APP_HANDLE.get()?;
+    app.get_webview_window("main")
+        .or_else(|| app.webview_windows().into_values().next())
+}
+
+/// Tell any open UI window that the on-disk store changed out-of-band — i.e. a
+/// profile/proxy created or removed through the automation API or MCP, which
+/// writes straight to disk without the React state ever knowing.  The view
+/// listens for `store-changed` and reloads, so the new items appear without an
+/// app restart.  `kind` ("profiles" | "proxies" | "automation") is informational; the UI
+/// reloads both lists regardless.  No-op when headless (no window).
+/// A warning the user has to see — shown as a toast. stderr is not a place a
+/// user looks, and a profile silently running on the host's clock is worth an
+/// interruption.
+pub fn notify_warning(text: impl Into<String>) {
+    use tauri::Emitter;
+    let text = text.into();
+    eprintln!("[launcher] WARNING: {text}");
+    if let Some(w) = main_window() {
+        let _ = w.emit("launcher-warning", text);
+    }
+}
+
+/// Any event to every window; nothing when headless.
+pub fn notify_event(event: &str, payload: Value) {
+    use tauri::Emitter;
+    if let Some(app) = app_handle() {
+        let _ = app.emit(event, payload);
+    }
+}
+
+pub fn notify_store_changed(kind: &str) {
+    use tauri::Emitter;
+    if let Some(w) = main_window() {
+        let _ = w.emit("store-changed", kind);
+    }
+}
+
+// ---- MCP server download ----
+
+/// Download MCP server source into `<dir>/mcp`; user manages registration.
+#[tauri::command]
+async fn mcp_download(dir: String) -> Result<String, String> {
+    mcp_setup::download_mcp(std::path::Path::new(&dir))
+        .await
+        .map(|p| p.display().to_string())
+        .map_err(|e| e.to_string())
+}
+
+// ---- Profiles ----
+
+#[tauri::command]
+async fn profile_list() -> Result<Vec<space::profile::ProfileMeta>, String> {
+    space::ready().await;
+    space::profile::list_all().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn profile_get(id: String) -> Result<Value, String> {
+    space::ready().await;
+    let mut stored = space::profile::fetch(&id).await.map_err(|e| e.to_string())?;
+    // Backfill gpu_preset_id for legacy profiles by matching webgl.renderer.
+    if stored.meta.gpu_preset_id.is_none() {
+        if let Some(gid) = infer_gpu_preset_id(&stored.config) {
+            stored.meta.gpu_preset_id = Some(gid);
+            // A team's copy refuses the save: the guess stays in this answer.
+            let _ = space::profile::save_raw(&mut stored);
+        }
+    }
+    serde_json::to_value(stored).map_err(|e| e.to_string())
+}
+
+/// Recover library fingerprint id by matching webgl.renderer (+ screen if ambiguous).
+fn infer_gpu_preset_id(config: &serde_json::Map<String, Value>) -> Option<String> {
+    let renderer = config.get("webgl")?.get("renderer")?.as_str()?;
+    let scr = config.get("screen");
+    let sw = scr.and_then(|s| s.get("width")).and_then(|v| v.as_i64());
+    let sh = scr.and_then(|s| s.get("height")).and_then(|v| v.as_i64());
+
+    let entries = fingerprints::list_all().ok()?;
+    let mut renderer_match: Option<String> = None;
+    for e in &entries {
+        let er = e
+            .payload
+            .get("webgl")
+            .and_then(|w| w.get("renderer"))
+            .and_then(|v| v.as_str());
+        if er != Some(renderer) {
+            continue;
+        }
+        let es = e.payload.get("screen");
+        let ew = es.and_then(|s| s.get("width")).and_then(|v| v.as_i64());
+        let eh = es.and_then(|s| s.get("height")).and_then(|v| v.as_i64());
+        if sw.is_some() && ew == sw && eh == sh {
+            return Some(e.id.clone());
+        }
+        renderer_match.get_or_insert_with(|| e.id.clone());
+    }
+    renderer_match
+}
+
+// ---- Realistic Sec-CH-UA-Platform-Version pools (spread per profile) ----
+
+// macOS Sonoma 14.x, Sequoia 15.x, Tahoe 26.x.
+const MACOS_PLATFORM_VERSIONS: &[&str] = &[
+    "14.6.1", "14.7", "14.7.1", "14.7.2",
+    "15.4", "15.4.1", "15.5", "15.6", "15.6.1", "15.7",
+    "26.0", "26.0.1", "26.1",
+];
+
+// Win 10 21H1+ ("10.0.0"), Win 11 21H2..25H2 ("13"–"17"); weighted to 22H2/23H2/24H2.
+const WINDOWS_PLATFORM_VERSIONS: &[&str] = &[
+    "10.0.0",
+    "13.0.0",
+    "14.0.0", "14.0.0", "14.0.0",
+    "15.0.0", "15.0.0", "15.0.0", "15.0.0",
+    "16.0.0", "16.0.0", "16.0.0",
+    "17.0.0",
+];
+
+// LTS kernels + current mainline.
+const LINUX_PLATFORM_VERSIONS: &[&str] = &[
+    "5.15.0", "6.1.0", "6.5.0",
+    "6.6.0", "6.8.0", "6.10.0", "6.11.0", "6.12.0",
+    "6.14.0", "6.15.0", "6.16.0",
+];
+
+/// Write a random platform_version into navigator + client_hints; unknown platforms left alone.
+pub(crate) fn randomize_platform_version(payload: &mut serde_json::Map<String, Value>) {
+    let platform = payload
+        .get("navigator")
+        .and_then(|n| n.get("platform"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let pool: &[&str] = match platform {
+        "macOS"   => MACOS_PLATFORM_VERSIONS,
+        "Windows" => WINDOWS_PLATFORM_VERSIONS,
+        "Linux"   => LINUX_PLATFORM_VERSIONS,
+        _         => return,
+    };
+    let pick_idx = (uuid::Uuid::new_v4().as_bytes()[0] as usize) % pool.len();
+    let version = pool[pick_idx].to_string();
+
+    if let Some(nav) = payload.get_mut("navigator").and_then(|v| v.as_object_mut()) {
+        nav.insert("platform_version".into(), Value::String(version.clone()));
+    }
+    if let Some(ch) = payload.get_mut("client_hints").and_then(|v| v.as_object_mut()) {
+        ch.insert("platform_version".into(), Value::String(version));
+    }
+}
+
+/// Realistic (hardware_concurrency, deviceMemory) combos per Mac model id.
+fn mac_hw_configs(model: &str) -> Option<&'static [(u32, u32)]> {
+    Some(match model {
+        "mac-m1-air13" | "mac-m1-mbp13" | "mac-m1-imac24" => &[(8, 8), (8, 16)],
+        "mac-m1-pro-mbp14" | "mac-m1-pro-mbp16" => &[(8, 16), (10, 16), (10, 32)],
+        "mac-m1-max-mbp14" | "mac-m1-max-mbp16" => &[(10, 32)],
+        "mac-m2-air13" | "mac-m2-air15" | "mac-m2-mbp13" => &[(8, 8), (8, 16)],
+        "mac-m2-pro-mbp14" | "mac-m2-pro-mbp16" => &[(10, 16), (12, 16), (12, 32)],
+        "mac-m2-max-mbp14" | "mac-m2-max-mbp16" => &[(12, 32)],
+        "mac-m3-air13" | "mac-m3-air15" | "mac-m3-mbp14" | "mac-m3-imac24" => {
+            &[(8, 8), (8, 16)]
+        }
+        "mac-m3-pro-mbp14" | "mac-m3-pro-mbp16" => &[(11, 16), (12, 16), (12, 32)],
+        "mac-m3-max-mbp14" | "mac-m3-max-mbp16" => &[(14, 32), (16, 32)],
+        "mac-m4-air13" | "mac-m4-air15" | "mac-m4-mbp14" | "mac-m4-imac24" => {
+            &[(10, 16), (10, 32)]
+        }
+        "mac-m4-pro-mbp14" | "mac-m4-pro-mbp16" => &[(12, 16), (14, 16), (14, 32)],
+        "mac-m4-max-mbp14" | "mac-m4-max-mbp16" => &[(14, 32), (16, 32)],
+        "mac-m5-mbp14" => &[(10, 16), (10, 32)],
+        _ => return None,
+    })
+}
+
+/// Host logical CPU count (counts SMT threads); fallback 8.
+fn host_logical_cores() -> u32 {
+    std::thread::available_parallelism()
+        .map(|n| n.get() as u32)
+        .unwrap_or(8)
+}
+
+/// Host physical RAM in GiB, best-effort per OS.
+fn host_ram_gb() -> Option<u32> {
+    #[cfg(target_os = "macos")]
+    {
+        let out = std::process::Command::new("sysctl")
+            .args(["-n", "hw.memsize"])
+            .output()
+            .ok()?;
+        let bytes: u64 = String::from_utf8_lossy(&out.stdout).trim().parse().ok()?;
+        return Some((bytes / (1024 * 1024 * 1024)) as u32);
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let s = std::fs::read_to_string("/proc/meminfo").ok()?;
+        let kb: u64 = s
+            .lines()
+            .find(|l| l.starts_with("MemTotal:"))?
+            .split_whitespace()
+            .nth(1)?
+            .parse()
+            .ok()?;
+        return Some((kb / (1024 * 1024)) as u32);
+    }
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        // 0x08000000 = CREATE_NO_WINDOW — suppress the brief console flash a GUI
+        // app gets when shelling out to a console-subsystem binary.
+        let out = std::process::Command::new("wmic")
+            .args(["ComputerSystem", "get", "TotalPhysicalMemory"])
+            .creation_flags(0x08000000)
+            .output()
+            .ok()?;
+        let txt = String::from_utf8_lossy(&out.stdout);
+        let bytes: u64 = txt.lines().filter_map(|l| l.trim().parse::<u64>().ok()).next()?;
+        return Some((bytes / (1024 * 1024 * 1024)) as u32);
+    }
+    #[allow(unreachable_code)]
+    None
+}
+
+/// Physical RAM rounded to Chrome's {8,16,32} deviceMemory bucket; unknown → 16.
+fn host_ram_bucket_gb() -> u32 {
+    match host_ram_gb() {
+        Some(gb) if gb >= 32 => 32,
+        Some(gb) if gb >= 16 => 16,
+        Some(_) => 8,
+        None => 16,
+    }
+}
+
+/// Pick (hardware_concurrency, device_memory): Mac → curated table, Win/Linux → host-bracketed.
+pub(crate) fn randomize_hardware(payload: &mut serde_json::Map<String, Value>) {
+    let model = payload
+        .get("_meta")
+        .and_then(|m| m.get("gpu_preset_id"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let platform = payload
+        .get("navigator")
+        .and_then(|n| n.get("platform"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let pick8 = || uuid::Uuid::new_v4().as_bytes()[0] as usize;
+
+    let (cores, mem): (u32, u32) = if let Some(pool) = mac_hw_configs(model) {
+        pool[pick8() % pool.len()]
+    } else if platform == "Windows" || platform == "Linux" {
+        let c = host_logical_cores();
+        // Real x86 logical-core counts (SMT + Intel hybrid); bracket host within [C-4, C+2].
+        const X86_CORES: [u32; 9] = [4, 6, 8, 12, 16, 20, 24, 28, 32];
+        let lo = c.saturating_sub(4);
+        let hi = c + 2;
+        let cand: Vec<u32> = X86_CORES
+            .into_iter()
+            .filter(|&n| n >= lo && n <= hi)
+            .collect();
+        let cores = if cand.is_empty() {
+            X86_CORES
+                .into_iter()
+                .min_by_key(|&n| (n as i64 - c as i64).abs())
+                .unwrap()
+        } else {
+            cand[pick8() % cand.len()]
+        };
+        // deviceMemory: core-tied floor and host-RAM ceiling.
+        let real = host_ram_bucket_gb();
+        let floor = if cores >= 12 { 16 } else { 8 };
+        let mem_cand: Vec<u32> = [8u32, 16, 32]
+            .into_iter()
+            .filter(|&m| m >= floor && m <= real)
+            .collect();
+        let mem = if mem_cand.is_empty() {
+            real
+        } else {
+            mem_cand[pick8() % mem_cand.len()]
+        };
+        (cores, mem)
+    } else {
+        return;
+    };
+
+    if let Some(nav) = payload.get_mut("navigator").and_then(|v| v.as_object_mut()) {
+        nav.insert("hardware_concurrency".into(), Value::from(cores));
+        nav.insert("device_memory".into(), Value::from(mem));
+    }
+}
+
+/// Clamp profile.screen to the real display when it's smaller than the FP claim.
+/// A profile keeps the screen it declares while the real display can hold it.
+pub fn clamp_screen_to_real_display(
+    window: &tauri::WebviewWindow,
+    payload: &mut serde_json::Map<String, Value>,
+) {
+    let Some(monitor) = window
+        .primary_monitor()
+        .ok()
+        .flatten()
+        .or_else(|| window.current_monitor().ok().flatten())
+    else {
+        eprintln!("[launcher] display: no monitor info — screen clamp skipped");
+        return;
+    };
+    let scale = monitor.scale_factor();
+    if scale <= 0.0 {
+        eprintln!("[launcher] display: bad scale_factor {scale} — screen clamp skipped");
+        return;
+    }
+    let phys = monitor.size();
+    let real_w = (phys.width as f64 / scale).round() as i64;
+    let real_h = (phys.height as f64 / scale).round() as i64;
+    eprintln!(
+        "[launcher] display: name={:?} physical={}x{} scale={} -> logical={}x{}",
+        monitor.name(), phys.width, phys.height, scale, real_w, real_h
+    );
+    if real_w <= 0 || real_h <= 0 {
+        return;
+    }
+
+    let Some(scr) = payload.get("screen").and_then(|v| v.as_object()) else {
+        eprintln!("[launcher] display: profile has no `screen` block — clamp skipped");
+        return;
+    };
+    let fp_w = scr.get("width").and_then(|v| v.as_i64()).unwrap_or(0);
+    let fp_h = scr.get("height").and_then(|v| v.as_i64()).unwrap_or(0);
+    eprintln!("[launcher] display: fingerprint screen={fp_w}x{fp_h}");
+    if fp_w <= 0 || fp_h <= 0 {
+        return;
+    }
+    // A screen the profile declares is kept whenever the real display can hold
+    // it; the clamp exists for the other case, where a window simply cannot be
+    // bigger than the monitor it opens on.
+    //
+    // This used to be the macOS rule only, and Windows/Linux overwrote the
+    // declared screen with the host display on every start. That handed every
+    // profile on one machine the SAME high-entropy pair — on a 5120x1440
+    // monitor, all of them said 5120x1440 — which is the opposite of what a
+    // per-profile screen is for, and it ignored what the profile's own API
+    // caller had asked for.
+    if real_w >= fp_w && real_h >= fp_h {
+        eprintln!(
+            "[launcher] display: real {real_w}x{real_h} >= fp {fp_w}x{fp_h} — keeping FP screen"
+        );
+        return;
+    }
+
+    // Preserve FP menubar/dock insets for avail_*.
+    let fp_avail_w = scr.get("avail_width").and_then(|v| v.as_i64()).unwrap_or(fp_w);
+    let fp_avail_h = scr.get("avail_height").and_then(|v| v.as_i64()).unwrap_or(fp_h);
+    let chrome_w = (fp_w - fp_avail_w).max(0);
+    let chrome_h = (fp_h - fp_avail_h).max(0);
+    let avail_w = (real_w - chrome_w).max(1);
+    let avail_h = (real_h - chrome_h).max(1);
+
+    if let Some(scr_mut) = payload.get_mut("screen").and_then(|v| v.as_object_mut()) {
+        scr_mut.insert("width".into(), Value::from(real_w));
+        scr_mut.insert("height".into(), Value::from(real_h));
+        scr_mut.insert("avail_width".into(), Value::from(avail_w));
+        scr_mut.insert("avail_height".into(), Value::from(avail_h));
+        scr_mut.insert("device_pixel_ratio".into(), Value::from(scale));
+    }
+    // Keep window inside the avail area; a profile with no window block gets one,
+    // otherwise the browser falls back to Chromium's own small default size.
+    let win_slot = payload
+        .entry("window")
+        .or_insert_with(|| Value::Object(serde_json::Map::new()));
+    if let Some(win) = win_slot.as_object_mut() {
+        win.insert("outer_width".into(), Value::from(avail_w));
+        win.insert("inner_width".into(), Value::from(avail_w));
+        let outer_h = (avail_h - 1).max(1);
+        win.insert("outer_height".into(), Value::from(outer_h));
+        win.insert("inner_height".into(), Value::from((outer_h - 87).max(1)));
+    }
+    eprintln!(
+        "[launcher] display: CLAMPED screen to real {real_w}x{real_h} \
+         (avail {avail_w}x{avail_h}, dpr {scale}) — FP claimed {fp_w}x{fp_h}"
+    );
+}
+
+/// `epoch` is the space's edition the interface read under: a save asked in
+/// another space than the one in use now is refused, nothing written.
+#[tauri::command]
+async fn profile_save(
+    window: tauri::WebviewWindow,
+    payload: Value,
+    epoch: Option<u64>,
+) -> Result<space::profile::ProfileMeta, String> {
+    // UI saves enrich new profiles; the API persists verbatim.
+    let t = ticket(epoch)?;
+    save_profile_core(Some(&window), payload, true, space::Door("profile_save"), &t)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Enrich a new profile in place: platform_version, hardware, screen clamp.
+pub fn enrich_new_config(
+    window: Option<&tauri::WebviewWindow>,
+    obj: &mut serde_json::Map<String, Value>,
+) {
+    randomize_platform_version(obj);
+    randomize_hardware(obj);
+    if let Some(w) = window {
+        clamp_screen_to_real_display(w, obj);
+    }
+}
+
+/// A profile payload as a save takes it, enriched when new, with the rev an
+/// editor opened it at; one without a rev is an internal caller and passes.
+fn profile_payload(
+    window: Option<&tauri::WebviewWindow>,
+    mut payload: Value,
+    enrich: bool,
+) -> Result<(space::profile::StoredProfile, space::profile::SaveOpts), String> {
+    let meta = payload.get("_meta");
+    let is_new = meta.and_then(|m| m.get("id")).and_then(|v| v.as_str()).map(|s| s.is_empty()).unwrap_or(true);
+    let sent_rev = meta.and_then(|m| m.get("rev")).and_then(|v| v.as_u64()).filter(|_| !is_new);
+    if is_new && enrich {
+        if let Some(obj) = payload.as_object_mut() {
+            enrich_new_config(window, obj);
+        }
+    }
+    let stored = serde_json::from_value(payload).map_err(|e| e.to_string())?;
+    Ok((stored, space::profile::SaveOpts { sent_rev, ..Default::default() }))
+}
+
+/// Core of `profile_save` callable without Tauri context; `enrich=false` stores
+/// verbatim. It goes to the space of `t`, by the rule of `door`.
+pub async fn save_profile_core(
+    window: Option<&tauri::WebviewWindow>,
+    payload: Value,
+    enrich: bool,
+    door: space::Door,
+    t: &space::Ticket,
+) -> anyhow::Result<space::profile::ProfileMeta> {
+    let (stored, opts) = profile_payload(window, payload, enrich).map_err(anyhow::Error::msg)?;
+    space::profile::save(door, t, stored, opts).await
+}
+
+/// The same, to this machine's own files only: a run's profiles and temporary ones.
+pub fn save_profile_here(
+    window: Option<&tauri::WebviewWindow>,
+    payload: Value,
+    enrich: bool,
+) -> Result<space::profile::ProfileMeta, String> {
+    let (stored, opts) = profile_payload(window, payload, enrich)?;
+    space::profile::save_here(stored, opts).map_err(|e| e.to_string())
+}
+
+/// Into the trash: this machine's for a week, or the team's on its server.
+#[tauri::command]
+async fn profile_delete(id: String, epoch: Option<u64>) -> Result<(), String> {
+    let t = ticket(epoch)?;
+    space::profile::remove(space::Door("profile_delete"), &t, &id).await.map_err(|e| e.to_string())
+}
+
+/// The ticket for a write the interface asked under `epoch`.
+fn ticket(epoch: Option<u64>) -> Result<space::Ticket, String> {
+    space::window_ticket(epoch).map_err(|e| e.to_string())
+}
+
+// ---- Automation ----
+
+/// Whether this build has the automation section compiled in. Always present,
+/// so the UI can ask before it renders anything.
+#[tauri::command]
+fn automation_available() -> bool {
+    cfg!(feature = "automation")
+}
+
+#[tauri::command]
+async fn automation_list() -> Result<Vec<space::automation::Project>, String> {
+    space::ready().await;
+    space::automation::list().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn automation_create(name: String, epoch: Option<u64>) -> Result<space::automation::Project, String> {
+    let t = ticket(epoch)?;
+    space::automation::create(space::Door("automation_create"), &t, &name).await.map_err(|e| e.to_string())
+}
+
+/// In a team, a step's secret values stay on this machine and go up blank.
+#[tauri::command]
+async fn automation_save(project: space::automation::Project, epoch: Option<u64>) -> Result<space::automation::Project, String> {
+    let t = ticket(epoch)?;
+    space::automation::save(space::Door("automation_save"), &t, project).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn automation_delete(id: String, epoch: Option<u64>) -> Result<(), String> {
+    let t = ticket(epoch)?;
+    space::automation::delete(space::Door("automation_delete"), &t, &id).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn automation_duplicate(id: String, epoch: Option<u64>) -> Result<space::automation::Project, String> {
+    let t = ticket(epoch)?;
+    space::automation::duplicate(space::Door("automation_duplicate"), &t, &id).await.map_err(|e| e.to_string())
+}
+
+/// Starts a profile WITH automation on, and attaches. The ordinary UI launch
+/// deliberately leaves CDP off, so the studio needs its own door.
+#[tauri::command]
+async fn automation_launch(app: tauri::AppHandle, profile_id: String) -> Result<u32, String> {
+    #[cfg(feature = "automation")]
+    {
+        if migrate::in_progress() {
+            return Err("profiles are being moved — try again when that finishes".into());
+        }
+        // CDP cannot be turned on for a live process, so attaching to one opened
+        // without it would give a focused window with no frames and no control.
+        if is_profile_running(&profile_id)
+            && process::Tracker::shared().cdp(&profile_id).is_none()
+        {
+            return Err(
+                "This profile is already open without debugging. Close it, then open it here."
+                    .into(),
+            );
+        }
+        let b = bus().await?;
+        // (enable_cdp, headless) — the studio needs a visible window with CDP on.
+        let out = launch::launch_profile_synced(&profile_id, true, false, None, b.port, &b.token)
+            .await
+            .map_err(|e| e.to_string())?;
+        automation_attach(app, profile_id).await?;
+        return Ok(out.pid);
+    }
+    #[cfg(not(feature = "automation"))]
+    {
+        let _ = (app, profile_id);
+        Err("automation is not compiled into this build".into())
+    }
+}
+
+/// Attaches to a profile already running with CDP on; frames arrive as
+/// `automation:frame`. Only bodies are gated — Tauri's command list takes no `#[cfg]`.
+#[tauri::command]
+async fn automation_attach(app: tauri::AppHandle, profile_id: String) -> Result<(), String> {
+    #[cfg(feature = "automation")]
+    {
+        use tauri::Emitter;
+        let info = space::cdp_pass(&profile_id)?;
+        let handle = app.clone();
+        let nav_handle = app.clone();
+        let ev_handle = app.clone();
+        let ev_profile = profile_id.clone();
+        return cdp::attach_with(
+            profile_id,
+            info.web_socket_debugger_url,
+            move |frame| {
+                let _ = handle.emit("automation:frame", frame);
+            },
+            move |profile_id, url| {
+                let _ = nav_handle.emit(
+                    "automation:navigated",
+                    serde_json::json!({ "profile_id": profile_id, "url": url }),
+                );
+            },
+            // Surface the interceptor's paused-request events to the studio so
+            // it can answer them with Traffic.resolve.
+            move |method, params| {
+                let topic = match method.as_str() {
+                    "Traffic.requestPaused" => "automation:traffic-paused",
+                    "Traffic.requestObserved" => "automation:traffic-observed",
+                    _ => return,
+                };
+                let _ = ev_handle.emit(
+                    topic,
+                    serde_json::json!({ "profile_id": ev_profile, "params": params }),
+                );
+            },
+        )
+        .await
+        .map_err(|e| e.to_string());
+    }
+    #[cfg(not(feature = "automation"))]
+    {
+        let _ = (app, profile_id);
+        Err("automation is not compiled into this build".into())
+    }
+}
+
+#[tauri::command]
+fn automation_detach(profile_id: String) {
+    #[cfg(feature = "automation")]
+    cdp::detach(&profile_id);
+    #[cfg(not(feature = "automation"))]
+    let _ = profile_id;
+}
+
+#[tauri::command]
+fn automation_attached(profile_id: String) -> bool {
+    #[cfg(feature = "automation")]
+    return cdp::is_attached(&profile_id);
+    #[cfg(not(feature = "automation"))]
+    {
+        let _ = profile_id;
+        false
+    }
+}
+
+#[tauri::command]
+async fn automation_screencast(
+    profile_id: String,
+    on: bool,
+    width: u32,
+    height: u32,
+) -> Result<(), String> {
+    #[cfg(feature = "automation")]
+    {
+        if on {
+            space::cdp_pass(&profile_id)?;
+        }
+        return if on {
+            cdp::start_screencast(&profile_id, width, height).await
+        } else {
+            cdp::stop_screencast(&profile_id).await
+        }
+        .map_err(|e| e.to_string());
+    }
+    #[cfg(not(feature = "automation"))]
+    {
+        let _ = (profile_id, on, width, height);
+        Err("automation is not compiled into this build".into())
+    }
+}
+
+/// What this desktop lets the launcher do with windows: browsers still place
+/// themselves over X11/XWayland, but under Wayland our own panels cannot.
+#[tauri::command]
+fn automation_display() -> serde_json::Value {
+    #[cfg(target_os = "linux")]
+    {
+        let wayland = std::env::var("WAYLAND_DISPLAY").is_ok()
+            || std::env::var("XDG_SESSION_TYPE")
+                .map(|v| v.eq_ignore_ascii_case("wayland"))
+                .unwrap_or(false);
+        // The same condition launch.rs pins --ozone-platform=x11 on.
+        let x_display = std::env::var_os("DISPLAY").is_some();
+        let browser_placement = !wayland || x_display;
+        let panels = !wayland;
+        let note = if !browser_placement {
+            "This is a Wayland session with no X display for the browser to fall back to, so it \
+             runs as a Wayland window: it cannot place itself, arranging browsers does nothing, \
+             and the launcher cannot keep the Fleet window above the others either. Install \
+             XWayland, or log in with an Xorg session. Recording and running still work — the \
+             live view comes over the debugging connection, not off the screen."
+        } else if !panels {
+            "This is a Wayland session. Browsers still arrange themselves, because they run \
+             through XWayland, but the launcher cannot keep its own Fleet window above the \
+             others or place it — a Wayland application is not allowed to. Log in with an Xorg \
+             session if you need that."
+        } else {
+            ""
+        };
+        return serde_json::json!({
+            "server": if wayland { "wayland" } else { "x11" },
+            "limited": !browser_placement || !panels,
+            "note": note,
+            "browser_placement": browser_placement,
+            "panels": panels,
+        });
+    }
+    #[cfg(not(target_os = "linux"))]
+    serde_json::json!({
+        "server": "native",
+        "limited": false,
+        "note": "",
+        "browser_placement": true,
+        "panels": true,
+    })
+}
+
+// ---- Modules ----
+
+/// Every TLS/HTTP2 fingerprint the request steps can wear. Read off the
+/// library, so it stays right when the library is updated.
+#[tauri::command]
+fn automation_tls_fingerprints() -> Vec<String> {
+    #[cfg(feature = "automation")]
+    return requests::fingerprints();
+    #[cfg(not(feature = "automation"))]
+    Vec::new()
+}
+
+#[tauri::command]
+fn automation_modules() -> Result<Vec<serde_json::Value>, String> {
+    #[cfg(feature = "automation")]
+    return wasm::list()
+        .map(|v| v.into_iter().filter_map(|m| serde_json::to_value(m).ok()).collect())
+        .map_err(|e| e.to_string());
+    #[cfg(not(feature = "automation"))]
+    Ok(Vec::new())
+}
+
+#[tauri::command]
+fn automation_module_install(path: String) -> Result<serde_json::Value, String> {
+    #[cfg(feature = "automation")]
+    return wasm::install(&path)
+        .map(|m| serde_json::to_value(m).unwrap_or_default())
+        .map_err(|e| e.to_string());
+    #[cfg(not(feature = "automation"))]
+    {
+        let _ = path;
+        Err("automation is not compiled into this build".into())
+    }
+}
+
+#[tauri::command]
+fn automation_module_remove(id: String) -> Result<(), String> {
+    #[cfg(feature = "automation")]
+    return wasm::remove(&id).map_err(|e| e.to_string());
+    #[cfg(not(feature = "automation"))]
+    {
+        let _ = id;
+        Ok(())
+    }
+}
+
+
+/// What a module asks to be allowed to call, and what it was allowed.
+#[tauri::command]
+fn automation_module_permissions(id: String) -> Result<serde_json::Value, String> {
+    #[cfg(feature = "automation")]
+    return Ok(serde_json::json!({
+        "asks": wasm::manifest_of(&id),
+        "granted": wasm::grant_for(&id),
+    }));
+    #[cfg(not(feature = "automation"))]
+    {
+        let _ = id;
+        Err("automation is not compiled into this build".into())
+    }
+}
+
+/// Records what the operator allowed this module to call.
+#[tauri::command]
+fn automation_module_grant(
+    id: String,
+    modules: Vec<String>,
+    flows: Vec<String>,
+) -> Result<serde_json::Value, String> {
+    #[cfg(feature = "automation")]
+    return wasm::set_grant(&id, modules, flows)
+        .map(|g| serde_json::to_value(g).unwrap_or_default())
+        .map_err(|e| e.to_string());
+    #[cfg(not(feature = "automation"))]
+    {
+        let _ = (id, modules, flows);
+        Err("automation is not compiled into this build".into())
+    }
+}
+
+#[tauri::command]
+fn automation_modules_dir() -> Result<String, String> {
+    #[cfg(feature = "automation")]
+    return wasm::modules_dir()
+        .map(|p| p.to_string_lossy().to_string())
+        .map_err(|e| e.to_string());
+    #[cfg(not(feature = "automation"))]
+    Err("automation is not compiled into this build".into())
+}
+
+// ---- Export / import ----
+
+#[tauri::command]
+fn automation_export(project_id: String) -> Result<serde_json::Value, String> {
+    space::automation::export(&project_id)
+        .map(|b| serde_json::to_value(b).unwrap_or_default())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn automation_import(bundle: serde_json::Value, epoch: Option<u64>) -> Result<space::automation::Project, String> {
+    let t = ticket(epoch)?;
+    let parsed: space::automation::Bundle =
+        serde_json::from_value(bundle).map_err(|e| format!("that is not a project bundle: {e}"))?;
+    space::automation::import(space::Door("automation_import"), &t, parsed).await.map_err(|e| e.to_string())
+}
+
+/// Starts the project. Answers as soon as the run is under way; progress is
+/// read back with `automation_run_status`.
+#[tauri::command]
+async fn automation_run(project_id: String) -> Result<(), String> {
+    #[cfg(feature = "automation")]
+    {
+        return runner::start(&project_id).await.map_err(|e| e.to_string());
+    }
+    #[cfg(not(feature = "automation"))]
+    {
+        let _ = project_id;
+        Err("automation is not compiled into this build".into())
+    }
+}
+
+#[tauri::command]
+fn automation_run_stop(project_id: String) {
+    #[cfg(feature = "automation")]
+    runner::stop(&project_id);
+    #[cfg(not(feature = "automation"))]
+    let _ = project_id;
+}
+
+#[tauri::command]
+fn automation_run_status(project_id: String) -> Option<serde_json::Value> {
+    #[cfg(feature = "automation")]
+    return runner::status(&project_id).and_then(|s| serde_json::to_value(s).ok());
+    #[cfg(not(feature = "automation"))]
+    {
+        let _ = project_id;
+        None
+    }
+}
+
+/// Every run going right now — what the fleet window shows.
+#[tauri::command]
+fn automation_fleet() -> Vec<serde_json::Value> {
+    #[cfg(feature = "automation")]
+    return runner::all()
+        .into_iter()
+        .filter_map(|s| serde_json::to_value(s).ok())
+        .collect();
+    #[cfg(not(feature = "automation"))]
+    Vec::new()
+}
+
+/// Opens (or re-focuses) the fleet window: one row per browser in a run.
+/// `async` for the same reason as `helper_show` — a webview built on the main
+/// thread deadlocks Windows.
+#[tauri::command]
+async fn automation_fleet_window(app: tauri::AppHandle) {
+    use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+    if let Some(w) = app.get_webview_window("fleet") {
+        let _ = w.set_focus();
+        return;
+    }
+    let built = WebviewWindowBuilder::new(&app, "fleet", WebviewUrl::App("index.html#/?fleet=1".into()))
+        .title("Octopus Agent Fleet")
+        .inner_size(460.0, 420.0)
+        .min_inner_size(360.0, 240.0)
+        .always_on_top(true)
+        .build();
+    if let Err(e) = built {
+        eprintln!("[launcher] fleet window unavailable: {e}");
+    }
+}
+
+/// Resolves the element under a viewport point, natively. A recorded step stores
+/// what this returns, so replay finds the element again at a different window size.
+#[tauri::command]
+async fn automation_pick(
+    profile_id: String,
+    x: f64,
+    y: f64,
+) -> Result<serde_json::Value, String> {
+    #[cfg(feature = "automation")]
+    {
+        space::cdp_pass(&profile_id)?;
+        return cdp::pick_element(&profile_id, x, y)
+            .await
+            .map(|p| serde_json::to_value(p).unwrap_or_default())
+            .map_err(|e| e.to_string());
+    }
+    #[cfg(not(feature = "automation"))]
+    {
+        let _ = (profile_id, x, y);
+        Err("automation is not compiled into this build".into())
+    }
+}
+
+/// One raw CDP call against the attached page. The studio drives every page
+/// action through the Motion domain, and this is the only door.
+#[tauri::command]
+async fn automation_call(
+    profile_id: String,
+    method: String,
+    params: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    #[cfg(feature = "automation")]
+    {
+        space::cdp_pass(&profile_id)?;
+        return cdp::page_call(&profile_id, &method, params)
+            .await
+            .map_err(|e| e.to_string());
+    }
+    #[cfg(not(feature = "automation"))]
+    {
+        let _ = (profile_id, method, params);
+        Err("automation is not compiled into this build".into())
+    }
+}
+
+// ---- Trash ----
+
+#[tauri::command]
+fn trash_list() -> Result<Vec<space::trash::TrashEntry>, String> {
+    space::trash::list().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn trash_restore(id: String, epoch: Option<u64>) -> Result<space::profile::ProfileMeta, String> {
+    space::trash::restore(&ticket(epoch)?, &id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn trash_purge(id: String, epoch: Option<u64>) -> Result<(), String> {
+    space::trash::purge(&ticket(epoch)?, &id).map_err(|e| e.to_string())
+}
+
+/// Empties the trash for good; returns how many went.
+#[tauri::command]
+fn trash_empty(epoch: Option<u64>) -> Result<usize, String> {
+    let t = ticket(epoch)?;
+    let entries = space::trash::list().map_err(|e| e.to_string())?;
+    let n = entries.len();
+    for e in entries {
+        space::trash::purge(&t, &e.id).map_err(|e| e.to_string())?;
+    }
+    Ok(n)
+}
+
+// ---- Extensions ----
+
+#[tauri::command]
+async fn extension_list() -> Result<Vec<space::extensions::ExtensionEntry>, String> {
+    space::ready().await;
+    space::extensions::list().map_err(|e| e.to_string())
+}
+
+/// What went in and each file refused with why, so one bad file in a multi-select loses only itself.
+#[tauri::command]
+async fn extension_import(
+    paths: Vec<String>,
+    epoch: Option<u64>,
+    separate: Option<bool>,
+) -> Result<space::extensions::Imported, String> {
+    let t = ticket(epoch)?;
+    let separate = separate.unwrap_or(false);
+    let door = space::Door("extension_import");
+    let out = space::extensions::import_each(&paths, |p| {
+        let t = &t;
+        async move { space::extensions::import_as(door, t, &p, separate).await }
+    })
+    .await;
+    // The space moved under it and nothing went in: the window reads the space again.
+    let moved = space::CmdError::SpaceChanged.to_string();
+    if out.added.is_empty() && out.refused.iter().any(|r| r.error == moved) {
+        return Err(moved);
+    }
+    Ok(out)
+}
+
+/// Import from a Web Store link, a bare extension id, or a direct .crx / .zip
+/// URL — the launcher fetches the file itself. `separate`: a copy beside one already there.
+#[tauri::command]
+async fn extension_import_url(url: String, epoch: Option<u64>, separate: Option<bool>) -> Result<space::extensions::ExtensionEntry, String> {
+    let t = ticket(epoch)?;
+    space::extensions::import_url_as(space::Door("extension_import_url"), &t, &url, separate.unwrap_or(false))
+        .await
+        .map_err(|e| format!("{e:#}"))
+}
+
+#[tauri::command]
+async fn extension_delete(id: String, epoch: Option<u64>) -> Result<(), String> {
+    let t = ticket(epoch)?;
+    space::extensions::delete(space::Door("extension_delete"), &t, &id).await.map_err(|e| e.to_string())
+}
+
+// ---- Extension updates from the Web Store ----
+
+#[tauri::command]
+async fn extension_updates() -> Result<Vec<space::extensions::ExtensionUpdate>, String> {
+    space::ready().await;
+    space::extensions::updates(ext_updates::engine()).map_err(|e| e.to_string())
+}
+
+/// Asks the Web Store now; a check under way is waited for, not repeated.
+#[tauri::command]
+async fn extension_updates_check(epoch: Option<u64>) -> Result<Vec<space::extensions::ExtensionUpdate>, String> {
+    let t = ticket(epoch)?;
+    ext_updates::check_now(&t).await
+}
+
+/// `confirmed`: what the staged version asked the person about, let in.
+#[tauri::command]
+async fn extension_update(id: String, epoch: Option<u64>, confirmed: Option<bool>) -> Result<space::extensions::UpdateDone, String> {
+    let t = ticket(epoch)?;
+    space::extensions::update(space::Door("extension_update"), &t, &id, confirmed.unwrap_or(false), ext_updates::engine())
+        .await
+        .map_err(|e| format!("{e:#}"))
+}
+
+#[tauri::command]
+async fn extension_link_source(
+    id: String,
+    link: String,
+    epoch: Option<u64>,
+    confirmed: Option<bool>,
+) -> Result<space::extensions::LinkDone, String> {
+    let t = ticket(epoch)?;
+    space::extensions::link_source(space::Door("extension_link_source"), &t, &id, &link, confirmed.unwrap_or(false), ext_updates::engine())
+        .await
+        .map_err(|e| format!("{e:#}"))
+}
+
+#[tauri::command]
+async fn extension_update_cancel(id: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || space::extensions::cancel_update(&id))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| format!("{e:#}"))
+}
+
+#[tauri::command]
+async fn extension_update_skip(id: String, version: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || space::extensions::skip_update(&id, &version))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| format!("{e:#}"))
+}
+
+// ---- Bookmarks ----
+
+#[tauri::command]
+async fn bookmark_list() -> Result<Vec<space::bookmarks::Bookmark>, String> {
+    space::ready().await;
+    space::bookmarks::list().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn bookmark_save(entry: space::bookmarks::Bookmark, epoch: Option<u64>) -> Result<space::bookmarks::Bookmark, String> {
+    let t = ticket(epoch)?;
+    space::bookmarks::save(space::Door("bookmark_save"), &t, entry).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn bookmark_delete(id: String, epoch: Option<u64>) -> Result<(), String> {
+    let t = ticket(epoch)?;
+    space::bookmarks::delete(space::Door("bookmark_delete"), &t, &id).await.map_err(|e| e.to_string())
+}
+
+// ---- Tags ----
+
+#[tauri::command]
+async fn tag_list() -> Result<space::tags::TagState, String> {
+    space::ready().await;
+    space::tags::list().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn tag_save(tag: space::tags::Tag, at: Option<usize>, epoch: Option<u64>) -> Result<space::tags::Tag, String> {
+    let t = ticket(epoch)?;
+    space::tags::save(space::Door("tag_save"), &t, tag, at).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn tag_delete(id: String, epoch: Option<u64>) -> Result<(), String> {
+    let t = ticket(epoch)?;
+    space::tags::delete(space::Door("tag_delete"), &t, &id).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn tag_assign(by_profile: std::collections::BTreeMap<String, Vec<String>>, epoch: Option<u64>) -> Result<(), String> {
+    let t = ticket(epoch)?;
+    space::tags::assign(space::Door("tag_assign"), &t, by_profile).await.map_err(|e| e.to_string())
+}
+
+/// The tags the interface kept in its own storage, taken once.
+#[tauri::command]
+fn tag_import(state: space::tags::TagState, epoch: Option<u64>) -> Result<bool, String> {
+    space::tags::import(&ticket(epoch)?, state).map_err(|e| e.to_string())
+}
+
+// ---- Folders kept while empty, and their looks ----
+
+#[tauri::command]
+async fn folder_list() -> Result<space::folders::FolderState, String> {
+    space::ready().await;
+    space::folders::list().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn folder_add(name: String, epoch: Option<u64>) -> Result<(), String> {
+    let t = ticket(epoch)?;
+    space::folders::add(space::Door("folder_add"), &t, &name).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn folder_meta_set(name: String, meta: space::folders::FolderMeta, epoch: Option<u64>) -> Result<(), String> {
+    let t = ticket(epoch)?;
+    space::folders::set_meta(space::Door("folder_meta_set"), &t, &name, meta).await.map_err(|e| e.to_string())
+}
+
+/// The folders and looks the interface kept in its own storage, taken once.
+#[tauri::command]
+fn folder_import(state: space::folders::FolderState, epoch: Option<u64>) -> Result<bool, String> {
+    space::folders::import(&ticket(epoch)?, state).map_err(|e| e.to_string())
+}
+
+// ---- Data root ----
+
+#[derive(serde::Serialize)]
+struct DataRootInfo {
+    path: String,
+    /// False while the data still lives in the config dir.
+    custom: bool,
+    migrating: bool,
+}
+
+#[tauri::command]
+fn data_root_get() -> Result<DataRootInfo, String> {
+    let s = settings::load().map_err(|e| e.to_string())?;
+    let path = store::data_root().map_err(|e| e.to_string())?;
+    Ok(DataRootInfo {
+        path: path.display().to_string(),
+        custom: s.data_root.is_some(),
+        migrating: migrate::in_progress(),
+    })
+}
+
+/// Progress goes out as `data-migration` events; nothing launches until done.
+#[tauri::command]
+async fn data_root_migrate(app: tauri::AppHandle, path: String) -> Result<u64, String> {
+    if !process::Tracker::shared().running().is_empty() {
+        return Err("close every running profile first".into());
+    }
+    let dst = std::path::PathBuf::from(&path);
+    tauri::async_runtime::spawn_blocking(move || migrate::run(&app, &dst))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn profile_bind_proxy(profile_id: String, proxy_id: Option<String>, epoch: Option<u64>) -> Result<(), String> {
+    let t = ticket(epoch)?;
+    space::profile::bind_proxy(space::Door("profile_bind_proxy"), &t, &profile_id, proxy_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn profile_clone(id: String, epoch: Option<u64>) -> Result<space::profile::ProfileMeta, String> {
+    let t = ticket(epoch)?;
+    space::profile::clone_profile(space::Door("profile_clone"), &t, &id).await.map_err(|e| e.to_string())
+}
+
+/// Import profiles verbatim under fresh ids; returns the count.
+#[tauri::command]
+async fn profile_import(payloads: Vec<Value>, epoch: Option<u64>) -> Result<usize, String> {
+    let t = ticket(epoch)?;
+    let mut n = 0;
+    for mut payload in payloads {
+        if let Some(obj) = payload.as_object_mut() {
+            match obj.get_mut("_meta").and_then(|m| m.as_object_mut()) {
+                Some(meta) => {
+                    meta.insert("id".into(), Value::String(String::new()));
+                }
+                None => {
+                    obj.insert("_meta".into(), serde_json::json!({ "id": "" }));
+                }
+            }
+        }
+        save_profile_core(None, payload, false, space::Door("profile_import"), &t)
+            .await
+            .map_err(|e| e.to_string())?;
+        n += 1;
+    }
+    Ok(n)
+}
+
+// ---- Clipboard (via tauri-plugin-clipboard-manager; webview navigator.clipboard throws) ----
+
+#[tauri::command]
+fn clipboard_write(app: tauri::AppHandle, text: String) -> Result<(), String> {
+    use tauri_plugin_clipboard_manager::ClipboardExt;
+    app.clipboard().write_text(text).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn clipboard_read(app: tauri::AppHandle) -> Result<String, String> {
+    use tauri_plugin_clipboard_manager::ClipboardExt;
+    // An empty clipboard is an empty string, not a failure.
+    //
+    // The platform reports "nothing to read" as an error, and every caller
+    // then showed whatever the operating system called it — on macOS a bare
+    // "unknown error" — where the honest answer is that there was nothing to
+    // paste. Each caller says what it wanted and found nothing; this one just
+    // stops pretending the clipboard broke.
+    match app.clipboard().read_text() {
+        Ok(text) => Ok(text),
+        Err(_) => Ok(String::new()),
+    }
+}
+
+#[tauri::command]
+fn profile_set_pin(id: String, pinned: bool, epoch: Option<u64>) -> Result<(), String> {
+    space::profile::set_pin(&ticket(epoch)?, &id, pinned).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn profile_set_folder(id: String, folder: String, epoch: Option<u64>) -> Result<(), String> {
+    let t = ticket(epoch)?;
+    space::profile::set_folder(space::Door("profile_set_folder"), &t, &id, &folder)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Rename folder (retag profiles); returns count.
+#[tauri::command]
+async fn folder_rename(old: String, new: String, epoch: Option<u64>) -> Result<usize, String> {
+    let t = ticket(epoch)?;
+    space::profile::rename_folder(space::Door("folder_rename"), &t, &old, &new)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Delete folder; `delete_profiles` true → remove, false → unfile.
+#[tauri::command]
+async fn folder_delete(folder: String, delete_profiles: bool, epoch: Option<u64>) -> Result<usize, String> {
+    let t = ticket(epoch)?;
+    space::profile::delete_folder(space::Door("folder_delete"), &t, &folder, delete_profiles)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Host OS in fingerprint-library vocabulary (macOS/Windows/Linux).
+#[tauri::command]
+fn host_platform() -> String {
+    match std::env::consts::OS {
+        "macos" => "macOS",
+        "windows" => "Windows",
+        "linux" => "Linux",
+        other => other,
+    }
+    .to_string()
+}
+
+#[tauri::command]
+async fn profile_create_from_template(
+    window: tauri::WebviewWindow,
+    template_id: String,
+    epoch: Option<u64>,
+) -> Result<space::profile::ProfileMeta, String> {
+    let t = ticket(epoch)?;
+    let merged = library_profile(&template_id, host_screen_of(&window))?;
+    let door = space::Door("profile_create_from_template");
+    save_profile_core(Some(&window), Value::Object(merged), true, door, &t)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Merge library fingerprint into fresh profile map; tz/lang/geo set to "auto" sentinel.
+pub fn merge_library_fingerprint(
+    template_id: &str,
+) -> Result<serde_json::Map<String, Value>, String> {
+    let entry = fingerprints::get(template_id)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("unknown fingerprint id: {template_id}"))?;
+
+    let mut merged = serde_json::Map::new();
+    merged.insert(
+        "_meta".into(),
+        serde_json::json!({
+            "id": "",
+            "proxy_id": null,
+            "last_launched_at": null,
+            "gpu_preset_id": entry.id,
+        }),
+    );
+    if let Some(o) = entry.payload.as_object() {
+        for (k, v) in o {
+            if k == "_meta" { continue; }
+            merged.insert(k.clone(), v.clone());
+        }
+    }
+
+    // launch-time resolver fills tz/lang/geo from the bound proxy
+    merged.insert("timezone".into(), Value::String("auto".into()));
+    if let Some(nav) = merged.get_mut("navigator").and_then(|v| v.as_object_mut()) {
+        nav.insert("language".into(), Value::String("auto".into()));
+        nav.remove("accept_language");
+        nav.remove("languages");
+    }
+    merged.insert("geolocation".into(), serde_json::json!({ "mode": "auto" }));
+    Ok(merged)
+}
+
+/// Produce uniquified fingerprint config WITHOUT persisting (API get-new-fingerprint).
+pub fn build_fingerprint_config(
+    window: Option<&tauri::WebviewWindow>,
+    template_id: &str,
+) -> Result<serde_json::Map<String, Value>, String> {
+    // A run has no window of its own: the launcher's main one is asked.
+    let host = window.cloned().or_else(main_window).and_then(|w| host_screen_of(&w));
+    fingerprint_config_on(window, template_id, host)
+}
+
+/// The same with the monitor given (a test has none to ask).
+fn fingerprint_config_on(
+    window: Option<&tauri::WebviewWindow>,
+    template_id: &str,
+    host: Option<launch::HostScreen>,
+) -> Result<serde_json::Map<String, Value>, String> {
+    let mut merged = library_profile(template_id, host)?;
+    enrich_new_config(window, &mut merged);
+    ensure_default_noise(&mut merged);
+    Ok(merged)
+}
+
+/// A library fingerprint as a new profile starts from it, outside the profile
+/// form: Windows/Linux take this computer's screen `host` (launch::claim_host_screen).
+pub fn library_profile(
+    template_id: &str,
+    host: Option<launch::HostScreen>,
+) -> Result<serde_json::Map<String, Value>, String> {
+    let mut merged = merge_library_fingerprint(template_id)?;
+    launch::claim_host_screen(&mut merged, host);
+    Ok(merged)
+}
+
+/// Add the UI's default noise block (every vector present, disabled, seed 0 —
+/// the sentinel `save_raw` fills per-profile) when a config carries none, so
+/// API/SDK profiles match UI profiles and get a unique seed instead of none.
+pub fn ensure_default_noise(cfg: &mut serde_json::Map<String, Value>) {
+    if cfg.contains_key("noise") {
+        return;
+    }
+    cfg.insert(
+        "noise".into(),
+        serde_json::json!({
+            "canvas":       { "enabled": false, "seed": 0 },
+            "webgl":        { "enabled": false, "seed": 0, "intensity": 0 },
+            "audio":        { "enabled": false, "seed": 0 },
+            "client_rects": { "enabled": false, "seed": 0, "max_offset": 0 },
+            "sensors":      { "enabled": false, "seed": 0 },
+            "fonts":        { "enabled": false, "seed": 0 }
+        }),
+    );
+}
+
+#[derive(serde::Serialize)]
+pub struct PresetEnrichPicks {
+    pub hardware_concurrency: u32,
+    pub device_memory: u32,
+    pub platform_version: Option<String>,
+}
+
+/// Editor preview: draw a fresh hw + platform_version triple from the same tables save uses.
+#[tauri::command]
+fn enrich_picks_for_preset(preset_id: String) -> Result<PresetEnrichPicks, String> {
+    let entry = fingerprints::get(&preset_id)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("unknown fingerprint id: {preset_id}"))?;
+    let platform = entry
+        .payload
+        .get("navigator")
+        .and_then(|n| n.get("platform"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("macOS")
+        .to_string();
+    let mut payload = serde_json::Map::new();
+    payload.insert(
+        "_meta".into(),
+        serde_json::json!({ "gpu_preset_id": preset_id }),
+    );
+    payload.insert(
+        "navigator".into(),
+        serde_json::json!({ "platform": platform }),
+    );
+    // Mirror enrich_new_config order: platform_version first, then hardware.
+    randomize_platform_version(&mut payload);
+    randomize_hardware(&mut payload);
+    let nav = payload
+        .get("navigator")
+        .and_then(|v| v.as_object())
+        .ok_or("internal: navigator missing after randomize")?;
+    let cores = nav
+        .get("hardware_concurrency")
+        .and_then(|v| v.as_u64())
+        .ok_or("internal: hardware_concurrency missing")? as u32;
+    let mem = nav
+        .get("device_memory")
+        .and_then(|v| v.as_u64())
+        .ok_or("internal: device_memory missing")? as u32;
+    let pv = nav
+        .get("platform_version")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+    Ok(PresetEnrichPicks {
+        hardware_concurrency: cores,
+        device_memory: mem,
+        platform_version: pv,
+    })
+}
+
+// ---- Fingerprint library ----
+
+#[tauri::command]
+fn fingerprint_list() -> Result<Vec<fingerprints::LibraryEntry>, String> {
+    fingerprints::list_all().map_err(|e| e.to_string())
+}
+
+/// What this machine's GPU can actually do. Cached; `force` re-asks the engine.
+/// Slow on the first call — it starts the engine off-screen — so the UI asks once.
+#[tauri::command]
+async fn gpu_caps(force: bool) -> Result<gpu_caps::HostGlCaps, String> {
+    gpu_caps::probe(force).await.map_err(|e| e.to_string())
+}
+
+/// Whether the machine can wear each library fingerprint, keyed by id. Kept out of
+/// fingerprint_list() so that stays fast; an empty map means "not known", not "all fine".
+#[tauri::command]
+async fn gpu_caps_compat(
+) -> Result<std::collections::HashMap<String, gpu_caps::Compat>, String> {
+    let caps = match gpu_caps::probe(false).await {
+        Ok(c) => c,
+        Err(_) => return Ok(Default::default()),
+    };
+    let entries = fingerprints::list_all().map_err(|e| e.to_string())?;
+    Ok(entries
+        .into_iter()
+        .map(|e| (e.id, gpu_caps::compat(&e.payload, &caps)))
+        .collect())
+}
+
+#[tauri::command]
+fn fingerprint_get(id: String) -> Result<Option<fingerprints::LibraryEntry>, String> {
+    fingerprints::get(&id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn fingerprint_import(json_text: String, id_hint: Option<String>) -> Result<fingerprints::LibraryEntry, String> {
+    fingerprints::import(&json_text, id_hint).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn fingerprint_delete(id: String) -> Result<(), String> {
+    fingerprints::delete(&id).map_err(|e| e.to_string())
+}
+
+/// Path to fingerprint library dir (UI "Open library folder").
+#[tauri::command]
+fn fingerprint_dir() -> Result<String, String> {
+    store::fingerprints_dir()
+        .map(|p| p.display().to_string())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn read_text_file(path: String) -> Result<String, String> {
+    std::fs::read_to_string(&path).map_err(|e| e.to_string())
+}
+
+// ---- Process tracker ----
+
+/// The space in use only; a team profile's CDP address only with Cookies on it.
+#[tauri::command]
+fn process_list() -> Vec<process::RunningProfile> {
+    space::running()
+}
+
+#[tauri::command]
+async fn process_kill(profile_id: String) -> Result<bool, String> {
+    process::Tracker::shared()
+        .kill(&profile_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+// ---- Proxies ----
+
+#[tauri::command]
+async fn proxy_list() -> Result<Vec<space::proxy::ProxyEntry>, String> {
+    space::ready().await;
+    // Newest-first display order; internal paths still read raw on-disk order.
+    let mut list = space::proxy::list().map_err(|e| e.to_string())?;
+    list.reverse();
+    Ok(list)
+}
+
+#[tauri::command]
+async fn proxy_save(entry: space::proxy::ProxyEntry, epoch: Option<u64>) -> Result<space::proxy::ProxyEntry, String> {
+    let t = ticket(epoch)?;
+    space::proxy::upsert(space::Door("proxy_save"), &t, entry).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn proxy_delete(id: String, epoch: Option<u64>) -> Result<(), String> {
+    let t = ticket(epoch)?;
+    space::proxy::delete(space::Door("proxy_delete"), &t, &id).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn proxy_check(entry: space::proxy::ProxyEntry) -> Result<u128, String> {
+    space::proxy::probe(&entry).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn proxy_check_udp(entry: space::proxy::ProxyEntry) -> Result<u128, String> {
+    space::proxy::probe_udp(&entry).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn proxy_geo(entry: space::proxy::ProxyEntry, provider: Option<String>) -> Result<space::proxy::GeoInfo, String> {
+    space::proxy::geo_check(&entry, provider).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn proxy_full_test(entry: space::proxy::ProxyEntry) -> Result<space::proxy::TestSnapshot, String> {
+    space::proxy::full_test(&entry).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn proxy_history(id: String) -> Result<Vec<space::proxy::TestSnapshot>, String> {
+    space::proxy::history(&id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn proxy_last_test(id: String) -> Option<space::proxy::TestSnapshot> {
+    space::proxy::latest_test(&id)
+}
+
+#[tauri::command]
+async fn proxy_bulk_import(text: String, kind: String, epoch: Option<u64>) -> Result<usize, String> {
+    let t = ticket(epoch)?;
+    let default_kind = match kind.as_str() {
+        "http" => space::proxy::ProxyKind::Http,
+        "https" => space::proxy::ProxyKind::Https,
+        _ => space::proxy::ProxyKind::Socks5,
+    };
+    let parsed = space::proxy::parse_bulk(&text, default_kind);
+    space::proxy::bulk_save(space::Door("proxy_bulk_import"), &t, parsed).await.map_err(|e| e.to_string())
+}
+
+/// Parse bulk-import text without saving (preview list with per-row test).
+#[tauri::command]
+fn proxy_bulk_parse(text: String, kind: String) -> Vec<space::proxy::ProxyEntry> {
+    let default_kind = match kind.as_str() {
+        "http" => space::proxy::ProxyKind::Http,
+        "https" => space::proxy::ProxyKind::Https,
+        _ => space::proxy::ProxyKind::Socks5,
+    };
+    space::proxy::parse_bulk(&text, default_kind)
+}
+
+/// Persist pre-tested proxies (bulk dialog).
+#[tauri::command]
+async fn proxy_bulk_save(entries: Vec<space::proxy::ProxyEntry>, epoch: Option<u64>) -> Result<usize, String> {
+    let t = ticket(epoch)?;
+    space::proxy::bulk_save(space::Door("proxy_bulk_save"), &t, entries).await.map_err(|e| e.to_string())
+}
+
+// ---- Launcher ----
+
+/// Cancel a launch still on its way (a slow proxy can hold one in Starting):
+/// the pending `launch` call returns "launch cancelled" and no browser starts.
+#[tauri::command]
+fn launch_cancel(profile_id: String) {
+    launch::cancel(&profile_id);
+}
+
+#[tauri::command]
+async fn launch(profile_id: String) -> Result<u32, String> {
+    // UI launches: no CDP, headed. The bus goes along even with no group so the
+    // page helper has somewhere to report.
+    if migrate::in_progress() {
+        return Err("profiles are being moved — try again when that finishes".into());
+    }
+    let b = bus().await?;
+    launch::launch_profile_synced(&profile_id, false, false, None, b.port, &b.token)
+        .await
+        .map(|o| o.pid)
+        .map_err(|e| e.to_string())
+}
+
+// ---- Window synchronisation ----
+
+/// The synchronisation bus, started lazily and shared: the port stays closed
+/// for a user who never groups profiles.
+static BUS: tokio::sync::OnceCell<std::sync::Arc<sync_bus::Bus>> =
+    tokio::sync::OnceCell::const_new();
+
+pub(crate) async fn bus() -> Result<std::sync::Arc<sync_bus::Bus>, String> {
+    BUS.get_or_try_init(|| async {
+        // Fresh per run: tells a browser this launcher started it rather than
+        // anything else on the machine.
+        let token = uuid::Uuid::new_v4().simple().to_string();
+        sync_bus::Bus::start(token).await.map_err(|e| e.to_string())
+    })
+    .await
+    .cloned()
+}
+
+/// The bus if it is up; never starts one.
+pub(crate) fn bus_now() -> Option<std::sync::Arc<sync_bus::Bus>> {
+    BUS.get().cloned()
+}
+
+/// Opens (or re-focuses) the floating control panel for a group. Same bundle,
+/// addressed by hash — a 60px strip does not warrant its own vite entry point.
+fn open_sync_panel(app: &tauri::AppHandle, group: &str) {
+    use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+
+    if let Some(w) = app.get_webview_window("sync-panel") {
+        let _ = w.set_focus();
+        return;
+    }
+    let url = format!("index.html#/?syncPanel={group}");
+    let built = WebviewWindowBuilder::new(app, "sync-panel", WebviewUrl::App(url.into()))
+        .title("Octopus Agent Sync")
+        .inner_size(360.0, 168.0)
+        .resizable(true)
+        .min_inner_size(280.0, 120.0)
+        .resizable(false)
+        .always_on_top(true)
+        .decorations(false)
+        .skip_taskbar(true)
+        .build();
+    if let Err(e) = built {
+        // Not fatal — the group is synchronising, it just has no panel.
+        eprintln!("[launcher] sync panel unavailable: {e}");
+    }
+}
+
+#[tauri::command]
+async fn sync_launch(
+    app: tauri::AppHandle,
+    profile_ids: Vec<String>,
+    group: Option<String>,
+) -> Result<String, String> {
+    if profile_ids.len() < 2 {
+        return Err("a group needs at least two profiles".into());
+    }
+    // A phone profile turns a mirrored mouse press into a touch and a desktop one
+    // does not, so refuse a mixed group before anything is launched.
+    let mut mobile: Vec<String> = Vec::new();
+    let mut desktop: Vec<String> = Vec::new();
+    for id in &profile_ids {
+        let stored = space::profile::load_raw(id).map_err(|e| format!("{id}: {e}"))?;
+        let name = stored
+            .config
+            .get("name")
+            .and_then(|v| v.as_str())
+            .unwrap_or(id.as_str())
+            .to_string();
+        if space::profile::claims_mobile(&stored.config) {
+            mobile.push(name);
+        } else {
+            desktop.push(name);
+        }
+    }
+    if !mobile.is_empty() && !desktop.is_empty() {
+        return Err(format!(
+            "a sync group must be all-mobile or all-desktop — mobile: {}; desktop: {}",
+            mobile.join(", "),
+            desktop.join(", ")
+        ));
+    }
+    // Phones of one size only: a handset window IS its screen and cannot be resized,
+    // and a mirrored press carries a fraction of the viewport, so widths must match.
+    if desktop.is_empty() {
+        let mut sizes: Vec<(String, String)> = Vec::new();
+        for id in &profile_ids {
+            let stored = space::profile::load_raw(id).map_err(|e| format!("{id}: {e}"))?;
+            let name = stored
+                .config
+                .get("name")
+                .and_then(|v| v.as_str())
+                .unwrap_or(id.as_str())
+                .to_string();
+            let size = match space::profile::claimed_screen(&stored.config) {
+                Some((w, h)) => format!("{w}x{h}"),
+                None => "unknown".to_string(),
+            };
+            sizes.push((name, size));
+        }
+        let distinct: std::collections::BTreeSet<&str> =
+            sizes.iter().map(|(_, s)| s.as_str()).collect();
+        if distinct.len() > 1 {
+            let listed: Vec<String> = sizes
+                .iter()
+                .map(|(n, s)| format!("{n} ({s})"))
+                .collect();
+            return Err(format!(
+                "a mobile sync group must be all one screen size — {}",
+                listed.join(", ")
+            ));
+        }
+    }
+    let group = group.unwrap_or_else(|| "fleet".to_string());
+    let b = bus().await?;
+
+    let mut failed: Vec<String> = Vec::new();
+    for id in &profile_ids {
+        if let Err(e) = launch::launch_profile_synced(
+            id, false, false, Some(&group), b.port, &b.token).await {
+            failed.push(format!("{id}: {e}"));
+        }
+    }
+    if failed.len() == profile_ids.len() {
+        return Err(format!("nothing launched — {}", failed.join("; ")));
+    }
+    // A partial launch is still a usable group; just say what did not make it.
+    if !failed.is_empty() {
+        eprintln!("[launcher] sync group '{group}': {} failed — {}",
+                  failed.len(), failed.join("; "));
+    }
+    open_sync_panel(&app, &group);
+    Ok(group)
+}
+
+#[tauri::command]
+async fn sync_status(group: String) -> Result<sync_bus::GroupStatus, String> {
+    Ok(bus().await?.status(&group))
+}
+
+#[tauri::command]
+async fn sync_set_paused(group: String, paused: bool) -> Result<(), String> {
+    bus().await?.set_paused(&group, paused);
+    Ok(())
+}
+
+/// Lays the group's windows out on the primary display's work area — under the
+/// menu bar or behind the dock means moving them by hand anyway.
+#[tauri::command]
+async fn sync_arrange(
+    app: tauri::AppHandle,
+    group: String,
+    layout: sync_bus::Layout,
+) -> Result<(), String> {
+    let monitor = app
+        .primary_monitor()
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "no display".to_string())?;
+    let scale = monitor.scale_factor();
+    let pos = monitor.position().to_logical::<i32>(scale);
+    let size = monitor.size().to_logical::<i32>(scale);
+    // Margin for the menu bar; browsers report logical pixels, as SetBounds wants.
+    let top = if cfg!(target_os = "macos") { 28 } else { 0 };
+    bus().await?.arrange(
+        &group,
+        layout,
+        (pos.x, pos.y + top, size.width, size.height - top),
+    );
+    Ok(())
+}
+
+/// Asks every window in the group to close; the panel goes with them.
+#[tauri::command]
+async fn sync_stop(group: String) -> Result<(), String> {
+    bus().await?.stop(&group);
+    Ok(())
+}
+
+/// Holds one profile out of the group — a captcha, a different password.
+#[tauri::command]
+async fn sync_set_excluded(
+    group: String,
+    profile: String,
+    excluded: bool,
+) -> Result<(), String> {
+    bus().await?.set_excluded(&group, &profile, excluded);
+    Ok(())
+}
+
+/// Every profile whose current page has something the helper could fill.
+#[tauri::command]
+async fn helper_profiles() -> Result<Vec<String>, String> {
+    let s = settings::load().map_err(|e| e.to_string())?;
+    if !s.helper_enabled {
+        return Ok(Vec::new());
+    }
+    Ok(bus().await?.helper_profiles(&s.helper_triggers))
+}
+
+/// What the helper found in one profile.
+#[tauri::command]
+async fn helper_fields(profile: String) -> Result<serde_json::Value, String> {
+    Ok(bus()
+        .await?
+        .helper_fields(&profile)
+        .unwrap_or(serde_json::Value::Null))
+}
+
+/// The operator accepted the offer; nothing fills without this. In a group every
+/// member fills with its own person — the command travels, the data does not.
+#[tauri::command]
+async fn helper_fill(profile: String) -> Result<usize, String> {
+    let b = bus().await?;
+    match b.group_of(&profile) {
+        Some(group) => Ok(b.fill_group(&group)),
+        None => {
+            b.fill(&profile);
+            Ok(1)
+        }
+    }
+}
+
+/// Brings a running profile's browser window to the front.
+///
+/// The browser raises itself, because on macOS raising another
+/// application's window needs an Accessibility grant the operator never
+/// gave. The message travels over the same bus the synchroniser uses, so it
+/// works whether or not the profile is in a group.
+#[tauri::command]
+async fn profile_focus_window(profile_id: String) -> Result<(), String> {
+    if !process::Tracker::shared().is_running(&profile_id) {
+        return Err("profile is not running".into());
+    }
+    let b = bus().await?;
+    if !b.focus(&profile_id) {
+        // Started before this launcher, or started without the bus.
+        return Err("this profile's browser is not listening — stop it and start it again".into());
+    }
+    Ok(())
+}
+
+/// Opens (or re-focuses) the helper panel for one profile.
+fn open_helper_panel(app: &tauri::AppHandle, profile: &str) {
+    use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+    if let Some(w) = app.get_webview_window("helper-panel") {
+        let _ = w.set_focus();
+        return;
+    }
+    let url = format!("index.html#/?helperPanel={profile}");
+    if let Err(e) = WebviewWindowBuilder::new(app, "helper-panel", WebviewUrl::App(url.into()))
+        .title("Octopus Helper")
+        .inner_size(300.0, 150.0)
+        .resizable(false)
+        .always_on_top(true)
+        .decorations(false)
+        .skip_taskbar(true)
+        // Unfocused: it appears mid-form, and stealing the keyboard then is
+        // worse than not appearing.
+        .focused(false)
+        .build()
+    {
+        eprintln!("[launcher] helper panel unavailable: {e}");
+    }
+}
+
+/// `async` is load-bearing. A sync command runs on the main thread, and building
+/// a webview there deadlocks on Windows: WebView2 needs the message loop this
+/// command is sitting on, so the panel comes up white and the whole launcher
+/// stops answering. An async command runs off that thread and the builder hands
+/// the work to the loop properly.
+#[tauri::command]
+async fn helper_show(app: tauri::AppHandle, profile: String) -> Result<(), String> {
+    open_helper_panel(&app, &profile);
+    Ok(())
+}
+
+#[tauri::command]
+fn helper_close(app: tauri::AppHandle) -> Result<(), String> {
+    use tauri::Manager;
+    if let Some(w) = app.get_webview_window("helper-panel") {
+        let _ = w.close();
+    }
+    Ok(())
+}
+
+/// The operator closed the panel themselves — a refusal about this page.
+/// `helper_close` is the other case: the page moved on, which silences nothing.
+#[tauri::command]
+async fn helper_dismiss(app: tauri::AppHandle, profile: String) -> Result<(), String> {
+    use tauri::Manager;
+    bus().await?.helper_dismiss(&profile);
+    if let Some(w) = app.get_webview_window("helper-panel") {
+        let _ = w.close();
+    }
+    Ok(())
+}
+
+/// Closes the floating panel; the panel calls it once the group is empty.
+#[tauri::command]
+fn sync_close_panel(app: tauri::AppHandle) -> Result<(), String> {
+    use tauri::Manager;
+    if let Some(w) = app.get_webview_window("sync-panel") {
+        let _ = w.close();
+    }
+    Ok(())
+}
+
+// ---- Cookies ----
+
+/// True if profile has a running browser process.
+pub fn is_profile_running(profile_id: &str) -> bool {
+    process::Tracker::shared()
+        .running()
+        .iter()
+        .any(|r| r.profile_id == profile_id)
+}
+
+#[tauri::command]
+fn cookies_export(profile_id: String) -> Result<Vec<space::cookies::Cookie>, String> {
+    let pass = space::perm::cookies(&profile_id).map_err(|e| e.to_string())?;
+    space::cookies::export(&pass).map_err(|e| e.to_string())
+}
+
+/// Export cookies to a user-picked path; returns count written.
+#[tauri::command]
+fn cookies_export_to_file(profile_id: String, path: String) -> Result<usize, String> {
+    let pass = space::perm::cookies(&profile_id).map_err(|e| e.to_string())?;
+    let cookies = space::cookies::export(&pass).map_err(|e| e.to_string())?;
+    let json = serde_json::to_string_pretty(&cookies).map_err(|e| e.to_string())?;
+    std::fs::write(&path, json).map_err(|e| e.to_string())?;
+    Ok(cookies.len())
+}
+
+#[tauri::command]
+fn cookies_import(profile_id: String, cookies: Vec<space::cookies::Cookie>) -> Result<usize, String> {
+    // Running browser would clobber the import on exit.
+    if is_profile_running(&profile_id) {
+        return Err("stop the profile before importing cookies".into());
+    }
+    let pass = space::perm::cookies(&profile_id).map_err(|e| e.to_string())?;
+    space::cookies::import(&pass, &cookies).map_err(|e| e.to_string())
+}
+
+// ---- Settings ----
+
+#[tauri::command]
+fn settings_get() -> Result<settings::Settings, String> {
+    settings::load().map_err(|e| e.to_string())
+}
+
+/// The primary monitor in CSS pixels, so the editor can offer resolutions and
+/// refuse the ones this machine cannot actually show. None when there is no
+/// monitor to ask (headless), and the editor then offers the full list.
+/// What this computer really has, for the profile form's "Real" choice.
+///
+/// Offered only when the profile claims the same operating system as this
+/// one: a Windows profile reporting an Apple GPU's core count, or a mac
+/// profile reporting a number no Mac ships, is a worse tell than a rounded
+/// guess. Even then it ties every profile on this machine to every other —
+/// they all answer alike — which is why it is a choice and not the default.
+#[derive(serde::Serialize)]
+struct HostHardware {
+    os: &'static str,
+    cores: u32,
+    memory_gb: u32,
+}
+
+#[tauri::command]
+fn host_hardware() -> HostHardware {
+    HostHardware {
+        os: if cfg!(target_os = "windows") {
+            "Windows"
+        } else if cfg!(target_os = "macos") {
+            "macOS"
+        } else {
+            "Linux"
+        },
+        cores: host_logical_cores(),
+        // The bucket, not the raw figure: navigator.deviceMemory is reported
+        // in the same steps by every browser, so a raw 12 would be a value no
+        // real one returns.
+        memory_gb: host_ram_bucket_gb(),
+    }
+}
+
+#[tauri::command]
+fn host_screen(window: tauri::WebviewWindow) -> Option<launch::HostScreen> {
+    host_screen_of(&window)
+}
+
+/// The primary monitor in CSS px and its scale, as `host_screen` answers the form.
+pub fn host_screen_of(window: &tauri::WebviewWindow) -> Option<launch::HostScreen> {
+    let monitor = window
+        .primary_monitor()
+        .ok()
+        .flatten()
+        .or_else(|| window.current_monitor().ok().flatten())?;
+    let scale = monitor.scale_factor();
+    if scale <= 0.0 {
+        return None;
+    }
+    let phys = monitor.size();
+    let w = (phys.width as f64 / scale).round() as i64;
+    let h = (phys.height as f64 / scale).round() as i64;
+    (w > 0 && h > 0).then_some((w, h, scale))
+}
+
+/// Why the settings file could not be read, for the banner. None = it reads fine.
+#[tauri::command]
+fn settings_load_error() -> Option<String> {
+    settings::load_error()
+}
+
+#[tauri::command]
+fn settings_save(mut value: settings::Settings) -> Result<(), String> {
+    // Saving on top of a file we could not read would write the defaults this
+    // form was filled from over whatever the file actually held — the data
+    // root among them, which is where every profile lives. The banner says
+    // the file was not read; until it is fixed or moved aside, nothing here
+    // gets written.
+    if let Some(err) = settings::load_error() {
+        return Err(format!(
+            "Settings were not saved: the file could not be read, so what is on \
+             screen are defaults, not your settings. Writing them would lose \
+             whatever the file holds — including where your profiles live. Fix \
+             or delete it first. ({err})"
+        ));
+    }
+    // Owned by the migration, not the form — which round-trips the whole struct
+    // and would reset it while the data sits on another disk.
+    if let Ok(cur) = settings::load() {
+        value.data_root = cur.data_root;
+        if value.api_secret.is_empty() {
+            value.api_secret = cur.api_secret;
+        }
+        // Set in the file by hand; a form that does not know the key sends none.
+        if value.engine_paths.is_empty() {
+            value.engine_paths = cur.engine_paths;
+        }
+    }
+    settings::save(&value).map_err(|e| e.to_string())
+}
+
+// ---- Automation API ----
+
+/// API connection info: base URL + permanent Bearer JWT (no raw key exposed).
+#[tauri::command]
+fn api_info() -> Result<Value, String> {
+    let s = settings::ensure_secret().map_err(|e| e.to_string())?;
+    let token = api::long_lived_token(&s.api_secret)?;
+    Ok(serde_json::json!({
+        "enabled": s.api_enabled,
+        "port": s.api_port,
+        "base_url": format!("http://127.0.0.1:{}", s.api_port),
+        "token": token,
+    }))
+}
+
+/// Rotate API secret; live-swap on running server invalidates prior tokens.
+#[tauri::command]
+fn api_regenerate_token() -> Result<Value, String> {
+    let mut s = settings::load().map_err(|e| e.to_string())?;
+    s.api_secret = format!(
+        "{}{}",
+        uuid::Uuid::new_v4().simple(),
+        uuid::Uuid::new_v4().simple()
+    );
+    settings::save(&s).map_err(|e| e.to_string())?;
+    api::set_secret(&s.api_secret);
+    let token = api::long_lived_token(&s.api_secret)?;
+    Ok(serde_json::json!({
+        "enabled": s.api_enabled,
+        "port": s.api_port,
+        "base_url": format!("http://127.0.0.1:{}", s.api_port),
+        "token": token,
+    }))
+}
+
+/// The space the launcher works in, the teams it has joined, and this device's
+/// name. No token ever comes back from here.
+#[tauri::command]
+fn space_state() -> Result<team::SpaceState, String> {
+    team::state().map_err(|e| e.to_string())
+}
+
+/// Switch the whole launcher to a space, refused while a profile starts or the
+/// data moves. A team's lists are read before the answer, for a while at most.
+#[tauri::command]
+async fn space_set(app: tauri::AppHandle, space: team::Space) -> Result<team::SpaceState, String> {
+    use tauri::Emitter;
+    let st = space::switch(space).await.map_err(|e| e.to_string())?;
+    let _ = app.emit("space-changed", &st.space);
+    Ok(st)
+}
+
+/// Join a team and move into it; its live channel opens at once.
+#[tauri::command]
+async fn team_join(app: tauri::AppHandle, server: String, token: String) -> Result<team::SpaceState, String> {
+    use tauri::Emitter;
+    let st = space::join(&server, &token).await.map_err(|e| e.to_string())?;
+    let _ = app.emit("space-changed", &st.space);
+    Ok(st)
+}
+
+/// Forget a team on this launcher. Its data stays on the team's server.
+#[tauri::command]
+async fn team_leave(app: tauri::AppHandle, team_id: String) -> Result<team::SpaceState, String> {
+    use tauri::Emitter;
+    let was = team::active_team();
+    // Its profiles open here go back first: once it is left, nothing reaches it.
+    space::open::close_team_and_wait(&team_id, space::open::QUIT_WAIT).await;
+    team::leave(&team_id).map_err(|e| e.to_string())?;
+    space::perm::forget(&team_id);
+    space::cache::forget(&team_id);
+    space::secrets::forget(&team_id);
+    space::live::follow_joined();
+    if was.as_deref() == Some(team_id.as_str()) {
+        space::settle().await;
+    }
+    let st = team::state().map_err(|e| e.to_string())?;
+    let _ = app.emit("space-changed", &st.space);
+    Ok(st)
+}
+
+// ---- personal sync: the person's own space on a team server ----
+
+// Async: off the main thread, as each reads files.
+#[tauri::command]
+async fn sync_state() -> space::sync::SyncState {
+    space::sync::state()
+}
+
+/// An invite's server and token, or a team joined here.
+#[tauri::command]
+async fn sync_connect(
+    server: Option<String>,
+    token: Option<String>,
+    team_id: Option<String>,
+) -> Result<space::sync::SyncState, String> {
+    space::sync::connect(server, token, team_id).await.map_err(|e| e.to_string())
+}
+
+/// Local copies always stay; with `remove_from_server`, the server's go first.
+#[tauri::command]
+async fn sync_disconnect(remove_from_server: bool) -> Result<space::sync::SyncState, String> {
+    space::sync::disconnect(remove_from_server).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn sync_set_kinds(kinds: space::sync::Kinds) -> Result<space::sync::SyncState, String> {
+    space::sync::set_kinds(kinds).map_err(|e| e.to_string())
+}
+
+/// Answered at once as syncing; the end comes as `sync-changed`.
+#[tauri::command]
+async fn sync_now() -> Result<space::sync::SyncState, String> {
+    space::sync::sync_now().await.map_err(|e| e.to_string())
+}
+
+#[derive(serde::Serialize)]
+struct SyncInvite {
+    invite: String,
+}
+
+#[tauri::command]
+async fn sync_invite() -> Result<SyncInvite, String> {
+    space::sync::invite().map(|invite| SyncInvite { invite }).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn sync_set_device_name(name: String) -> Result<space::sync::SyncState, String> {
+    space::sync::set_device_name(&name).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn profile_sync_set(ids: Vec<String>, on: bool) -> Result<Vec<space::profile::ProfileMeta>, String> {
+    space::sync::profile_set(&ids, on).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn profile_sync_take(id: String) -> Result<space::profile::ProfileMeta, String> {
+    space::sync::profile_take(&id).await.map_err(|e| e.to_string())
+}
+
+// ---- the Team page: the admin's commands go with the admin token ----
+
+#[tauri::command]
+async fn team_admin_overview(team_id: String) -> Result<space::admin::TeamOverview, String> {
+    space::admin::overview(&team_id).await.map_err(|e| e.to_string())
+}
+
+/// The invite is shown once: the server's address, "#" and the new token.
+#[tauri::command]
+async fn team_admin_member_create(team_id: String, name: String) -> Result<space::admin::CreatedMember, String> {
+    space::admin::member_create(&team_id, &name).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn team_admin_member_set_active(
+    team_id: String,
+    member_id: String,
+    active: bool,
+) -> Result<space::admin::TeamMember, String> {
+    space::admin::member_set_active(&team_id, &member_id, active).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn team_admin_member_delete(team_id: String, member_id: String) -> Result<(), String> {
+    space::admin::member_delete(&team_id, &member_id).await.map_err(|e| e.to_string())
+}
+
+/// A new invite for the member; the old token stops working at once.
+#[tauri::command]
+async fn team_admin_member_reissue(team_id: String, member_id: String) -> Result<space::admin::CreatedMember, String> {
+    space::admin::member_reissue(&team_id, &member_id).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn team_admin_grants(team_id: String, member_id: String) -> Result<Vec<team_model::Grant>, String> {
+    space::admin::grants(&team_id, &member_id).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn team_admin_set_grants(
+    team_id: String,
+    member_id: String,
+    grants: Vec<team_model::Grant>,
+) -> Result<Vec<team_model::Grant>, String> {
+    space::admin::set_grants(&team_id, &member_id, &grants).await.map_err(|e| e.to_string())
+}
+
+/// The space menu shows the team's name, so it is told too.
+#[tauri::command]
+async fn team_admin_rename(app: tauri::AppHandle, team_id: String, name: String) -> Result<space::admin::TeamInfo, String> {
+    use tauri::Emitter;
+    let (team, st) = space::admin::rename(&team_id, &name).await.map_err(|e| e.to_string())?;
+    let _ = app.emit("space-changed", &st.space);
+    Ok(team)
+}
+
+#[tauri::command]
+async fn team_admin_folder_create(
+    team_id: String,
+    name: String,
+    color: Option<String>,
+) -> Result<space::admin::TeamFolder, String> {
+    space::admin::folder_create(&team_id, &name, color.as_deref()).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn team_admin_folder_rename(team_id: String, name: String, next: String) -> Result<space::admin::TeamFolder, String> {
+    space::admin::folder_rename(&team_id, &name, &next).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn team_admin_folder_color(team_id: String, name: String, color: String) -> Result<space::admin::TeamFolder, String> {
+    space::admin::folder_color(&team_id, &name, &color).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn team_admin_folder_delete(team_id: String, name: String) -> Result<(), String> {
+    space::admin::folder_delete(&team_id, &name).await.map_err(|e| e.to_string())
+}
+
+/// The team's trash on its server, 30 days: the server judges each row by this launcher's token.
+#[tauri::command]
+async fn team_trash_list(team_id: String) -> Result<Vec<space::admin::TeamTrashRow>, String> {
+    space::admin::trash_list(&team_id).await.map_err(|e| e.to_string())
+}
+
+/// `kind` as the row says it; a profile comes back with its session.
+#[tauri::command]
+async fn team_trash_restore(team_id: String, id: String, kind: String) -> Result<space::admin::TeamRestored, String> {
+    space::admin::trash_restore(&team_id, &id, &kind).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn team_trash_purge(team_id: String, id: String, kind: String) -> Result<(), String> {
+    space::admin::trash_purge(&team_id, &id, &kind).await.map_err(|e| e.to_string())
+}
+
+/// A member's own rules, as the team signed them for this launcher.
+#[tauri::command]
+async fn team_my_access(team_id: String) -> Result<Vec<team_model::Grant>, String> {
+    space::admin::my_access(&team_id).await.map_err(|e| e.to_string())
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+/// Bring the main window back from the tray / minimized state and focus it.
+fn show_main_window(app: &tauri::AppHandle) {
+    use tauri::Manager;
+    if let Some(w) = app.get_webview_window("main") {
+        let _ = w.show();
+        let _ = w.unminimize();
+        let _ = w.set_focus();
+    }
+}
+
+/// Run as the reaper when the command line says `--reap`; its exit code then.
+pub fn reap_if_asked() -> Option<i32> {
+    space::reap::from_args(std::env::args_os())
+}
+
+pub fn run() {
+    with_app_menu(tauri::Builder::default())
+        // Must be the first plugin: a second launch focuses the running window.
+        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+            show_main_window(app);
+        }))
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_notification::init())
+        .on_menu_event(|app, e| {
+            if e.id.as_ref() == "app_quit" {
+                quit(app);
+            }
+        })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                // Mid-reset the window stays: closing it could end the app
+                // with the data half moved.
+                if reset::active() {
+                    api.prevent_close();
+                    notify_warning(reset::WAIT);
+                    return;
+                }
+                let to_tray = settings::load().map(|s| s.minimize_to_tray).unwrap_or(true);
+                if window.label() == "main" && to_tray {
+                    api.prevent_close();
+                    let _ = window.hide();
+                } else if window.label() == "main" {
+                    // Closing it ends the app: the same question as Quit.
+                    api.prevent_close();
+                    crate::quit(tauri::Manager::app_handle(window));
+                }
+            }
+        })
+        .invoke_handler(tauri::generate_handler![
+            sync_launch,
+            sync_status,
+            sync_set_paused,
+            sync_arrange,
+            sync_stop,
+            sync_set_excluded,
+            sync_close_panel,
+            helper_profiles,
+            helper_fields,
+            helper_fill,
+            profile_focus_window,
+            helper_show,
+            helper_close,
+            helper_dismiss,
+            engines::engines_detect,
+            engines::engines_install,
+            engines::engines_latest,
+            engines::engines_remove,
+            profile_list,
+            profile_get,
+            profile_save,
+            profile_delete,
+            automation_available,
+            automation_list,
+            automation_create,
+            automation_save,
+            automation_delete,
+            automation_duplicate,
+            automation_launch,
+            automation_attach,
+            automation_detach,
+            automation_attached,
+            automation_screencast,
+            automation_call,
+            automation_pick,
+            automation_run,
+            automation_run_stop,
+            automation_run_status,
+            automation_fleet,
+            automation_fleet_window,
+            automation_display,
+            automation_tls_fingerprints,
+            automation_modules,
+            automation_module_install,
+            automation_module_remove,
+            automation_module_permissions,
+            automation_module_grant,
+            automation_modules_dir,
+            automation_export,
+            automation_import,
+            trash_list,
+            trash_restore,
+            trash_purge,
+            trash_empty,
+            extension_list,
+            extension_import,
+            extension_import_url,
+            extension_delete,
+            extension_updates,
+            extension_updates_check,
+            extension_update,
+            extension_link_source,
+            extension_update_cancel,
+            extension_update_skip,
+            bookmark_list,
+            bookmark_save,
+            bookmark_delete,
+            tag_list,
+            tag_save,
+            tag_delete,
+            tag_assign,
+            tag_import,
+            folder_list,
+            folder_add,
+            folder_meta_set,
+            folder_import,
+            data_root_get,
+            data_root_migrate,
+            profile_bind_proxy,
+            profile_clone,
+            profile_import,
+            clipboard_write,
+            clipboard_read,
+            profile_set_pin,
+            profile_set_folder,
+            folder_rename,
+            folder_delete,
+            host_platform,
+            profile_create_from_template,
+            enrich_picks_for_preset,
+            fingerprint_list,
+            gpu_caps,
+            gpu_caps_compat,
+            fingerprint_get,
+            fingerprint_import,
+            fingerprint_delete,
+            fingerprint_dir,
+            read_text_file,
+            process_list,
+            process_kill,
+            proxy_list,
+            proxy_save,
+            proxy_delete,
+            proxy_check,
+            proxy_check_udp,
+            proxy_geo,
+            proxy_full_test,
+            proxy_history,
+            proxy_last_test,
+            proxy_bulk_import,
+            proxy_bulk_parse,
+            proxy_bulk_save,
+            launch,
+            settings_get,
+            settings_save,
+            settings_load_error,
+            host_screen,
+            host_hardware,
+            api_info,
+            api_regenerate_token,
+            space_state,
+            space_set,
+            team_join,
+            team_leave,
+            team_admin_overview,
+            team_admin_member_create,
+            team_admin_member_set_active,
+            team_admin_member_delete,
+            team_admin_member_reissue,
+            team_admin_grants,
+            team_admin_set_grants,
+            team_admin_rename,
+            team_admin_folder_create,
+            team_admin_folder_rename,
+            team_admin_folder_color,
+            team_admin_folder_delete,
+            team_trash_list,
+            team_trash_restore,
+            team_trash_purge,
+            team_my_access,
+            sync_state,
+            sync_connect,
+            sync_disconnect,
+            sync_set_kinds,
+            sync_now,
+            sync_invite,
+            sync_set_device_name,
+            profile_sync_set,
+            profile_sync_take,
+            cookies_export,
+            cookies_export_to_file,
+            cookies_import,
+            mcp_download,
+            runtime::runtime_status,
+            runtime::runtime_install,
+            runtime::launcher_update_check,
+            reset::app_reset_plan,
+            reset::app_reset,
+            reset::app_reset_backup,
+            reset::app_reset_keep_storage,
+            reset::app_reset_pending,
+            reset::app_reset_undo,
+            reset::app_reset_finish,
+            reset::app_reset_set_aside,
+            reset::app_restart,
+            launch_cancel,
+            app_quit_asking,
+            app_quit_confirmed,
+            app_quit_cancelled,
+            team_sessions,
+        ])
+        .setup(|app| {
+            let _ = APP_HANDLE.set(app.handle().clone());
+
+            {
+                use tauri::menu::{Menu, MenuItem};
+                use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+                let show = MenuItem::with_id(app, "tray_show", "Show Launcher", true, None::<&str>)?;
+                let quit = MenuItem::with_id(app, "tray_quit", "Quit", true, None::<&str>)?;
+                let menu = Menu::with_items(app, &[&show, &quit])?;
+                if let Some(icon) = app.default_window_icon().cloned() {
+                    let builder = TrayIconBuilder::with_id("main").icon(icon);
+                    // The macOS menu bar wants a stencil: drawn from the icon's
+                    // shape alone, so it is dark on a light bar and light on a
+                    // dark one instead of staying purple in both.
+                    #[cfg(target_os = "macos")]
+                    let builder = builder.icon_as_template(true);
+                    builder
+                        .tooltip("Octopus Agent")
+                        .menu(&menu)
+                        .show_menu_on_left_click(false)
+                        .on_menu_event(|app, e| match e.id.as_ref() {
+                            "tray_show" => show_main_window(app),
+                            "tray_quit" => crate::quit(app),
+                            _ => {}
+                        })
+                        .on_tray_icon_event(|tray, e| {
+                            if let TrayIconEvent::Click {
+                                button: MouseButton::Left,
+                                button_state: MouseButtonState::Up,
+                                ..
+                            } = e
+                            {
+                                show_main_window(tray.app_handle());
+                            }
+                        })
+                        .build(app)?;
+                }
+            }
+
+            // Win/Linux: strip native caption since macOS-only titleBarStyle:Overlay leaves it.
+            #[cfg(not(target_os = "macos"))]
+            {
+                use tauri::Manager;
+                if let Some(w) = app.get_webview_window("main") {
+                    let _ = w.set_decorations(false);
+                }
+            }
+
+            // An engine update the launcher died in the middle of: the previous
+            // engine is put back before the window asks for it (#122).
+            runtime::recover_at_start();
+
+            // A Delete all data that did not finish (a crash, a forced quit)
+            // keeps the app locked, and nothing below writes into its folders:
+            // the window opens on "A reset didn’t finish" (undo or finish).
+            let reset_pending = reset::check_pending();
+
+            // Point the heavy directories wherever the operator moved them,
+            // before anything reads a profile.
+            if let Ok(s) = settings::load() {
+                if let Some(root) = s.data_root.as_deref().filter(|r| !r.is_empty()) {
+                    store::set_data_root(Some(std::path::PathBuf::from(root)));
+                }
+            }
+
+            if reset_pending {
+                return Ok(());
+            }
+
+            // Each extension's source, before a profile's Chrome deletes `_metadata/`.
+            space::extensions::at_launch();
+
+            // This machine's own profiles' UA + client_hints, moved to the
+            // current engine version; a team's are not kept here.
+            tauri::async_runtime::spawn(async {
+                runtime::ensure_profiles_migrated().await;
+            });
+
+            space::live::set_tell(std::sync::Arc::new(|event: &str, payload| notify_event(event, payload)));
+            // Team copies a launcher that died left behind: closed, sent back, wiped.
+            space::open::sweep();
+            // The teams joined: their permissions and live channels.
+            space::live::follow_joined();
+            // The person's own space, synced in the background.
+            space::sync::start();
+            // The Web Store asked about linked extensions every 5 h.
+            ext_updates::start();
+
+            // Trash older than its week.
+            match space::trash::purge_expired() {
+                Ok(n) if n > 0 => eprintln!("[launcher] trash: {n} expired profile(s) removed"),
+                Ok(_) => {}
+                Err(e) => eprintln!("[launcher] trash sweep failed: {e}"),
+            }
+
+            // Clean up temporary profiles from crashed runs.
+            match space::profile::purge_temporary() {
+                Ok(n) if n > 0 => eprintln!("[launcher] purged {n} stale temporary profile(s)"),
+                Ok(_) => {}
+                Err(e) => eprintln!("[launcher] temporary purge failed: {e}"),
+            }
+
+            // API task on the shared tokio runtime.
+            match settings::ensure_secret() {
+                Ok(s) if s.api_enabled => {
+                    let (secret, port) = (s.api_secret.clone(), s.api_port);
+                    tauri::async_runtime::spawn(async move {
+                        api::serve(secret, port).await;
+                    });
+                }
+                Ok(_) => eprintln!("[launcher] automation API disabled in settings"),
+                Err(e) => eprintln!("[launcher] API secret init failed: {e}"),
+            }
+            Ok(())
+        })
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            // Mid-reset nothing ends the app but its own restart.
+            if let tauri::RunEvent::ExitRequested { api, code, .. } = event {
+                if reset::active() && code != Some(tauri::RESTART_EXIT_CODE) {
+                    api.prevent_exit();
+                    notify_warning(reset::WAIT);
+                } else if space::open::any_open() && code != Some(tauri::RESTART_EXIT_CODE) {
+                    api.prevent_exit();
+                    exit_app(app, code.unwrap_or(0));
+                }
+            }
+        });
+}
+
+/// Exit, once the team profiles open here are closed, sent back and wiped.
+fn exit_app(app: &tauri::AppHandle, code: i32) {
+    use std::sync::atomic::Ordering::SeqCst;
+    static CLOSING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    if !space::open::any_open() {
+        app.exit(code);
+        return;
+    }
+    if CLOSING.swap(true, SeqCst) {
+        return;
+    }
+    notify_warning("Saving the team and synced profiles open here before quitting…");
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        space::open::close_all(space::open::QUIT_WAIT).await;
+        CLOSING.store(false, SeqCst);
+        app.exit(code);
+    });
+}
+
+/// Quit from the tray, the app menu, or closing the window with the tray off.
+/// Refused while Delete all data moves the data (the toast says why), so it
+/// never stops half way. Otherwise the window is asked first: nothing saves
+/// on its own, so an open editor may hold unsaved changes, and the window
+/// answers Save / Don't save / Cancel (`useQuitGuard.ts`).
+///
+/// The window says it is asking (`app_quit_asking`) at once; one that does
+/// not within a few seconds is gone or wedged, and the app exits as it always
+/// did. Once it is asking there is no timeout: a person deciding whether to
+/// save must not have the app close under the dialog.
+fn quit(app: &tauri::AppHandle) {
+    use std::sync::atomic::Ordering::SeqCst;
+    use tauri::{Emitter, Manager};
+    if reset::active() {
+        notify_warning(reset::WAIT);
+        return;
+    }
+    let Some(main) = app.get_webview_window("main") else {
+        exit_app(app, 0);
+        return;
+    };
+    if QUIT_ASKING.load(SeqCst) {
+        return; // already asking: the dialog is up
+    }
+    let round = QUIT_ROUND.fetch_add(1, SeqCst) + 1;
+    show_main_window(app);
+    if main.emit("app://quit-requested", ()).is_err() {
+        exit_app(app, 0);
+        return;
+    }
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+        if QUIT_ROUND.load(SeqCst) == round && !QUIT_ASKING.load(SeqCst) {
+            exit_app(&app, 0);
+        }
+    });
+}
+
+/// Which Quit the window last answered for: a late timer from an earlier
+/// round must not end the app.
+static QUIT_ROUND: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+/// The window has the question up.
+static QUIT_ASKING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+#[tauri::command]
+fn app_quit_asking() {
+    QUIT_ASKING.store(true, std::sync::atomic::Ordering::SeqCst);
+}
+
+#[tauri::command]
+fn app_quit_confirmed(app: tauri::AppHandle) {
+    QUIT_ASKING.store(false, std::sync::atomic::Ordering::SeqCst);
+    if reset::active() {
+        notify_warning(reset::WAIT);
+        return;
+    }
+    exit_app(&app, 0);
+}
+
+/// The team profiles open on this device, for the quit dialog to name.
+#[tauri::command]
+fn team_sessions() -> Vec<space::open::Listed> {
+    space::open::listed()
+}
+
+#[tauri::command]
+fn app_quit_cancelled() {
+    QUIT_ASKING.store(false, std::sync::atomic::Ordering::SeqCst);
+    // A later Quit is a new round; the timer of this one must not fire.
+    QUIT_ROUND.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+}
+
+/// macOS: the app menu's Quit (⌘Q) is the launcher's own, so it can refuse
+/// mid-reset (the stock item ends the process at once). Elsewhere the window
+/// keeps having no menu.
+fn with_app_menu(b: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wry> {
+    #[cfg(target_os = "macos")]
+    let b = b.menu(app_menu);
+    b
+}
+
+/// The stock macOS menu with its Quit swapped for one that asks `quit`.
+#[cfg(target_os = "macos")]
+fn app_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
+    use tauri::menu::{Menu, MenuItem, MenuItemKind};
+    let menu = Menu::default(app)?;
+    if let Some(MenuItemKind::Submenu(first)) = menu.items()?.into_iter().next() {
+        if let Some(stock) = first.items()?.last() {
+            first.remove(stock)?;
+        }
+        let label = format!("Quit {}", app.package_info().name);
+        first.append(&MenuItem::with_id(app, "app_quit", label, true, Some("CmdOrCtrl+Q"))?)?;
+    }
+    Ok(menu)
+}

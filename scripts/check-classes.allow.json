@@ -1,0 +1,18 @@
+{
+  "_comment": "Files that still break a class rule (scripts/lib/class-rules.mjs). The lists only shrink: check:classes fails when a listed file is clean.",
+  "hover-weak": [],
+  "raw-color": [],
+  "palette-color": [],
+  "text-size": [
+    "src/widgets/BlockCanvas/BlockCanvas.tsx"
+  ],
+  "old-type": [],
+  "two-roles": [],
+  "radius": [
+    "src/features/automation-blocks/ui/BlockPicker.tsx",
+    "src/widgets/BlockCanvas/BlockCanvas.tsx"
+  ],
+  "outline-none": [],
+  "shadow-focus": [],
+  "transition": []
+}

@@ -1,0 +1,21 @@
+[package]
+name = "octopus-agent-module-example"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = "s"
+# A module is shipped inside a project bundle, so its size is the operator's
+# download. Stripping and one codegen unit take the example from ~400 KB to
+# well under a hundred.
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

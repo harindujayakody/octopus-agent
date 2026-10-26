@@ -1,0 +1,27 @@
+/* ============================================================================
+ * Shardx UI Kit — LIBRARY stylesheet (this is what ships as dist/styles.css).
+ *
+ * Deliberately excludes Tailwind's Preflight and any global `html`/`body`
+ * styles, so importing it into a host app does NOT reset/override the host's
+ * base styles. It contains only:
+ *   - the Tailwind theme variables + the utilities actually used by components
+ *   - the kit's design tokens (light/dark)
+ *   - a minimal box-sizing rule (needed for correct component sizing)
+ * ==========================================================================*/
+
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@import "./tokens.css";
+
+/* The only base rule we ship — border-box is what every utility assumes.
+ * Kept in the low-priority `base` layer so the host can still override it. */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+  }
+}

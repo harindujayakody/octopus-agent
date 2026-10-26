@@ -1,0 +1,13 @@
+[package]
+name = "module-harness"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# The same version the launcher runs modules on.
+wasmtime = "48.0.1"
+serde_json = "1"
+anyhow = "1"
+
+# Its own root, so it is not dragged into a workspace higher up.
+[workspace]

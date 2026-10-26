@@ -1,0 +1,17 @@
+/* Dev / showcase stylesheet — full Tailwind (incl. Preflight) + tokens + a
+ * global body style. This is NOT the file shipped to consumers; the library
+ * CSS is built from `lib.css` (no Preflight, no global body). */
+@import "tailwindcss";
+@import "./tokens.css";
+
+html {
+  font-family: var(--font-sans);
+}
+
+body {
+  background: var(--bg-white-0);
+  color: var(--text-strong-950);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}

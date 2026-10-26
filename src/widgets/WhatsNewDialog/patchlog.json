@@ -1,0 +1,2455 @@
+{
+  "starsRequired": 1000,
+  "repoUrl": "https://github.com/harindujayakody/octopus-agent",
+  "releases": [
+    {
+      "version": "2.2.0",
+      "date": "2026-10-27",
+      "entries": [
+        {
+          "id": "octopus-agent",
+          "title": "Octopus Agent",
+          "lead": "The launcher is now Octopus Agent, with a new name and logo. It is built on ShardBrowser 2.1.2, with thanks.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Octopus Agent keeps its data in its own folder, apart from ShardBrowser's, so both can sit on the same computer. The browser engine that applies the fingerprint is still the one ShardBrowser publishes."
+            }
+          ]
+        },
+        {
+          "id": "auto-update",
+          "title": "Automatic updates",
+          "lead": "New releases install from inside the app.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Octopus Agent checks GitHub for a new release when it starts and every six hours. When one is out, a notification offers Install and restart; the update's signature is checked before it is installed. Settings > About has the same button."
+            }
+          ]
+        },
+        {
+          "id": "browsers-page",
+          "title": "Browsers page",
+          "lead": "Google Chrome, Chromium and Firefox install on their own from Settings > Browsers.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Each browser goes into Octopus Agent's folder, apart from any copy on this computer, so profiles start the version shown there. A new version of an installed browser is announced in a notification, with Update beside it."
+            }
+          ]
+        },
+        {
+          "id": "engine-fixed",
+          "title": "A profile keeps its browser",
+          "lead": "The browser is chosen when a profile is made and stays fixed after that.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A profile's data folder belongs to the browser that made it, and opening it in another one could damage it. To use a different browser, make a new profile."
+            }
+          ]
+        },
+        {
+          "id": "store-removed",
+          "title": "No proxy store, no upsells",
+          "lead": "The ProxyShard page, its free-trial popup, the Get started card and the cards above the profile list are gone.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Adding, testing and assigning your own proxies works as before. The app no longer sends usage statistics anywhere."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "2.1.2",
+      "date": "2026-10-25",
+      "entries": [
+        {
+          "id": "drm-module",
+          "title": "Protected video module",
+          "lead": "The module that plays protected video told sites this computer's real operating system and processor.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A site can ask it for a license request without playing anything, and that request carried this computer's system, processor and device details, whatever the profile claimed. It now works the way it does in Chrome, and the first request carries none of them. Protected video plays as before."
+            }
+          ]
+        },
+        {
+          "id": "webgl1",
+          "title": "WebGL 1",
+          "lead": "WebGL 1 answered some settings that only WebGL 2 has, and listed its extensions in a different order than Chrome.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Asking WebGL 1 for a WebGL 2 setting now returns the same error as in Chrome, and extensions come in Chrome's order. The values the profile sets are unchanged."
+            }
+          ]
+        },
+        {
+          "id": "fonts-other-system",
+          "title": "Fonts of another system",
+          "lead": "A profile of another system showed this computer's fonts, such as Mac fonts in a Windows profile on a Mac.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Such a profile now has the fonts of the system it claims: a Windows profile has Segoe UI, Calibri and Consolas and no Mac fonts, and a Mac profile on Windows the other way round. Text is drawn with the closest fonts this computer has, so letter widths are still this computer's."
+            },
+            {
+              "type": "note",
+              "text": "Profiles of the same system as the computer are unchanged."
+            }
+          ]
+        },
+        {
+          "id": "processor-math",
+          "title": "Processor in calculations",
+          "lead": "Some calculations give different results on Apple chips and on Intel or AMD processors, and profiles gave this computer's.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A Mac profile on a Windows or Linux computer, or a Windows profile on a Mac, now gives the results of the processor it claims. Profiles on a computer with the same kind of processor work exactly as before."
+            }
+          ]
+        },
+        {
+          "id": "headless-screen",
+          "title": "Screen in headless mode",
+          "lead": "In headless mode pages were drawn on a small screen at normal scale, whatever screen the profile claims.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Pages are now drawn on the profile's screen at its scale, so text and emoji measure the same as in a window. This works for starts from the launcher, the API and the SDKs."
+            },
+            {
+              "type": "note",
+              "text": "A screen you pass yourself with --screen-info is used as given."
+            }
+          ]
+        },
+        {
+          "id": "apple-webgpu",
+          "title": "WebGPU on Apple profiles",
+          "lead": "macOS profiles with Apple chips lacked one WebGPU feature that Chrome reports on those Macs.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "New profiles have it, and existing ones get it at their next start. Nothing else in the profile changes."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "2.1.1",
+      "date": "2026-10-24",
+      "entries": [
+        {
+          "id": "teams",
+          "title": "Teams",
+          "lead": "Share profiles with the people you work with, through a server you run yourself.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Run the team server on any Linux machine and invite members from the Team page. Rights are given per team, folder or profile: see, start, edit, delete, cookies, take out. A profile is open on one computer at a time; when it closes, its cookies and logins return to the server for the next person."
+            },
+            {
+              "type": "p",
+              "text": "The admin doesn't need to be online. Removing a member ends their access at once. Deleted items stay in the team's Trash for 30 days."
+            }
+          ]
+        },
+        {
+          "id": "sync",
+          "title": "Sync between your computers",
+          "lead": "Your own profiles, proxies and the rest follow you to your other computers.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Connect it in Settings to your own server or your team's, then turn it on for the profiles you want. They travel with their sessions, proxies, folders, tags, bookmarks, extensions and automation projects. Launcher settings and the fingerprint library stay on each computer."
+            },
+            {
+              "type": "p",
+              "text": "A profile open on one computer can't start on another until it closes there. Offline changes go out when the server is back; if a profile changed on two computers, both versions are kept."
+            }
+          ]
+        },
+        {
+          "id": "extension-updates",
+          "title": "Extension updates",
+          "lead": "Extensions added from the Chrome Web Store show when a new version is out and update in place.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The launcher checks every few hours, or now with Check for updates. Updating keeps the extension's data, such as wallets and logins. If profiles using it are running, the update waits until they close, and a version asking for more access asks you first."
+            },
+            {
+              "type": "p",
+              "text": "Extensions added earlier need one Link to Web Store… from their menu."
+            },
+            {
+              "type": "note",
+              "text": "The check uses this computer's own connection, as Chrome does. It can be turned off in Settings."
+            }
+          ]
+        },
+        {
+          "id": "bookmarks-from-chrome",
+          "title": "Bookmarks from Chrome",
+          "lead": "Import the Bookmarks file of a Chrome profile into the launcher's bookmarks.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Choose the file on the Bookmarks page, pick which profiles the bookmarks show in, and import. Folders from Chrome come in as one list, duplicates and bookmarklets are skipped, and importing the same file again adds nothing. Chrome shows where its Bookmarks file is on chrome://version."
+            }
+          ]
+        },
+        {
+          "id": "wide-screens",
+          "title": "Large screens",
+          "lead": "Lists and pages use the whole window, and the interface size can follow the screen.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Tables stretch across the window instead of leaving an empty band on the right, and the Team, Settings and ProxyShard pages are no longer a narrow column. The new Auto interface size picks a larger size on large screens such as 4K."
+            }
+          ]
+        },
+        {
+          "id": "screen-of-this-computer",
+          "title": "Screen size for new Windows and Linux profiles",
+          "lead": "A new Windows or Linux profile starts with this computer's screen size.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "On these systems the screen depends on the monitor, so the profile's window now matches the screen it reports. macOS and Android profiles keep the screen of their device. Any size can still be picked by hand, and existing profiles keep theirs."
+            }
+          ]
+        },
+        {
+          "id": "ui-language",
+          "title": "Browser interface language",
+          "lead": "Each profile can show the browser's menus in your language or in the profile's.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Fingerprint › Browser interface language: System language (the default) or Same as the profile language. Pages see the profile's language either way."
+            }
+          ]
+        },
+        {
+          "id": "engine-update-failed",
+          "title": "An engine update that did not finish",
+          "lead": "A failed engine update no longer leaves the launcher without a browser engine.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "If the download breaks, the disk is full, or profiles are still running, the current engine stays and keeps working. A notice at the top says what stopped the update and offers to try again; when profiles are in the way it can close them and finish. An update that already downloaded finishes without downloading again."
+            }
+          ]
+        },
+        {
+          "id": "stop-keeps-cookies",
+          "title": "Cookies kept when a profile stops",
+          "lead": "Stopping a profile could lose cookies set in its last half-minute.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Stop now closes the browser the normal way on every system, so everything it had is saved, even when a page asks “Leave site?”. The same goes for profiles closed when you quit the launcher."
+            }
+          ]
+        },
+        {
+          "id": "new-profile-loading",
+          "title": "Creating a profile",
+          "lead": "On some computers New profile kept loading and never opened the form.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The form no longer waits for the graphics check of this computer. The check runs once in the background, and the compatibility badges appear when it finishes."
+            }
+          ]
+        },
+        {
+          "id": "external-drive",
+          "title": "Data folder on an external drive",
+          "lead": "With the data folder on an external drive, the list of profiles could fail to load.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "macOS leaves hidden service files on such drives, and the launcher tried to read them as profiles. They are now skipped everywhere."
+            }
+          ]
+        },
+        {
+          "id": "view-menu-windows",
+          "title": "Sort order on Windows",
+          "lead": "On Windows the sort list in the Display menu did not open.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Clicks inside the Display and Filters menus could start moving the window instead. They now reach the menu. In Russian, the column hint “appears when a tag is created” no longer covers the column name."
+            }
+          ]
+        },
+        {
+          "id": "lists-scroll",
+          "title": "Long lists in pickers",
+          "lead": "At 90% interface size a list did not scroll to the selected or last item, and a notice could cover the bottom rows of the proxy list.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Lists scroll to where they should at every interface size, and notices move out of the way of an open list. Arrow keys move through a list even while the pointer rests on it."
+            }
+          ]
+        },
+        {
+          "id": "bookmark-in-folder-tab",
+          "title": "New bookmark from a folder tab",
+          "lead": "A bookmark created on a folder tab was saved so that no profile showed it.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "It is now saved for that folder, the same as when the folder is picked in the form."
+            }
+          ]
+        },
+        {
+          "id": "site-and-names",
+          "title": "ShardBrowser everywhere",
+          "lead": "The launcher and the browser's start page now say ShardBrowser, and About links to shardbrowser.com.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The Russian translation was also reworded where it read like a word-for-word translation; Views are now called «Сохранённые фильтры» in Russian."
+            }
+          ]
+        },
+        {
+          "id": "mac-last-tab",
+          "title": "Closing the last tab on macOS",
+          "lead": "Closing a profile's last tab on macOS no longer stops the profile.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The browser stays open in the Dock, the way Chrome does on a Mac, and the launcher keeps showing it as running. Quit, Cmd+Q or Stop in the launcher end it. Show the window in the launcher opens a new window when none is left."
+            }
+          ]
+        },
+        {
+          "id": "extension-first-run",
+          "title": "Extension welcome pages",
+          "lead": "Extensions such as MetaMask and Authenticator opened their welcome page at every start.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The browser treated them as freshly installed each time. Now that happens once per profile, and what extensions set up for later, such as reminders, survives a restart. Their data was never lost."
+            },
+            {
+              "type": "note",
+              "text": "Welcome tabs that piled up before this update stay until you close them once."
+            }
+          ]
+        },
+        {
+          "id": "store-extensions-alongside",
+          "title": "Extensions installed inside a profile",
+          "lead": "Extensions installed from the Web Store inside a profile were hidden while the profile also had extensions from the launcher.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Both kinds now work side by side. Extensions installed inside a profile were not removed before, only hidden, so they come back with their data."
+            }
+          ]
+        },
+        {
+          "id": "host-extensions",
+          "title": "Extensions from other programs",
+          "lead": "Programs on this computer that add extensions to Chrome could add them to profiles too.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Profiles now ignore extensions registered for Chrome on this computer. Only extensions you add in the launcher or inside the profile are used."
+            }
+          ]
+        },
+        {
+          "id": "language-everywhere",
+          "title": "One language for the whole profile",
+          "lead": "Some parts of the browser still answered in this computer's language instead of the profile's.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Extensions now see the profile's languages, so MetaMask and Phantom agree. Pages without a declared text encoding, dates and numbers follow the profile's language the way Chrome in that language does. On macOS profiles speech voices are named in the profile's language."
+            },
+            {
+              "type": "note",
+              "text": "MetaMask and Phantom keep the language they picked at first start. If already installed, switch it once in their settings — don't reinstall them, that removes the wallet."
+            }
+          ]
+        },
+        {
+          "id": "audio",
+          "title": "Sound a page plays back",
+          "lead": "Audio protection also changed sound a page had written itself and read back unchanged.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Some checks compare a sound before and after the browser handles it. Sound a page wrote is now returned exactly as written, and protection applies only to sound the browser computes itself."
+            }
+          ]
+        },
+        {
+          "id": "chrome-runtime",
+          "title": "An extension-only object on web pages",
+          "lead": "Web pages could see an object that ordinary Chrome shows only to extensions.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Detection services look for it. It is no longer available to web pages; extensions keep it."
+            }
+          ]
+        },
+        {
+          "id": "mobile-human-type",
+          "title": "Human Type on mobile profiles",
+          "lead": "On mobile profiles the right-click menu had no Human Type and fill items.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A long press now offers them, and they type into the field you pressed on."
+            }
+          ]
+        },
+        {
+          "id": "helper-dropdowns",
+          "title": "Dropdowns filled by Shard Helper on Windows and Linux",
+          "lead": "Fill left standard dropdowns empty on Windows and Linux.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Shard Helper now picks the option the way a person does: it opens the list, moves to the option and confirms it, then checks the field took the value. If the page moves while it fills, it aims at where each field is now."
+            }
+          ]
+        },
+        {
+          "id": "linux-freeze",
+          "title": "Freezes on Linux",
+          "lead": "With Shard Helper on, the browser on Linux could freeze while starting and left a crash report on every start.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Both are gone. Real crashes are still recorded as before."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "2.1.0",
+      "date": "2026-10-21",
+      "entries": [
+        {
+          "id": "chromium-156",
+          "title": "The browser engine moves to Chromium 156",
+          "lead": "Profiles now present themselves as Chrome 156, down to the network handshake.",
+          "tag": "new",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The engine under every profile is now Chromium 156. The version a profile reports moves with it — in the user agent, in the client hints and in navigator.userAgentData — so profiles don't fall behind the Chrome that real visitors run."
+            },
+            {
+              "type": "p",
+              "text": "The connection matches Chrome 156 too: the TLS handshake, including the GREASE value among the signature algorithms and the Trust Anchor IDs extension that Chrome 156 now sends, the HTTP/2 settings, and the default Accept header with image/jxl. A site that compares the version a browser declares with the way it connects sees the same browser in both."
+            },
+            {
+              "type": "note",
+              "text": "The new engine downloads by itself the first time the launcher starts after this update. Profiles keep their data."
+            }
+          ]
+        },
+        {
+          "id": "launcher-redesign",
+          "title": "A new launcher interface",
+          "lead": "Every page was redone: profiles open in a side panel next to the list, and Folders, Tags and Views keep large fleets in order.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Click a profile to see and edit it in Peek, the panel beside the list, without leaving the list. Folders group profiles, Tags mark states such as “warm-up” or “needs 2FA”, and a View saves a filter, a sort and a set of columns in the sidebar. Press Cmd+K (Ctrl+K) to reach any command or profile by typing."
+            },
+            {
+              "type": "p",
+              "text": "The app is now called ShardBrowser Launcher. On macOS the new version installs next to the old one: once it opens, delete “ShardX Launcher” from Applications. Both use the same data, so nothing has to be moved."
+            }
+          ]
+        },
+        {
+          "id": "save-and-quit",
+          "title": "Changes wait for Save",
+          "lead": "Nothing is written while you type; leaving a page or quitting with unsaved changes asks first.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Profiles, proxies, settings and automation projects keep your edits until you press Save. Quitting from the menu, the tray or Cmd+Q asks whether to save them, discard them or stay."
+            }
+          ]
+        },
+        {
+          "id": "delete-all-data",
+          "title": "Delete all data",
+          "lead": "Settings › Storage can start the launcher over without losing anything.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Profiles, proxies, automation and settings move into a backup folder beside your data, together with Tags, Views and Folder colors. Nothing is deleted, and an interrupted reset offers to undo or finish at the next start. The browser engine and the fingerprint library stay."
+            }
+          ]
+        },
+        {
+          "id": "resi-usage-history",
+          "title": "Residential traffic history",
+          "lead": "The ProxyShard page charts how much residential traffic you used and how many requests went through.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Pick the last 24 hours, 7 days or 30 days: each residential plan shows its traffic over that time and how it compares with the period before. Datacenter and ISP proxies have no traffic limit, so they have no chart."
+            }
+          ]
+        },
+        {
+          "id": "window-from-screen",
+          "title": "Window size for profiles that named none",
+          "lead": "A profile without a window size opened as large as this computer's screen allows.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The window is now taken from the screen the profile declares and stored with the profile on its next start, so it opens inside its own screen. On Windows and Linux a resolution you pick for a profile is no longer replaced by the “real screen” setting, which is meant for macOS profiles."
+            }
+          ]
+        },
+        {
+          "id": "proxy-password-sessions",
+          "title": "Proxies that differ only in password",
+          "lead": "Importing the same gateway with different session passwords kept only the first.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Providers put a sticky session or a country into the password, so one host, port and user can be many different exits. Each password is now its own proxy; only an exact duplicate is skipped."
+            }
+          ]
+        },
+        {
+          "id": "cancel-start",
+          "title": "Cancel a profile that is still starting",
+          "lead": "A profile waiting on a slow proxy can be canceled before its browser opens.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Cancel stops the start before the browser window appears, instead of letting it open and closing it again."
+            }
+          ]
+        },
+        {
+          "id": "canvas-marks-per-surface",
+          "title": "Canvases that came back unmarked",
+          "lead": "On some profiles the most commonly probed canvas was handed over exactly as the computer had drawn it.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Canvas protection marks the picture a page reads back. On some profiles those marks were landing where they made no difference, and the page ended up with the canvas exactly as this computer had drawn it. Because the marks follow from the profile, such a profile did it every time, not now and then."
+            },
+            {
+              "type": "p",
+              "text": "Marking now covers the canvases fingerprinting libraries actually draw. Measured across twenty profiles on the shapes those libraries use, every profile hands back a canvas of its own and none matches an unprotected browser. What you see on screen is unchanged."
+            }
+          ]
+        },
+        {
+          "id": "canvas-flat-patches",
+          "title": "A filled rectangle read back exactly",
+          "lead": "A page could fill a rectangle inside a canvas it had drawn on, read it back, and find pixels that did not match the color it asked for.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A canvas filled entirely with one color was already handed back untouched. A rectangle inside a canvas with other things on it was not, so comparing that rectangle against the color it was filled with found around 26 pixels in 8000 that differed — a difference no ordinary browser produces."
+            },
+            {
+              "type": "p",
+              "text": "A pixel surrounded on all sides by its own color is now left alone, which covers any rectangle filled with one color wherever it sits. The decision ignores the bit a mark would change, so marking one pixel cannot change the answer for the pixel beside it, and it is taken from the whole canvas rather than from the rectangle being read — otherwise reading a canvas whole and reading it in quarters would disagree, which is itself a check pages run."
+            },
+            {
+              "type": "note",
+              "text": "It costs little: text and gradients have hardly any pixel with a 2 by 2 square of its own color around it, so a 220 by 30 text canvas still carries 27 to 42 marks and a plain background with one word on it 3 to 15 — enough for a canvas unique to that profile, which is checked rather than assumed."
+            },
+            {
+              "type": "note",
+              "text": "A canvas asked for in floating point is covered the same way now. Saving one as an image used to skip the marks entirely, so the same drawing was protected when read as pixels and not when saved as a file."
+            }
+          ]
+        },
+        {
+          "id": "webgl-read-stable",
+          "title": "WebGL pictures that changed between reads",
+          "lead": "Reading the same WebGL canvas twice gave two different pictures, and two profiles could give the same one.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The noise added to a WebGL canvas was tied to how many times it had been read rather than to where the pixels are, so a page that read it twice and compared got a different answer each time — and that difference is itself the answer: something is editing this canvas. The profile's own number was not reaching the WebGL path at all, which is why two profiles could produce identical pictures."
+            },
+            {
+              "type": "p",
+              "text": "Marks now belong to a position in the drawing buffer, the way they already did for an ordinary canvas, and they come from the profile. Reading the whole canvas, reading a corner of it and saving it as a file now agree, and two profiles no longer agree with each other."
+            },
+            {
+              "type": "note",
+              "text": "Two things kept the ways of reading apart even after that: a WebGL buffer is handed over bottom row first, and a canvas snapshot on macOS stores blue before red. Both are accounted for, and the agreement was measured rather than assumed."
+            },
+            {
+              "type": "note",
+              "text": "A page can ask WebGL to leave gaps between the rows it reads, or to skip the first few. The marks ignored both, so they landed on the wrong pixels and the picture read back stopped matching the one an export produced. They follow the page's own layout now."
+            }
+          ]
+        },
+        {
+          "id": "svg-box-agrees",
+          "title": "SVG element sizes that disagreed",
+          "lead": "An SVG shape reported one size through one call and a different size through another.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Element measurements carry a small amount of noise so the exact font metrics of this computer cannot be read off them. One SVG-only way of asking for a size went around it, so a page could ask twice and get two answers. The same went for the size reported when an SVG element changes size."
+            },
+            {
+              "type": "p",
+              "text": "All three now go through the same calculation and return the same numbers."
+            }
+          ]
+        },
+        {
+          "id": "validation-message-language",
+          "title": "The language of form error messages",
+          "lead": "A form that refused what was typed explained why in the computer's language, not the profile's.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The text the browser itself puts under an invalid field — the \"please fill in this field\" kind — came from the language the program was installed in. A profile set to Polish on an English computer answered in English, which no ordinary browser in that configuration would do. The message now follows the profile's language."
+            }
+          ]
+        },
+        {
+          "id": "oopif-mouse",
+          "title": "Clicks inside embedded frames on a mobile profile",
+          "lead": "On a mobile profile a click never reached a frame embedded from another site, reCAPTCHA among them.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A mobile profile reports a screen and a window of its own, and the coordinates of a click were being translated into that reported window twice — once for the page and again for anything embedded in it from a different site. The second translation moved the click off the frame entirely, so the checkbox never saw it. The translation now happens once, and a click lands where it was aimed whatever frame it belongs to."
+            }
+          ]
+        },
+        {
+          "id": "mac-last-window",
+          "title": "The browser after the last window closes",
+          "lead": "On macOS the browser kept running with no windows open, and the profile stayed marked as running.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Closing the last window on macOS normally leaves the application running — that is how the platform works — but for a profile it meant the launcher went on showing it as running, and starting it again attached to the leftover instead of opening a window. The browser now exits with its last window, which is what a profile is for."
+            }
+          ]
+        },
+        {
+          "id": "watch-position-loop",
+          "title": "Location updates repeating without end",
+          "lead": "A page asking to be told when the location changes was told over and over, forever.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A profile declares one fixed location, so there is nothing to report after the first answer. The code that delivered it kept rescheduling itself anyway, which left a page receiving the same coordinates several times a second and the processor busy producing them."
+            }
+          ]
+        },
+        {
+          "id": "keep-focus",
+          "title": "Keeping a background window focused",
+          "lead": "A page can tell its window is not the one in front, which matters when several profiles run at once.",
+          "tag": "new",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Sites check whether their window is the active one, and a window sitting behind another honestly says it is not. With a row of profiles working at the same time only one of them can be in front, so a profile can now be told to report itself as focused regardless."
+            },
+            {
+              "type": "note",
+              "text": "Off by default, and deliberately so: a window that is always focused is itself unusual if nothing else about the profile explains it. Turn it on for profiles that work in the background."
+            }
+          ]
+        },
+        {
+          "id": "voices-by-language",
+          "title": "The voices a profile offers",
+          "lead": "Every profile offered the same voices, taken from the computer it was running on.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The list of speech voices a browser can offer is one of the longer things a page can read, and it follows from the operating system and its language. Ours was the computer's own list, so a Polish Windows profile on an English Mac offered Mac voices with English names."
+            },
+            {
+              "type": "p",
+              "text": "A profile now offers the voices its declared system and language would have: the Windows roster for a Windows profile, the built-in set for macOS, and an empty list for Linux, which is what a Linux machine without extra packages really reports."
+            },
+            {
+              "type": "note",
+              "text": "The first voice in the list is the default one, which is how Chrome decides it, and Windows voice names are not translated — the system stores them in English whatever the interface language is."
+            }
+          ]
+        },
+        {
+          "id": "window-within-declared-screen",
+          "title": "A window larger than the screen it declares",
+          "lead": "A profile could report a window that did not fit on the screen it said it had.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The window and the screen are declared separately and nothing kept them consistent, so a profile claiming a 1366 by 768 screen could open a 1920-wide window on it. Any page that compares the two finds a shape no real computer produces. The window is now held inside the declared screen, and the space the system bars take is counted the way the declared system would count it."
+            }
+          ]
+        },
+        {
+          "id": "proxy-login-characters",
+          "title": "Proxy logins with special characters",
+          "lead": "A proxy whose user name or password contained a colon, an at sign or a percent failed to connect.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Those characters have a meaning inside a proxy address, so a password containing one was read as the end of the password and the start of something else. The address is now assembled so the characters are carried rather than interpreted — in the browser, in the launcher and in all the SDKs — and the reverse step reads addresses written either way."
+            }
+          ]
+        },
+        {
+          "id": "screen-rect-loop",
+          "title": "Processor load on an idle window",
+          "lead": "A window with nothing happening in it used a steady 200% of processor time.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A profile reports a window position of its own, and the part of the browser that tells the page where its window is was being given that reported position and then comparing it against the real one. They never matched, so it asked again, every frame, for as long as the window stayed open."
+            },
+            {
+              "type": "p",
+              "text": "The reported values are now handed to the page without being written back, and the comparison is against what the window really is. The page still sees the position the profile declares."
+            }
+          ]
+        },
+        {
+          "id": "measurement-grids",
+          "title": "Measurements that sat between pixels",
+          "lead": "Every length a page measured came back a fraction off the step browsers actually use.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Element sizes carry a small amount of noise so that the exact widths of this computer's fonts cannot be read off them. The noise was a free-floating fraction, and that put the answer where no browser puts it: a plain element reported 137.00392150878906 where every real browser reports 137. A page could see at a glance that the number had been altered."
+            },
+            {
+              "type": "p",
+              "text": "Measurements now land where a real browser puts them, each kind on the footing it belongs to, so a length reads as an ordinary number instead of announcing that something changed it."
+            },
+            {
+              "type": "p",
+              "text": "The amount is the size of an ordinary layout rounding: enough to change what a fingerprint adds up to, small enough that nothing moves on screen and a page comparing a measurement against its own stylesheet sees what it expects."
+            }
+          ]
+        },
+        {
+          "id": "text-ink-box",
+          "title": "The shape of measured text",
+          "lead": "Measuring text on a canvas returned the width through the profile and the shape of the letters straight from the computer.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A text measurement hands back a dozen numbers. The width was going through the profile; the four that describe the box the letters actually ink — how far they reach left, right, up and down — were not, and they say as much about which font this computer has as the width does. A page reading them got the real answer out of the same call whose width was protected."
+            },
+            {
+              "type": "p",
+              "text": "Those four now carry the profile's own step, each keeping the step it sits on, and a letter with nothing below the line still measures exactly zero below the line."
+            }
+          ]
+        },
+        {
+          "id": "webgl-clear-exact",
+          "title": "A WebGL surface cleared to one color",
+          "lead": "Clearing a WebGL surface to a color and reading it back returned pixels that were not that color.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "An ordinary canvas filled with one color was already handed back untouched; the WebGL side of the same rule was missing, so the simplest check anyone can write — clear to a color, read the pixels, compare — came back with a scattering of pixels one step off. A flat area drawn inside a WebGL scene had the same problem."
+            },
+            {
+              "type": "p",
+              "text": "A pixel surrounded by its own color is now left alone there too, and reading the surface back through the drawing interface agrees with saving it as an image, pixel for pixel."
+            }
+          ]
+        },
+        {
+          "id": "sizes-the-page-chose",
+          "title": "Sizes a page chose itself, handed back changed",
+          "lead": "A page could set an element's size, measure it, and see a number that was not the one it asked for.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Element sizes carry a small amount of noise so the exact widths of this computer's fonts cannot be read off them. It was applied to every measurement, including the ones where the page itself decided the answer: a box set to 400 pixels wide came back as 400.015625. Nothing about this computer is in that number — the page wrote it — so changing it hid nothing and told the page the measurements were being altered."
+            },
+            {
+              "type": "p",
+              "text": "Only sizes the fonts decided are covered now. A size pinned in the stylesheet comes back exactly, whether it was pinned outright, by a smallest and largest that meet, by a percentage of a pinned parent, or by fixing both edges of a positioned box. A box as wide as its own text — a line, a word, a cell stretched by the text beside it — still is."
+            },
+            {
+              "type": "note",
+              "text": "Three more ways of reading one rectangle used to disagree with each other and now do not: observing an element's size handed back the untouched box, the parts of a wrapped line no longer add up to something other than the whole, and an element under a transform reports exactly the transform applied to it."
+            }
+          ]
+        },
+        {
+          "id": "start-page",
+          "title": "A start page of our own",
+          "lead": "New tabs and the home button open a page that says what the browser does.",
+          "tag": "new",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "It is built into the browser at `chrome://shardx` and asks nothing of the network — no fonts, no images, no counters — so it opens at once, offline, and tells nobody that it was opened. It follows the system's light and dark setting."
+            }
+          ]
+        },
+        {
+          "id": "bring-window-forward",
+          "title": "Bringing a running profile's window to the front",
+          "lead": "There was no way to get back to a profile's window from the launcher.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Clicking the *Running* badge in the profile list now raises that profile's window, on all three systems. The same thing is available over the API and in the SDKs, so a script that opened a dozen profiles can bring any of them forward."
+            }
+          ]
+        },
+        {
+          "id": "windows-idle-status",
+          "title": "A running profile shown as idle on Windows",
+          "lead": "On Windows a profile that was open showed as idle in the list.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The launcher noticed the browser process had ended, but on Windows the browser hands its work to a second process and leaves, so the window was still there with nothing watching it. It now waits for the profile's own lock to be released, which is the thing that actually says the browser is gone."
+            }
+          ]
+        },
+        {
+          "id": "wait-step-variable",
+          "title": "A variable in the wait step",
+          "lead": "The *Wait* step in automation would not take a variable for how long to wait.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Every other step accepted a variable in a number field; this one read the field as a plain number and stopped on anything else. It now resolves a variable the way the rest do."
+            }
+          ]
+        },
+        {
+          "id": "real-hardware-opt-in",
+          "title": "Reporting the computer's own processor and memory",
+          "lead": "A profile always reported invented hardware, even where the real figures would have been safer.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A profile normally declares a processor count, an amount of memory and a graphics card of its own. When the profile's operating system is the same as this computer's, reporting the real ones is both consistent and harder to argue with, so the profile editor now offers *Real* for each of them."
+            },
+            {
+              "type": "note",
+              "text": "Only offered when the systems match, and never chosen for you: a Windows profile reporting a Mac's graphics card is worse than any invented pair."
+            }
+          ]
+        },
+        {
+          "id": "profile-icons",
+          "title": "Profile icons",
+          "lead": "Profiles fell back to the stock icon, and the badge drawn on it was hard to read on a dark Mac.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A profile without a picture of its own used the application's icon, which made a row of profiles indistinguishable in the dock and in the window switcher. It now gets a generated icon carrying its color and initials. The badge that marks it was redrawn so it reads on both the light and the dark macOS appearance."
+            }
+          ]
+        },
+        {
+          "id": "proxy-checker",
+          "title": "The proxy checker",
+          "lead": "Dead proxies were reported as working, with no address to show for them, and the check took a long time.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The check stopped at the handshake, and a proxy that accepts a connection and then refuses to carry anything passes that. It now opens a real connection through the proxy to a known address and asks what address came out the other end: a proxy that cannot carry traffic fails, and a working one reports the address it presents."
+            },
+            {
+              "type": "p",
+              "text": "Three other things were making it slow or wrong. A secure address was being probed in plain text, which some proxies answer and some hang on. A probe with no deadline could hang for minutes. And results were written where a later check overwrote them, so a proxy tested twice lost its first answer. Each step now has its own deadline, the whole check has one, and results are kept per proxy."
+            },
+            {
+              "type": "note",
+              "text": "Checking a proxy without UDP support is no longer slow: it used to wait out the full UDP timeout before concluding, and now concludes as soon as the proxy says it does not support it."
+            }
+          ]
+        },
+        {
+          "id": "copy-cdp-address",
+          "title": "Copying a profile's debugging address",
+          "lead": "Attaching a script to a running profile meant finding its debugging address by hand.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A profile started with debugging enabled now offers *Copy debugging address* in its menu, which puts the address on the clipboard ready to paste into a script."
+            },
+            {
+              "type": "note",
+              "text": "A page can tell when a developer tool is attached to it, so use this with care on work a site is not meant to see as automation."
+            }
+          ]
+        },
+        {
+          "id": "engine-download-safety",
+          "title": "An interrupted engine download",
+          "lead": "A download that broke off part way left the computer with no browser engine at all.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The old engine was deleted before the new one had been fetched, so a dropped connection left nothing to fall back on and nothing to run. The new engine is now downloaded first and the old one replaced only once it is on disk — in the launcher and in all three SDKs, which each carried their own copy of the same mistake."
+            },
+            {
+              "type": "p",
+              "text": "The same step also wrote a fixed engine version into the profile list when it could not reach the network, so profiles claimed a version the installed engine did not have. It now reports what is actually installed."
+            }
+          ]
+        },
+        {
+          "id": "mcp-health-check",
+          "title": "Checking the launcher from a script",
+          "lead": "A script could not tell a launcher that was not running from one that refused its key.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Both failures looked the same from outside, which made them hard to act on. There is now a health check that says which it is, and a way to find a profile by its name rather than by its identifier."
+            }
+          ]
+        },
+        {
+          "id": "proxy-password-api",
+          "title": "Changing a proxy password over the API",
+          "lead": "Updating a proxy password through the API added another proxy instead of changing the one in use.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Each change left another entry behind with the profile still pointing at the old one, so a fleet accumulated dead proxies and went on using the password that no longer worked. The change is now applied to the entry the profile actually uses."
+            }
+          ]
+        },
+        {
+          "id": "russian-ui",
+          "title": "Russian in the launcher",
+          "lead": "The launcher now speaks Russian.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Everything the launcher itself says — menus, settings, the profile editor, automation steps and error messages — is available in Russian, alongside English and Chinese. Change it in *Settings*."
+            },
+            {
+              "type": "note",
+              "text": "This page stays in English whatever the launcher is set to."
+            }
+          ]
+        },
+        {
+          "id": "proxyshard-trial",
+          "title": "A trial of premium residential",
+          "lead": "The Proxies page offers a free trial of premium residential traffic while no ProxyShard account is connected.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "How much traffic the trial is for, and whether there is one at all, is decided by ProxyShard rather than by the launcher, so the offer can change without an update. Taking it opens your browser; the traffic lands in the account you sign in with. Connect an API key afterwards and your orders, traffic and proxies appear on that page."
+            },
+            {
+              "type": "note",
+              "text": "Nothing is shown when there is no offer, and nothing is shown once a key is connected."
+            }
+          ]
+        },
+        {
+          "id": "sdk-motion-domain",
+          "title": "Turning a device in a script",
+          "lead": "The SDKs could not reach the commands that rotate the screen or move the sensors.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A profile started from an SDK was missing the switch that opens those commands, so a script could set up a mobile profile and then not turn it. Every SDK now starts the browser with it and attaches to the page's own session, so rotation, motion and the rest answer the same way they do from the launcher."
+            }
+          ]
+        },
+        {
+          "id": "clipboard-empty",
+          "title": "An empty clipboard",
+          "lead": "Importing from an empty clipboard reported a system error instead of saying it was empty.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Nothing to paste is not a failure. It now says so plainly, and the import stays where it was instead of closing."
+            }
+          ]
+        },
+        {
+          "id": "list-arrow-keys",
+          "title": "Arrow keys after moving to another page",
+          "lead": "On every page but the one the launcher opens on, the arrow keys did nothing until a row was clicked.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Moving to Proxies, Bookmarks or Fingerprints puts the keyboard on the page's heading, and a list only answered the arrows when the keyboard was on nothing at all. Lists now take the arrows from the heading as well, so one can be walked straight after switching pages, without reaching for the mouse first."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "2.0.3",
+      "date": "2026-09-12",
+      "entries": [
+        {
+          "id": "canvas-paths-agree",
+          "title": "Canvas readings that disagreed with each other",
+          "lead": "A page could prove the canvas was being altered by comparing two ways of reading it.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A page can read a canvas as an image or as raw pixels, and the two must match — the image format is lossless, so any difference means something is being added in between. Ours differed, on a handful of pixels, every time. Comparing the two is a standard check, and it was passing back a definite answer: this browser edits its canvas."
+            },
+            {
+              "type": "p",
+              "text": "The marks were placed at byte positions inside whichever buffer was at hand, and a canvas snapshot stores colors in a different order than raw pixels do, so “the first color” meant blue on one path and red on the other. The position also depended on the rectangle asked for, so reading a canvas whole and reading it in quarters disagreed as well. Marks now belong to a point on the canvas rather than to a place in a buffer, and the color is chosen as a color."
+            },
+            {
+              "type": "p",
+              "text": "Two more ways out of the canvas carried no noise at all — saving it as a file rather than as an address, and the same call from a canvas running off the main thread — and a third, reading it back as floating point, quietly returned the untouched picture. All of them are marked now, in the same place and the same way."
+            },
+            {
+              "type": "note",
+              "text": "A mark only goes where it survives being read back: on a see-through pixel the stored color is always zero, so a mark there would be a pixel no ordinary browser can produce. Translucent pixels are marked wherever the arithmetic returns the same byte, which also means a page cannot switch the whole thing off by drawing everything at 99% opacity. The smallest canvas worth marking is now judged by area rather than by each side, so the short wide surfaces detectors actually use — 220 by 30 and the like — are covered again."
+            }
+          ]
+        },
+        {
+          "id": "audio-fingerprint-real",
+          "title": "The audio fingerprint that never changed",
+          "lead": "Every profile on a machine reported the same one, whatever seed it had.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A page fingerprints audio by rendering a tone through a compressor and adding up 500 of the resulting samples. Our noise moved each sample by the smallest step a number of that kind can take, in a direction as often down as up — so across 500 samples the changes canceled and the total came out the same to more decimal places than anyone reads. Noise off, seed A, seed B: one number, and the same number on every machine running the browser."
+            },
+            {
+              "type": "p",
+              "text": "The step is larger now, chosen so the total lands where two real machines running the same Chrome already differ from each other. Across a thousand seeds, every one produced a different total and none matched the untouched one. The change is far below anything audible. The profile's audio intensity setting, which until now was read from the profile and then used by nothing, sets how far they move."
+            },
+            {
+              "type": "p",
+              "text": "The live spectrum readings had a fault of their own: the value taken from each byte depended on one bit of the profile's seed, so every profile on a machine fell into one of two answers. Over four thousand seeds that produced two distinct patterns; it now produces three and a half thousand. And digital silence stays digital silence — it used to come back as 129 where every real browser answers 128."
+            },
+            {
+              "type": "note",
+              "text": "A page reading a buffer in small pieces now costs what the pieces cost. Marking ran over the whole buffer on each of those calls, so a library streaming 44100 samples in chunks of 128 walked the buffer 344 times, and how long that takes is itself something a page can measure."
+            }
+          ]
+        },
+        {
+          "id": "noise-seed-range",
+          "title": "Half of all profiles had no noise at all",
+          "lead": "Seeds above a certain size were thrown away, and canvas, WebGL and element measurements went unprotected.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Each profile gets its own random number to drive its canvas, WebGL, audio and element-measurement noise. The launcher draws that number from the full 32-bit range; the browser read it into a slot half that size, so every value above 2147483647 was read as “not set”. Roughly one profile in two therefore ran with no noise at all while its settings said the noise was on — the same canvas hash as a plain browser, and the same as every other such profile on the machine."
+            },
+            {
+              "type": "p",
+              "text": "The whole range is read now. Profiles that were affected start producing their own canvas, WebGL and rect values from the next launch — which is a change to their fingerprint, and the point of the fix. The same reading mistake was fixed for the WebGPU limits, where a real graphics card reports numbers right at that boundary."
+            }
+          ]
+        },
+        {
+          "id": "screen-refresh-rate",
+          "title": "How often the screen refreshes",
+          "lead": "A 240 Hz gaming monitor was measurable inside every profile on the machine.",
+          "tag": "new",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "There is no property a page can read for this, but there is a clock: ask the browser to draw a frame and time how long it waits. That wait was the real monitor's. On a 240 Hz screen every profile answered 240 — a rate a few percent of desktops have, identical across every profile on that computer, and sitting next to a claimed graphics card no such panel is sold with."
+            },
+            {
+              "type": "p",
+              "text": "A profile now carries a refresh rate of its own and the browser holds its frames to it. 60 unless the profile says otherwise, which is what most machines report; pick another in the profile editor, next to cores and memory, or set screen.refresh_rate through the API."
+            },
+            {
+              "type": "p",
+              "text": "The rate can only be lowered — a computer cannot draw faster than its own panel. On macOS frames come from the display itself and can only be answered or skipped, so the claim is met when the panel divides down to it exactly: 60 out of 60, 120 or 240 is exact, and those are nearly every machine. A claim the panel cannot divide down to is left at the panel's rate rather than answered with something like 48 Hz, which no display ships and which would be a worse thing to be than honest."
+            }
+          ]
+        },
+        {
+          "id": "webgl-readpixels-overrun",
+          "title": "A WebGL read that wrote past the end of the page's own array",
+          "lead": "Reading pixels in any format other than RGBA bytes wrote four bytes per pixel into a smaller buffer.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The WebGL noise assumed every readPixels hands back four bytes per pixel. A page reading a single-channel framebuffer — gl.readPixels(..., gl.RED, gl.UNSIGNED_BYTE, buf) — passes a buffer a quarter of that size, and the noise wrote the full four bytes per pixel into it, past the end of memory the page owns. It now asks the same routine that validated the call how large the buffer really is, and leaves any read that is not RGBA bytes untouched."
+            }
+          ]
+        },
+        {
+          "id": "profile-path-non-ascii",
+          "title": "Profiles in a folder with a non-English name",
+          "lead": "On Windows the browser could not read them and ran on the real machine instead.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "If the path to the profile contained anything outside the English alphabet — a Windows user folder named in Russian, Chinese or Portuguese is enough — the browser read that path as empty, failed to open the file, and started anyway. Everything a page asked was then answered by the real computer: its graphics card, its screen, its processor. Nothing on screen said so."
+            },
+            {
+              "type": "p",
+              "text": "The path is read in full now. And a profile that was asked for and could not be loaded is written into the log as an error saying the browser is about to report its real hardware, rather than a line nobody would find."
+            }
+          ]
+        },
+        {
+          "id": "extension-popup-size",
+          "title": "Extension popups opening full screen",
+          "lead": "A wallet popup asking for 360 by 600 got the size of the whole display.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A profile's window is sized to the screen the profile claims, and that size was being applied to every window the browser opened — including the small ones extensions ask for. Solflare and anything like it opened the size of the display."
+            },
+            {
+              "type": "p",
+              "text": "Two things now have to be true before that size is used: the window has to be an ordinary browser window, so a popup, an app window or devtools keeps what it asked for; and nobody may have asked for a size already. An extension calling chrome.windows.create with a width and a height but no type gets an ordinary window carrying explicit bounds, and those bounds are the caller's answer, not ours to overwrite."
+            }
+          ]
+        },
+        {
+          "id": "webrtc-on-a-proxy",
+          "title": "WebRTC on a SOCKS5 proxy",
+          "lead": "A profile behind a proxy had no WebRTC at all — no address, no candidates, nothing.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "WebRTC sends its own UDP, and on a proxy that UDP goes through the proxy's relay. Opening the relay takes a moment — on a mobile proxy about a second and a half. WebRTC starts asking for data before that, and the socket answered those first reads with a hard failure. The layer above treats a hard failure as the socket being gone: it tears it down and does not build another. So the relay came up a second later with nothing left to use it, for the whole life of the tab."
+            },
+            {
+              "type": "p",
+              "text": "What a site saw was a browser that gathers no candidates. Not a hidden address — no WebRTC at all, which is its own kind of answer, and not one any ordinary browser gives."
+            },
+            {
+              "type": "p",
+              "text": "Reading is no longer tied to the relay being ready: the read waits, and the first packet through arrives on it. Sending before the relay is up reports the destination as temporarily unreachable, which is a normal thing for a UDP socket to say and which the layer above already knows how to wait out. With a mobile proxy bound, all three STUN configurations now return the proxy's exit address."
+            }
+          ]
+        },
+        {
+          "id": "one-relay-per-socket",
+          "title": "HTTP/3 and WebRTC sharing one relay on a proxy",
+          "lead": "Only the first socket through the proxy worked. The others sent fine and heard nothing, and their answers arrived on the first one.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "UDP on a SOCKS5 proxy goes through a relay the proxy opens on request. The browser is allowed to leave its own address out of that request, and the proxy then takes whichever socket speaks first and serves only that one from then on. We opened a single relay and ran everything through it — every HTTP/3 connection and every WebRTC port."
+            },
+            {
+              "type": "p",
+              "text": "So the first socket worked and the rest did not. Their packets went out normally, nothing came back, and the replies were delivered into the first socket instead, where they read as packets belonging to a connection they had nothing to do with. On a page opening HTTP/3 to more than one site that is one connection failing for no visible reason, and which one it is changes from load to load. WebRTC had the same shape: a call needing more than one port had one working port and the others silent."
+            },
+            {
+              "type": "p",
+              "text": "Each socket now opens a relay of its own. Two spares are kept connected ahead of time, because the first handshake against a mobile proxy takes about a second and a half — a connection that had to wait for one would lose the race to ordinary HTTPS every time and never be used."
+            },
+            {
+              "type": "note",
+              "text": "Separately from this: whether HTTP/3 runs at all still depends on the proxy letting UDP out on port 443. On one mobile proxy two channels of the same host behaved differently — one carried QUIC, the other answered nothing on 443 while carrying UDP fine on other ports. When it is blocked the browser tries HTTP/3, gets no answer and carries on over HTTPS, which is what a phone on that network does too."
+            }
+          ]
+        },
+        {
+          "id": "webgl-two-extension-lists",
+          "title": "WebGL1 offering extensions it cannot hand over",
+          "lead": "Two calls, no permission needed, and the list gave itself away.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "WebGL1 and WebGL2 do not have the same extensions: sixteen names exist only in the first because the second folded them into the language, and seventeen only in the second. A profile carrying a single list handed that one list to both, so a WebGL1 context advertised names it could not return — a page asks getSupportedExtensions(), asks getExtension() for one of them, gets null, and has learned in two steps that the list was not written by a driver. The other half was quieter and worse: nothing was pinned for WebGL2, so the real driver's list went out there."
+            },
+            {
+              "type": "p",
+              "text": "Profiles that carry one list are now split as they load, each context losing the names it cannot have, so older profiles are fixed where they sit with nothing to regenerate. The split follows the browser's own registration lists rather than a table written by hand. Profiles that already declare both are used exactly as written."
+            }
+          ]
+        },
+        {
+          "id": "screen-kept-when-it-fits",
+          "title": "The screen a profile declares, on Windows and Linux",
+          "lead": "Every profile on one machine reported that machine's monitor, whatever screen it was given.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A profile's screen was replaced with the host display on every start. That was meant as a clamp — a window cannot be larger than the monitor it opens on — but outside macOS it ran even when the declared screen fitted easily. On a 5120 by 1440 monitor every profile said 5120 by 1440: one unusual pair, shared by the whole fleet, which is the opposite of what a per-profile screen is for."
+            },
+            {
+              "type": "p",
+              "text": "The declared screen is now kept whenever the real display can hold it, on every platform, and the clamp is left for the case it was written for. A profile created through the API with 1920 by 1080 keeps 1920 by 1080."
+            }
+          ]
+        },
+        {
+          "id": "geo-and-timezone",
+          "title": "The timezone a profile starts on",
+          "lead": "A geo lookup that fails now tries the others, and never falls back to your own clock.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The location of a proxy was read from one service only. ip-api, the default, has no HTTPS on its free tier, so a proxy that refuses plain HTTP failed on it and nothing else was tried. The launcher then fell back to this computer's own timezone and language without telling anyone — the one thing a profile must never show."
+            },
+            {
+              "type": "p",
+              "text": "All three services are tried now, the chosen one first, and the two others speak HTTPS. A service over its daily quota answers with an ordinary-looking 200 carrying an error inside, which used to count as a successful lookup that simply found nothing; that now counts as a failure and the next service gets its turn. When a proxy has no location the Test panel says why, on the proxy itself."
+            },
+            {
+              "type": "p",
+              "text": "And a profile behind a proxy no longer starts on this computer's clock at all. It starts on UTC, with a message on screen rather than a line in a log — UTC is wrong, but it is nobody's address. Without a proxy the host's own timezone is right, and on Windows the launcher can finally read it: it used to look only where Linux and macOS keep it, find nothing, and settle on UTC for every profile."
+            }
+          ]
+        },
+        {
+          "id": "settings-file-kept",
+          "title": "A settings file that cannot be read",
+          "lead": "One stray byte used to wipe your settings and sign out every API client.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "If anything went wrong while reading settings.json, the launcher quietly carried on with an empty set: the API off, its port at zero, the helper and the camera off, the theme blank. It then wrote that emptiness back to disk along with a fresh API key, so every token you had issued stopped working. A byte-order mark was enough — PowerShell writes one whenever you edit the file with Set-Content, and a plain redirect writes the file in an encoding the launcher did not read at all."
+            },
+            {
+              "type": "p",
+              "text": "Now a file that cannot be read is left exactly as it is. The launcher runs on defaults for that session, says so at the top of Settings, and keeps your API key. Saving from that screen is refused while the file is unreadable, with a message saying why — because what is on screen are defaults, and writing them would replace whatever the file holds, the location of your profiles among them. Byte-order marks and UTF-16 are read correctly now, so the usual cause is gone."
+            }
+          ]
+        },
+        {
+          "id": "editor-stale-save",
+          "title": "Saving over someone else's change",
+          "lead": "The editor no longer reverts what the API changed while it was open.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Open a profile in the editor, change it from a script through the API, then press Save: the editor wrote its own copy over the top and your script's changes were gone, with nothing said. Every profile now carries a version number, and the editor remembers the one it opened. A save that would land on a newer version is refused, and the message tells you to reopen the profile and apply your changes to the current one."
+            },
+            {
+              "type": "note",
+              "text": "The number only moves when the profile itself changes. Launching a profile records the time it started and closing it records how long it ran; neither is something an open editor disagrees with, and counting them would have refused your own save while blaming an API nobody had called."
+            }
+          ]
+        },
+        {
+          "id": "on-startup-setting",
+          "title": "“On startup” in the browser",
+          "lead": "A profile continues where it left off, and the setting decides — the launcher stopped overruling it.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Whatever you picked under “On startup”, the profile always reopened the tabs from last time. The launcher was passing “restore the last session” on every start, which overrides the setting, so “Open the New Tab page” could be checked and never take effect."
+            },
+            {
+              "type": "p",
+              "text": "The switch is gone and the answer moved to where it belongs. A profile now continues where it left off by default, and a choice made in settings is stored on the profile and wins over that default. Both entries do what they say, and nothing has to be checked to keep the behavior you already had."
+            },
+            {
+              "type": "p",
+              "text": "Profiles made before this carry an explicit “New Tab page” that nobody chose — it was the browser's own default at the time and got written into the profile, so a new default alone would not reach them. That one value is now cleared once, on the next start, and the profile continues where it left off like the rest. A profile holding anything else picked it deliberately and is left alone, and this runs once: pick the New Tab page after it and it stays picked."
+            }
+          ]
+        },
+        {
+          "id": "start-cdp-wait",
+          "title": "The debugging address on start",
+          "lead": "Starting a profile through the API waits longer for the address, and says why when it has none.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Starting a profile through the API sometimes answered with no cdp object, and the address turned up in the log a few seconds later. The wait was six seconds, which a cold start on Windows with a large profile can outrun. It is thirty now. When even that is not enough the answer carries a cdp_error saying what happened and where to read the address yourself, instead of leaving you to guess from a missing field."
+            }
+          ]
+        },
+        {
+          "id": "python-sdk-encoding",
+          "title": "The Python SDK on Windows",
+          "lead": "Profiles with non-English text no longer break the SDK.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "On Windows the SDK read and wrote its files in whatever encoding the system happened to use, while every file it touches is UTF-8. A profile carrying a Spanish voice name, a Chinese one, or a note in Russian ended the first example in the README with UnicodeDecodeError. Worse in the other direction: the fingerprint handed to the browser was written in the local encoding, so those names reached it damaged. Every read and write is UTF-8 now."
+            }
+          ]
+        },
+        {
+          "id": "chinese-ui",
+          "title": "Chinese in the launcher",
+          "lead": "Every screen, switchable in Settings and picked up on its own on a Chinese system.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "There is a Language setting at the top of Settings. On a system already set to Chinese the launcher starts in Chinese without being asked. It is the launcher's own text only — what language a site sees is the profile's, and that has always been separate."
+            },
+            {
+              "type": "p",
+              "text": "1479 pieces of text, covering every screen: the profile list and its editor, proxies and the ProxyShard pages, the automation project editor with its whole step library, extensions, bookmarks, the fingerprint library, the trash and settings, along with every message, prompt and confirmation they raise."
+            },
+            {
+              "type": "note",
+              "text": "The text lives in shared/i18n/locales/en.json and zh.json under names like profileTable.lastRun, so rewording the English touches one line in one file instead of every place it is shown, and another language is one more file. `npm run check:i18n` fails the build if a new string is added without one, if a key is called that no locale has, or if the two files drift apart."
+            }
+          ]
+        },
+        {
+          "id": "refresh-rate-in-editor",
+          "title": "Refresh rate in the profile editor",
+          "lead": "Pick the rate the profile's screen claims, next to its cores and memory.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The browser learned to hold its frames to a rate the profile names, and the editor is where you name it: a Screen refresh rate list under CPU and memory, with the rates real panels ship with. 60 unless you change it, which is what most machines report."
+            },
+            {
+              "type": "note",
+              "text": "Frames can only be slowed down. A profile asking for more than this computer's own screen quietly runs at the screen's rate, so on a 60 Hz machine there is nothing above 60 to claim."
+            }
+          ]
+        },
+        {
+          "id": "profile-order",
+          "title": "Ordering the profile list",
+          "lead": "By name, by age, by when it last ran, or by how much it has been used.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The list only ever came in the order profiles were added. Under Filters there is now an Order setting: name A→Z or Z→A, newest or oldest first, last launched, or most used. It is remembered between restarts, and selecting a range with shift follows what you see rather than the old order."
+            }
+          ]
+        },
+        {
+          "id": "cookies-on-create",
+          "title": "Cookies in the profile editor",
+          "lead": "Pick a cookies file while making the profile instead of afterwards.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Loading cookies meant creating the profile, finding its row and using the menu. The editor has a Cookies block now: pick the file there and it is loaded the moment the profile is saved. Same JSON array as before, and the same rule — the profile has to be stopped, which a profile being created is."
+            }
+          ]
+        },
+        {
+          "id": "mac-menu-bar-icon",
+          "title": "The icon in the macOS menu bar",
+          "lead": "It follows the light and dark bar instead of staying purple.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The launcher put its full-color mark in the menu bar, where every other icon is a plain stencil that turns dark on a light bar and light on a dark one. It is drawn from the mark's shape now, the way macOS expects."
+            }
+          ]
+        },
+        {
+          "id": "udp-test-vpn",
+          "title": "The UDP test with a VPN running",
+          "lead": "A VPN could make the launcher decide a working proxy had no UDP, and start profiles with QUIC and WebRTC switched off.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Before starting a profile the launcher checks whether the proxy can carry UDP, and turns QUIC and WebRTC off when it cannot. The check was one probe: send a packet, wait for an answer. It could not tell apart a proxy with no UDP and a computer that could not send the probe in the first place."
+            },
+            {
+              "type": "p",
+              "text": "Some VPNs filter UDP per application. On one of those the launcher's probe got nothing while the browser on the same machine, at the same moment, went through the same proxy without trouble. The proxy was fine; the launcher's own packet never left. Every profile then started with QUIC and WebRTC removed."
+            },
+            {
+              "type": "p",
+              "text": "The launcher now checks whether it can send UDP from this machine at all before reading anything into the result. When it cannot, it says so and leaves the profile alone rather than deciding on the proxy's behalf."
+            }
+          ]
+        },
+        {
+          "id": "mobile-actions-everywhere",
+          "title": "Finger gestures outside the desktop app",
+          "lead": "The touch steps existed only in the Automation editor. Nothing outside it could tap, swipe or turn a phone.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A phone profile has no cursor, and the browser enforces that: it refuses pointer commands on a phone and finger commands everywhere else. The Automation editor knew this and had the gestures — tap, long press, swipe, drag, pinch. Nothing else did. Over MCP an agent driving a phone profile got a refusal from every click and every field it typed into, with nothing to say why. The SDKs had no input layer at all, and neither the API reference nor the read-me mentioned any of it."
+            },
+            {
+              "type": "p",
+              "text": "The gestures are now on every surface. MCP gained six tools — tap, long press, swipe, drag, pinch and rotate — and the existing human ones stopped needing to be told which kind of profile they are on: on a phone a click becomes a tap, a right click becomes a long press, and filling a field taps it first. Moving the cursor is the one that still refuses, because hovering has no touch equivalent and a tap in its place would be a different thing that looked like it worked."
+            },
+            {
+              "type": "p",
+              "text": "Fixing that turned up a second thing: over MCP the human pointer and typing had never worked at all. The input domain is built from the tab behind the session, and the server was asking for one that has no tab, so every human click and every human keystroke came back \"no live frame\" — on desktop profiles too, not only phones. It now asks on the page."
+            },
+            {
+              "type": "p",
+              "text": "All three SDKs gained the input domain, pointer and finger both. The API reference lists the touch steps with their parameters, and the read-me describes the whole domain, including the parts that were already there and undocumented — scrolling with the device the profile's platform implies, and pressing a named key through the profile's own keyboard layout."
+            },
+            {
+              "type": "note",
+              "text": "Turning the screen is new everywhere, including the editor, where it is the Rotate screen step. The turn is physical: the sensors move first and the picture commits at the end, the order a real handset produces. A profile with no motion sensors refuses it — a device with no accelerometer cannot notice it has been turned."
+            }
+          ]
+        },
+        {
+          "id": "gpu-probe-secure-context",
+          "title": "Every preset showing a GPU mismatch",
+          "lead": "The check that reads this machine's GPU asked on a page where the answer is never available.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The launcher starts the engine once to learn what the host GPU can do, and compares presets against it. It asked on a blank page — and WebGPU is only exposed on a page with a real origin, so the question came back “there is no adapter here”. That was written down as fact: no adapter features at all, and every preset in the library then looked like it claimed more than the machine had."
+            },
+            {
+              "type": "p",
+              "text": "The check now runs on a real page and gets the real answer. An empty adapter list is also no longer accepted as one: a working machine does not report zero features, so that is a question that failed, and it is asked again next time instead of being cached until the engine version happens to change."
+            }
+          ]
+        },
+        {
+          "id": "resolution-in-editor",
+          "title": "Screen resolution in the profile editor",
+          "lead": "On Windows and Linux you can now pick one, and only sizes this monitor can actually show are offered.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A resolution list sits under the refresh rate for Windows and Linux profiles, defaulting to whatever the fingerprint carries. The list stops at this machine's own monitor: a window cannot be larger than the screen it opens on, so a bigger claim is contradicted by the window the moment a page reads it."
+            },
+            {
+              "type": "p",
+              "text": "The available area keeps the fingerprint's own inset — the strip a taskbar or menubar occupies — rather than being invented, because a screen whose usable height equals its full height is a screen with no system chrome, which no ordinary desktop has. macOS has no such control: there the profile's own screen was already kept as written."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "2.0.2",
+      "date": "2026-09-12",
+      "entries": [
+        {
+          "id": "mobile-fonts",
+          "title": "Fonts on a mobile profile",
+          "lead": "A profile claiming a phone reports the fonts that phone has, and none of the machine's own.",
+          "tag": "new",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A page learns which fonts you have by measuring text, and a phone profile used to measure the fonts of the computer it was running on — a page could find Apple Chancery, or Segoe UI, on a device that has neither. The profile now carries the device's own set, and that set is all a page can find."
+            },
+            {
+              "type": "p",
+              "text": "Names the device really has answer as present even when the machine has no such file, because the browser draws them with a face it does have. What cannot be reproduced is the exact shape of the letters: the widths are the stand-in's. A detector holding a table of real widths can still tell; one asking which fonts exist cannot."
+            },
+            {
+              "type": "p",
+              "text": "The set is written as groups, because a phone's font configuration mostly is: on Android, Arial, Helvetica, Tahoma and Verdana are one file, and a page measuring all four gets one width. Android profiles carry their maker's own fonts too — Samsung, Motorola, OnePlus, Xiaomi and vivo each add their own."
+            }
+          ]
+        },
+        {
+          "id": "linux-webgpu",
+          "title": "WebGPU on a Linux profile",
+          "lead": "A profile claiming Linux gave the machine's own graphics adapter away.",
+          "tag": "fix",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Chrome on Linux ships with WebGPU switched off, so a page asking it for an adapter is answered with nothing. Ours answered with the adapter of the machine it ran on — vendor \"apple\", architecture \"metal-3\", beside a WebGL string naming an NVIDIA card on a Mesa driver. It now answers with nothing, the way Chrome on Linux does. navigator.gpu stays where it is; it is the adapter request that comes back empty."
+            }
+          ]
+        },
+        {
+          "id": "android-media",
+          "title": "Protected video on Android profiles",
+          "lead": "An optional switch for the video a phone can play and a desktop cannot.",
+          "tag": "new",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Almost any current phone plays protected video at a level no desktop offers, and a site that checks gets a different answer from a profile claiming a phone. Turn on Media in the profile editor and the profile claims it. It is off by default and only offered on mobile profiles, because the claim is only as good as the machine behind it: a site that takes it up will ask for video this computer may not be able to decode."
+            }
+          ]
+        },
+        {
+          "id": "screen-rotation",
+          "title": "Turning the screen",
+          "lead": "A mobile profile can be turned, and everything turns with it.",
+          "tag": "new",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Over the debugging port, Motion.setOrientation turns the claimed screen. The screen, the window, the media queries a page lays itself out with and the motion sensors all follow — and the sensors travel through the turn the way a hand does rather than jumping, because a device that arrives at a new angle without having moved is not a device."
+            }
+          ]
+        },
+        {
+          "id": "touch-drag",
+          "title": "Dragging with a finger",
+          "lead": "A new step for carrying something across the page, where a swipe only flicks it.",
+          "tag": "new",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A swipe scrolls; a drag moves the thing under the finger. The finger now rests long enough for the page to decide it is a drag and not a scroll, then travels from where it came to rest — which is what a slider, a map or a sortable list needs. Automation reaches it as Motion.touchDrag, and the launcher's own drag step uses it on a mobile profile."
+            }
+          ]
+        },
+        {
+          "id": "profile-webgpu-features",
+          "title": "Graphics features in profiles",
+          "lead": "Profiles carry the WebGPU features of the device they were taken from.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A page can list those features in one call, and a list belonging to a different card than the one the profile names is a contradiction. Every profile in the library now carries its own, and the browser never reports more than the machine can actually back."
+            },
+            {
+              "type": "p",
+              "text": "Fixed along the way: the warning about a feature your machine cannot provide was shown for every profile at once, because the list of what this machine supports had been recorded before there was anything to record. A missing record is no longer read as \"supports nothing\"."
+            }
+          ]
+        },
+        {
+          "id": "mobile-profile",
+          "title": "Mobile profile",
+          "lead": "A profile claiming a phone now reports one consistently: its connection, orientation, fonts and motion sensors all agree with the device it says it is.",
+          "tag": "new",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The connection block takes raw values now — the ones the device would have measured — and the browser rounds them the way it rounds real ones. A profile pinning 75 ms used to report exactly 75, which no Chrome reports, and the same number to every site. Add \"type\" to name the link, for example \"cellular4g\"."
+            },
+            {
+              "type": "p",
+              "text": "Screen orientation follows the screen the profile already sets, so a portrait phone no longer says landscape. There is no separate setting for it, on purpose: a second place to state which way the device is held is how the two ended up disagreeing."
+            },
+            {
+              "type": "p",
+              "text": "Fonts match what a phone has: the local font list is gone, the decorative generic families collapse onto the default as they do on Android, and text scaling works. Page text may render slightly differently on a mobile profile as a result."
+            },
+            {
+              "type": "p",
+              "text": "Motion sensors report a device being held. Add \"motion\": { \"carry\": \"hand\" } — or \"table\" or \"walking\" — to choose how much it moves. Without them a page listening for movement heard nothing at all, which no phone does."
+            }
+          ]
+        },
+        {
+          "id": "mobile-touch",
+          "title": "Touch",
+          "lead": "A profile can now claim a phone, and the browser behaves like one: your mouse and wheel reach the page as finger touches, not as a cursor.",
+          "tag": "new",
+          "scope": "browser",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Set the profile's platform or user agent to Android, or turn on the mobile client hint, and the page reports touch points, a coarse pointer and no hovering — the same set a real phone reports."
+            },
+            {
+              "type": "p",
+              "text": "From then on the wheel scrolls the page by dragging a finger, a click is a tap, dragging is a swipe, and the right button opens the touch context menu by holding. Moving the mouse without a button does nothing at all, because a phone cannot hover."
+            },
+            {
+              "type": "p",
+              "text": "This changes what you can do by hand: selecting text by dragging works the way it does on a phone, not the way it does on a desktop. Scrolling with a trackpad still carries momentum; scrolling with a notched wheel does not, for the same reason a slow finger drag does not."
+            },
+            {
+              "type": "p",
+              "text": "Automation gets four steps over the debugging port — tap, hold, swipe and pinch. The pointer steps refuse on a mobile profile and say so, because a phone moving a cursor contradicts itself."
+            }
+          ]
+        },
+        {
+          "id": "automation-studio",
+          "title": "Automation",
+          "tag": "new",
+          "scope": "launcher",
+          "lead": "A new section for building and running your own scripts against your profiles.",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A project is a list of steps. Add them from a library grouped by what they do — navigation, pointer, keyboard, flow, data — and fill in each step's fields."
+            },
+            {
+              "type": "p",
+              "text": "Every step says where the run goes next, both when it works and when it does not: on to the next one, jump to another step, try again, end the pass, or stop this profile. Failure stops by default, because carrying on after a click that found nothing is how a run ends up typing into the wrong page."
+            },
+            {
+              "type": "p",
+              "text": "Open a profile inside the section and its window appears next to the list. Click, type and scroll straight on it. Right-click offers what to do with whatever is under the cursor; shift and right-click opens the page's own menu instead. Turn recording on and everything you do is written down as you go — clicks, keys, scrolling and the pages you open."
+            },
+            {
+              "type": "p",
+              "text": "Every click and keystroke — yours and the project's — goes through the browser's own human-input engine. A site sees a person moving a mouse, not a script firing events."
+            },
+            {
+              "type": "p",
+              "text": "Run a project against as many profiles as you like, several at a time, for a number of passes or for a number of hours. The Fleet window shows every browser in the run and which step it is on, and each run keeps its own log on disk."
+            },
+            {
+              "type": "p",
+              "text": "A project can be exported to a file and imported somewhere else. Any module its steps use goes inside the file, so the project runs where it lands; a module already installed under the same name is kept as it is rather than replaced. Any field you mark as secret is left blank on the way out, and you are told what to fill in on the way back."
+            },
+            {
+              "type": "note",
+              "text": "You can add your own blocks by writing a small module in Rust. It never touches the page: it is handed the step's settings and answers with ordinary actions the launcher performs itself. Modules are added and removed at the bottom of the Automation section, and the steps they bring sit in the library in a group of their own."
+            }
+          ]
+        },
+        {
+          "id": "automation-over-api",
+          "title": "Automation from a script",
+          "tag": "new",
+          "scope": "launcher",
+          "lead": "Projects can now be run from outside the app.",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Everything the Automation section does — list projects, read one, replace it, run it, see how a run is going, stop it, export and import — now has an address on the launcher's local API, and the MCP server has a tool for each. Until now a project could only be started by hand in the window."
+            },
+            {
+              "type": "p",
+              "text": "It uses the same token as the rest of the API, from Settings → Automation API. Modules are covered too: list what is installed, add a .wasm from a path on this machine, remove one."
+            }
+          ]
+        },
+        {
+          "id": "screen-scaling-leaks",
+          "title": "Screen scaling",
+          "tag": "fix",
+          "scope": "browser",
+          "lead": "Two ways a page could read the real scaling of your monitor, and one way it could catch the profile out by zooming.",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A CSS paint worklet has a screen-scaling number of its own, and it was answering with the machine's, not the profile's. Any page could read it in three lines and no permission is asked for it — next to a window that claimed something else, that is a plain contradiction. The screen-details API, the one behind the window-management permission, gave the real number away the same way, alongside a screen whose width and height were the profile's."
+            },
+            {
+              "type": "p",
+              "text": "The third one needed no trick at all: on a real machine the reported scaling includes the page's zoom, so it moves the moment you press Ctrl-+. The profile's number stayed put, and a page that compares the window's width against the viewport's could see a page zoomed to 110% still insisting nothing had changed. The zoom is now carried on the profile's number too, so it moves exactly as far as it should. The screen's own figure, which carries no zoom on a real machine either, stays put as it should."
+            }
+          ]
+        },
+        {
+          "id": "wheel-scroll-numbers",
+          "title": "Scroll numbers",
+          "tag": "fix",
+          "scope": "browser",
+          "lead": "A page could tell the browser apart by what one turn of the wheel reported.",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The window reports the screen scaling its profile claims, and the numbers a wheel produces were being divided by that instead of by the machine's own. One notch arrived as 50 pixels with a wheelDelta of 60, where a real mouse reports 100 and 120 — and a wheelDelta that is not a multiple of 120 is a value no wheel produces. This hit a person scrolling with their own mouse, not only scrolling the browser performs itself."
+            },
+            {
+              "type": "p",
+              "text": "The division now uses the machine's real scaling, so a notch reports what a notch reports everywhere. The page still reads the profile's scaling from window.devicePixelRatio, unchanged. The correction that used to sit on the browser's own scrolling is gone with it: it straightened only what the browser sent itself, and in synchronized windows it had to be skipped or the copies scrolled twice as far."
+            }
+          ]
+        },
+        {
+          "id": "linux-arranging",
+          "title": "Arranging browsers on Linux",
+          "tag": "fix",
+          "scope": "launcher",
+          "lead": "Windows would not move into place in a Wayland session.",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Arranging is each browser putting its own window where it was told, and a Wayland window is not allowed to do that — the request goes nowhere and the desktop places the window as it sees fit. Browsers now start on X11, which inside a Wayland session means XWayland, so arranging works again both in the sync panel and during a run."
+            },
+            {
+              "type": "p",
+              "text": "Nothing changes if you already log in with Xorg, and your own --ozone-platform in the extra launch arguments still wins. If the session has no X server at all, the browser stays a Wayland window and the automation page now says exactly what that costs — which it used to get wrong, calling everything limited even where arranging was fine. The launcher's own Fleet window still cannot sit above the others under Wayland; nothing in the app can change that."
+            }
+          ]
+        },
+        {
+          "id": "automation-requests-and-drag",
+          "title": "Requests and dragging",
+          "tag": "new",
+          "scope": "launcher",
+          "lead": "Projects can now drag things and send requests of their own.",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Dragging was the one gesture missing: the browser could move, click, scroll and type, but not press, carry and let go. It can now — \"Drag onto\" takes one element to another, and \"Swipe\" presses and moves by a distance, which is what a slider, a canvas or a sweep that selects text needs. Both travel the same human path as an ordinary movement, and the moves carry the held button, without which a page sees a pointer that merely passed over it."
+            },
+            {
+              "type": "p",
+              "text": "\"Send a request\" goes out from the launcher rather than from the page, with a TLS fingerprint you choose — chrome_140, firefox_133, safari_18 and a hundred more — and, by default, through the profile's own proxy, so a call made beside a browsing session comes from the same address. Name a session and cookies and connections carry from one step to the next; leave it empty and the request goes alone. The answer arrives as three names: the body, and beside it the status and the headers."
+            },
+            {
+              "type": "list",
+              "items": [
+                "**Waiting**: until an element is gone, until it says something, until the address changes.",
+                "**Reading**: how many elements match, an element's attribute, a picture of the page.",
+                "**Choosing**: a random number or an item from a list, and a line taken from a file — removed as it is read, so a list of accounts is used once each."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "motion-in-cdp",
+          "title": "Human input over the debugging port",
+          "tag": "fix",
+          "scope": "launcher",
+          "lead": "Automated movement and typing failed on every profile started for automation.",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The browser only builds its human-input commands when it is told to, and the launcher never told it. Anything driving a profile through the debugging port — the MCP server included — got \"command not found\" the moment it tried to move the pointer."
+            },
+            {
+              "type": "p",
+              "text": "It is now switched on whenever a profile is started with the debugging port open. Nothing is added to what a page can see."
+            }
+          ]
+        },
+        {
+          "id": "window-size-on-host",
+          "title": "Window size on Windows and Linux",
+          "tag": "fix",
+          "scope": "launcher",
+          "lead": "Profiles opened in a window smaller than the monitor, and maximising did nothing.",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A profile carries the screen of the machine its fingerprint was taken from, and the browser both sizes the window to that screen and refuses to let the window grow past it. A profile created on another machine, or added through the API, therefore opened small on a bigger monitor, and pressing maximise only moved the window to the middle of the screen."
+            },
+            {
+              "type": "p",
+              "text": "On Windows and Linux the screen is now taken from the monitor in front of you every time a profile starts, not only when the profile is created, so the window opens at the size of the desktop and maximises normally. macOS still uses the screen from the fingerprint, unless the real display is smaller than it claims. Settings → Screen resolution set to Real reports the host monitor on every system."
+            }
+          ]
+        },
+        {
+          "id": "ensemble",
+          "title": "Synchronized windows",
+          "lead": "You work in one window; every other window in the group repeats the same actions in its own profile.",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Pointer, keystrokes, scrolling, opening and closing tabs, extension popups. It is not a recording played back: each window performs the action with its own motor profile, so the windows never move identically."
+            },
+            {
+              "type": "p",
+              "text": "There is no leader to appoint. Whichever window you are typing in is the one driving, because it is the one receiving real input. Switch windows and it follows."
+            },
+            {
+              "type": "p",
+              "text": "The fill helper is deliberately excluded. In a group every window fills the same form at the same moment with its own generated person, so mirroring those keystrokes would put one window's answers into everyone else's fields."
+            },
+            {
+              "type": "p",
+              "text": "Fixed: a window that came up zoomed, full-screen or minimised ignored the layout, because in those states the window state owns the geometry. It now leaves that state first. The chosen layout is also remembered, so a profile that finishes starting after the others is placed too."
+            },
+            {
+              "type": "p",
+              "text": "Fixed: a tab opened by a site — `target=_blank` or `window.open` — stayed behind in the other windows when it was closed. Such tabs are never broadcast, since every window opens its own from the same mirrored click, so there was no name to close by. They now get a name both sides work out independently, and the close carries the page address as a check, so a window that finds something else under that name leaves it alone."
+            }
+          ],
+          "scope": "browser"
+        }
+      ]
+    },
+    {
+      "version": "2.0.1",
+      "date": "2026-09-03",
+      "entries": [
+        {
+          "id": "human-type-browser",
+          "title": "Human typing in the browser",
+          "lead": "Right-click a field and the browser types into it the way a person does.",
+          "tag": "new",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The context menu of any text field, search box or `contenteditable` gets two entries: **Human Type**, which types the clipboard, and **Fill with generated**, a submenu of eight values generated for this profile — name, surname, email, username, phone and the rest. Each entry shows the value it will type."
+            },
+            {
+              "type": "p",
+              "text": "The text is not set on the element and not pasted. It goes in key by key, through the same path a keyboard uses:"
+            },
+            {
+              "type": "list",
+              "items": [
+                "gaps between keystrokes vary instead of being a fixed delay",
+                "timing depends on the letter pair — `th` is faster than `qz`, as it is for a person",
+                "keys overlap: the next goes down before the previous comes up",
+                "a per-character bias that belongs to the profile and survives restarts",
+                "optional typos, made and corrected with a real backspace"
+              ]
+            },
+            {
+              "type": "p",
+              "text": "The pointer moves the same way, with overshoot and correction, and takes longer to reach a small target than a large one. Password fields are excluded."
+            },
+            {
+              "type": "note",
+              "text": "No JavaScript is injected. The whole path is C++ inside the browser process, so a page cannot detect a script that was never there."
+            }
+          ],
+          "scope": "browser"
+        },
+        {
+          "id": "human-type-cdp",
+          "title": "Human typing over CDP",
+          "lead": "The same typing and pointer engine, driven from a script.",
+          "tag": "new",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The commands live in a `Motion` domain on the browser target. It does not appear in `/json/protocol` or `Schema.getDomains`, and the command names deliberately do not match those of other automation tools."
+            },
+            {
+              "type": "code",
+              "text": "Motion.createPointer  {x, y, paceScale?, seed?}\nMotion.glideTo        {x, y, targetWidth?}   → {durationMs}\nMotion.tap            {button?, clickCount?}\nMotion.enterText      {text, allowTypos?}    → {durationMs}\nMotion.destroyPointer"
+            },
+            {
+              "type": "p",
+              "text": "Create the pointer first: a session without one answers every other command with an error rather than guessing where the cursor is, since a guessed starting point gives the wrong duration and the wrong curve. Pass the element's real width as `targetWidth` — that is what makes the timing believable."
+            },
+            {
+              "type": "note",
+              "text": "Worked example in the README, section “Human input over CDP”."
+            }
+          ],
+          "scope": "browser"
+        },
+        {
+          "id": "shardx-camera",
+          "title": "Camera",
+          "lead": "The profile has a camera even on a machine that has none, and it shows the photo or video you pick.",
+          "tag": "new",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The machine's camera list is replaced, not added to. A page never reaches the real camera — which matters because the profile's fingerprint already names a specific camera model, and handing over the host's would contradict it."
+            },
+            {
+              "type": "p",
+              "text": "Pick the file from the control left of the app menu while the browser is running. PNG, JPEG, MP4, MOV, WebM, Y4M and MJPEG are accepted, and the format is detected from the file's contents, so a wrong extension does not matter. Video loops, so a short clip is enough."
+            },
+            {
+              "type": "p",
+              "text": "The panel shows the first frame with a selection rectangle: drag inside it to move, drag a corner to resize, and the numbers beside it let you write a framing down and repeat it. The rectangle keeps the camera's aspect ratio, so the picture is never stretched or letterboxed. For a portrait or square photo there is a checkbox that fits the whole image instead and fills the space beside it."
+            },
+            {
+              "type": "p",
+              "text": "What a page gets is a camera, not a file:"
+            },
+            {
+              "type": "list",
+              "items": [
+                "the device name and id are the profile's, not the path to your file",
+                "a normal ladder of resolutions, not just the one the picture happens to be",
+                "pan, tilt and zoom crop the picture for real, and are reported as supported only when the model the profile claims has them",
+                "frames carry sensor noise, so no two are identical — a page comparing consecutive frames does not see a frozen image",
+                "frame timing has a millisecond or two of jitter, as real hardware does",
+                "the color space is set"
+              ]
+            },
+            {
+              "type": "note",
+              "text": "With nothing picked the camera still works and shows a dark frame, rather than failing. A camera that enumerates and then never delivers is itself detectable."
+            }
+          ],
+          "scope": "browser"
+        },
+        {
+          "id": "helper",
+          "title": "Form filling helper",
+          "lead": "The browser finds the fields, offers them, and fills them on one button.",
+          "tag": "new",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Enabled per profile. The browser watches the page, offers the fields it can fill, and on one press types them in one at a time. Generated identities are stable per profile: the profile is the account, and an account has one owner."
+            },
+            {
+              "type": "p",
+              "text": "Three sources are used, each answering one question:"
+            },
+            {
+              "type": "list",
+              "items": [
+                "**Autofill** — what a field is: a first name, a year of birth, a gender.",
+                "**The accessibility tree** — whether the element is still there, where, and whether it is shown. Read fresh several times over the first seconds of a step, and matched by element id rather than position, because two steps of one signup can occupy the same rectangle.",
+                "**Focus after the click** — whether the click landed. Nothing in the browser process knows what is painted on top of what, so if another element took the focus the field is skipped instead of typed into blind."
+              ]
+            },
+            {
+              "type": "p",
+              "text": "Drop-downs built from a `div` and a `ul`, which autofill cannot see, are found through the accessibility tree and filled by clicking the box and then the option."
+            },
+            {
+              "type": "p",
+              "text": "Fixed: a signup that swapped its step inside one document left the helper offering the previous step's fields, so filling put a name into the date row. Three causes: the old step stayed in autofill's cache, the old fields were laid out underneath the new ones at the same coordinates, and a step that starts hidden was parsed once at load with every field marked unfocusable and never re-read. The accessibility tree now settles all three."
+            },
+            {
+              "type": "p",
+              "text": "The offer also settles itself: the page is looked at several times over the first seconds of a step, so a half-parsed form corrects itself instead of waiting for you to touch something."
+            }
+          ],
+          "scope": "browser"
+        },
+        {
+          "id": "mcp-human",
+          "title": "Human input in MCP",
+          "lead": "The Motion domain wrapped so a model can aim at an element instead of a coordinate.",
+          "tag": "new",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The bundled MCP server gains `human_click`, `human_move`, `human_fill` and `human_type`. They take the same selectors as the existing browser tools; the wrapper resolves the element, scrolls it into view and passes the engine its coordinates together with the element's real width, which is what makes a small target take longer to reach."
+            },
+            {
+              "type": "code",
+              "text": "human_fill(profile_id, \"#email\", \"ada@example.com\")\nhuman_fill(profile_id, \"#email\", \"new@…\", clear: true)\nhuman_click(profile_id, \"button[type=submit]\")"
+            },
+            {
+              "type": "p",
+              "text": "`clear` selects the current value with a triple click rather than a keyboard shortcut, so the clearing is as human as the typing. Give `x` and `y` instead of a selector when the coordinates are already known. The calls take real time and report how long the move and the typing took."
+            }
+          ],
+          "scope": "browser"
+        },
+        {
+          "id": "profile-icon",
+          "title": "Per-profile window icon",
+          "lead": "Each profile's window shows its own name and color.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "In the Dock, the taskbar and Alt-Tab you see which profile you are switching to. The name is set as large as it fits, wrapping to at most three lines; a name too long to fit is trimmed with an ellipsis."
+            },
+            {
+              "type": "p",
+              "text": "The icon is shaped the way each system shapes its own: a squircle with a shadow on macOS, a full-bleed rounded square on Windows, an Adwaita outline on Linux."
+            },
+            {
+              "type": "note",
+              "text": "Nothing to set up. Rename a profile and its icon follows on the next launch."
+            }
+          ]
+        },
+        {
+          "id": "profile-colour",
+          "title": "Profile color",
+          "lead": "One color per profile, on its window icon and behind its name in the omnibox.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Pick it in the profile editor. The window icon takes it, and so does the pill carrying the profile's name in the omnibox, so the two never disagree about which profile you are looking at."
+            },
+            {
+              "type": "p",
+              "text": "Left on **Auto** the icon derives a color from the name — the same profile always the same color, and the thing you can still tell apart at 32 px — while the pill keeps the browser's own toolbar color and follows the theme."
+            },
+            {
+              "type": "note",
+              "text": "`color` is a field on profile create and edit, so a scripted fleet can come out color-coded."
+            }
+          ]
+        },
+        {
+          "id": "extensions",
+          "title": "Extension library",
+          "lead": "Add an extension once, then pick it per profile.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "**Library → Extensions** → *From link*: give it a Web Store address and the extension downloads itself. Pasting just the id out of the address works too, as does a direct link to a `.crx` or `.zip`. A file or an unpacked folder can be added the same way."
+            },
+            {
+              "type": "p",
+              "text": "Each one shows its name, version, description and icon, read out of the extension itself — so what the grid shows is what the browser will load. In the profile editor they are chips: check the ones this profile should run, and different profiles can carry different sets."
+            },
+            {
+              "type": "note",
+              "text": "Removing an extension from the library stops every profile loading it from its next start; profiles hold a reference, not a copy."
+            },
+            {
+              "type": "note",
+              "text": "Also over the API and MCP: `POST /extensions` takes the same link, and a profile's `extensions` is a field on create and edit."
+            }
+          ]
+        },
+        {
+          "id": "bookmarks",
+          "title": "Folder bookmarks",
+          "lead": "A site bound to a folder appears in the bookmarks bar of every profile in that folder.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "**Library → Bookmarks**: add a site, pick the folder. Every profile in that folder gets it in a bookmarks-bar folder called **ShardBrowser**, from its next launch. Bound to no folder means every profile."
+            },
+            {
+              "type": "p",
+              "text": "Only that folder is managed. Bookmarks saved inside a profile are left alone, and a site removed here disappears from the profiles on their next launch."
+            },
+            {
+              "type": "note",
+              "text": "Also over the API and MCP: `GET`/`POST /bookmarks`."
+            }
+          ]
+        },
+        {
+          "id": "trash",
+          "title": "Trash",
+          "lead": "A deleted profile is kept for 7 days and can be restored with its cookies and logins.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Deleting a profile now moves it to **Trash**, restorable for seven days. What comes back is the account — cookies, saved logins, site data, preferences, history and bookmarks — under the same id, so anything that referenced the profile still points at it."
+            },
+            {
+              "type": "p",
+              "text": "Caches are not kept, which is why a profile that took a gigabyte sits in the trash as a few megabytes. Deleting a folder together with its profiles goes through the trash too."
+            },
+            {
+              "type": "note",
+              "text": "After seven days it is gone. **Empty trash** does it sooner."
+            },
+            {
+              "type": "note",
+              "text": "Also over the API and MCP: `DELETE /profiles/{id}` archives, `GET /trash` lists, `POST /trash/{id}/restore` brings it back."
+            }
+          ]
+        },
+        {
+          "id": "data-location",
+          "title": "Profile data location",
+          "lead": "Move profiles, extensions and the trash to another folder or disk.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "**Settings → Profile data location** → *Change…* and pick a folder on any disk. Moving shows a progress bar; nothing in the old folder is deleted until every file has arrived and been checked, so a failure part-way leaves you exactly where you were."
+            },
+            {
+              "type": "p",
+              "text": "Profiles cannot be launched while the move runs — including from the API, so a script cannot start a browser mid-move. Close every running profile first."
+            },
+            {
+              "type": "note",
+              "text": "A disk mounted read-only is refused before anything is copied, rather than half-way through."
+            }
+          ]
+        },
+        {
+          "id": "extra-args",
+          "title": "Extra launch arguments",
+          "lead": "Switches added to every profile launch.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "**Settings → Extra launch arguments**, one per line or space-separated; quote a value containing spaces. They are applied last, so a switch here also overrides the launcher's own."
+            },
+            {
+              "type": "note",
+              "text": "Put anything that changes what a page can measure in the profile instead. A switch applied to every profile at once makes them all alike."
+            }
+          ]
+        },
+        {
+          "id": "proxy-names",
+          "title": "Proxy names",
+          "lead": "`host:port:user:pass #facebook` — what follows the hash is the proxy's name.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The name is shown first in the profile's proxy list and in the proxy table, with the address after it. Set it when creating or editing a proxy, or write it into the line you paste. Bulk import reads it and export writes it back."
+            },
+            {
+              "type": "note",
+              "text": "Leave the name empty and the field's placeholder shows the address it will fall back to. The country is not something you write down — the proxy test fills it in."
+            }
+          ]
+        },
+        {
+          "id": "proxy-distribute",
+          "title": "Distributing proxies",
+          "lead": "Select proxies, press Distribute, check the pairing, bind.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The dialog puts the two lists side by side and pairs them by position — proxy #1 to profile #1 — so you can check the pairing before binding. One proxy per profile: if the proxies run out, the remaining profiles are left alone rather than sharing an IP."
+            },
+            {
+              "type": "p",
+              "text": "It applies to profiles **without a proxy** by default. Switch it to all profiles to reassign existing ones; it shows how many bindings would be replaced before you confirm."
+            }
+          ]
+        },
+        {
+          "id": "editor-proxy",
+          "title": "Adding a proxy from the profile editor",
+          "lead": "Add and bind a proxy from the profile's own proxy list.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "**Create new proxy** sits at the top of the profile's proxy list — the place you are already looking when you find the proxy you wanted is not there. Paste one line and it is read the way bulk import reads it: `host:port`, `host:port:user:pass`, `user:pass@host:port` or a `socks5://` URL, with a trailing `#name`."
+            },
+            {
+              "type": "p",
+              "text": "What was understood is shown before anything is saved. Saving adds it to the proxy list and binds it to the profile you are editing."
+            }
+          ]
+        },
+        {
+          "id": "list-work",
+          "title": "Row selection and filters",
+          "lead": "Shift-click selects a run of rows; filters narrow the profile list.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Shift-click spans from the last row you clicked to the one you shift-click, on both the profiles and the proxies table, and anywhere on the row rather than only the checkbox."
+            },
+            {
+              "type": "p",
+              "text": "The row you shift-click decides the direction: an unchecked row checks the whole run, a checked one clears it. That is also how a run selected by mistake is undone."
+            },
+            {
+              "type": "p",
+              "text": "Profiles filter by whether they are running, by the country of the bound proxy and by whether there is a proxy at all. The button carries a count so you can see when a filter is hiding something."
+            }
+          ]
+        },
+        {
+          "id": "temp-noise",
+          "title": "Noise for temporary profiles",
+          "lead": "`POST /profiles/temporary` takes a noise block.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A temporary profile can now set noise per vector instead of taking the default, which is everything off:"
+            },
+            {
+              "type": "code",
+              "text": "POST /profiles/temporary\n{\n  \"platform\": \"Windows\",\n  \"proxy\": \"socks5://user:pass@host:1080\",\n  \"noise\": {\n    \"canvas\": true,\n    \"webgl\": { \"enabled\": true, \"intensity\": 0.0005 },\n    \"fonts\": true\n  }\n}"
+            },
+            {
+              "type": "p",
+              "text": "`true` turns a vector on with the strength the UI uses; a full block sets the details. A vector you leave out stays off. The same argument reaches the bundled MCP server as `create_temporary_profile`'s `noise`."
+            },
+            {
+              "type": "note",
+              "text": "Leave `seed` out. Two temporary profiles created a second apart still get different fingerprints."
+            }
+          ]
+        },
+        {
+          "id": "fixes",
+          "title": "Fixes",
+          "lead": "Two places where the launcher's lists were out of date.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "list",
+              "items": [
+                "**A proxy added on the Proxies page was missing from the profile editor** until the app was restarted. It appears immediately now, and a proxy bound by the distribute dialog shows up in the profiles table the same way.",
+                "**Country, region and city in the ProxyShard residential generator had no search.** They are searchable now, as is the location picker on the buy card."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "engine-updates",
+          "title": "Engine update detection",
+          "lead": "A rebuilt engine now reaches you even when the Chromium version has not changed.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The update check only compared Chromium versions, so a second engine build on the same version — new patches, same upstream, which is most releases — was never offered. Three things now say an engine has moved: the Chromium version, the build stamp the release carries, and the archive itself."
+            },
+            {
+              "type": "p",
+              "text": "A release can also state the launcher version it needs. When it wants a newer one than you are running, the engine update is held back and the launcher update is what you are told about instead — a browser the launcher cannot configure looks like a broken profile rather than a missed update."
+            }
+          ]
+        },
+        {
+          "id": "whats-new",
+          "title": "Patch log after an update",
+          "lead": "Opens automatically on the first run after an update.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Shown once per version. After that the app opens where it always did."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Octopus Agent",
+  "version": "2.2.0",
+  "identifier": "com.harindujayakody.octopusagent",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Octopus Agent",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 1024,
+        "minHeight": 680,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "trafficLightPosition": { "x": 14, "y": 21 },
+        "dragDropEnabled": false,
+        "visible": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEI1NDk1REM0NjQ3MzZCODYKUldTR2EzTmt4RjFKdFNUMk9IbEFHanpLbHlSaGpyWU14R3FiQ0ZDWll5S0dnT0dzU2ZXQ2QvVzAK",
+      "endpoints": [
+        "https://github.com/harindujayakody/octopus-agent/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "createUpdaterArtifacts": true,
+    "publisher": "Harindu Jayakody",
+    "copyright": "Copyright (c) 2026 Harindu Jayakody. Inspired by ShardBrowser.",
+    "shortDescription": "Octopus Agent anti-detect browser",
+    "longDescription": "Octopus Agent: an anti-detect browser for profiles, proxies, fingerprints and automation.",
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "wix": {
+        "upgradeCode": "af9c10ea-af90-46a0-a525-7dc47defcbfc"
+      }
+    }
+  }
+}

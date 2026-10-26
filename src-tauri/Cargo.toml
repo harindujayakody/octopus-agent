@@ -1,0 +1,139 @@
+[package]
+name = "octopus-agent"
+version = "2.2.0"
+description = "Octopus Agent: an anti-detect browser for profiles, proxies, fingerprints and automation."
+authors = ["Harindu Jayakody"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "octopus_agent_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[features]
+# On by default; `--no-default-features` builds a launcher with no automation
+# section at all, backend and UI both.
+default = ["automation"]
+automation = ["dep:wasmtime", "dep:wreq", "dep:wreq-util", "dep:postgres", "dep:mysql", "dep:mongodb"]
+
+[dev-dependencies]
+# `oneshot` on the router, so the API can be exercised without binding a port.
+tower = { version = "0.5", features = ["util"] }
+# A real team server in-process, for the team client's tests.
+shardbrowser_team_server = { package = "octopus-agent-team-server", path = "../team-server" }
+# Team keys made per test, as the team server makes them.
+ed25519-dalek = { version = "2", features = ["pkcs8", "rand_core"] }
+rand = "0.8"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# Requests the launcher sends itself, with a chosen TLS/HTTP2 fingerprint.
+# Optional: only the automation runner uses them.
+# `cookies` is what makes a session a session; the decompressors are what makes
+# a real site's answer readable.
+wreq = { version = "0.16.1", optional = true, features = ["cookies", "gzip", "brotli", "deflate", "zstd"] }
+wreq-util = { version = "0.2.0", optional = true, features = ["emulation", "emulation-serde"] }
+# Extra database drivers for the automation runner (SQLite is rusqlite above,
+# always present). Optional + behind the automation feature so a non-automation
+# build carries none of them. TLS via rustls to avoid an OpenSSL build dep.
+postgres = { version = "0.19", optional = true }
+mysql = { version = "28", optional = true, default-features = false, features = ["minimal-rust", "rustls"] }
+mongodb = { version = "3", optional = true, features = ["sync"] }
+
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-single-instance = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
+tauri-plugin-notification = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Team rights, decided the same way the team server decides them.
+team-model = { path = "../crates/team-model" }
+tokio = { version = "1", features = ["process", "rt-multi-thread", "macros", "fs", "net", "io-util", "time", "sync"] }
+anyhow = "1"
+dirs = "5"
+# The host's IANA zone name on every OS. Windows keeps its own names, so
+# reading /etc/localtime or $TZ there found nothing and every fallback said UTC.
+iana-time-zone = "0.1"
+uuid = { version = "1", features = ["v4", "serde"] }
+url = "2"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "socks", "json"] }
+# A session upload read from its file as it goes, already in the tree with reqwest.
+http-body = "1"
+# The team link: hyper's pool over connections switched to TLS with the team's key.
+# All already in the tree with reqwest, at these features, on ring.
+team-wire = { path = "../crates/team-wire" }
+hyper = { version = "1", features = ["client", "http1"] }
+hyper-util = { version = "0.1", features = ["client-legacy", "http1", "tokio"] }
+http-body-util = "0.1"
+tower-service = "0.3"
+httparse = "1"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring"] }
+webpki-roots = "1"
+base64 = "0.22"
+# Local automation HTTP API (axum) + JWT bearer auth.
+axum = "0.7"
+jsonwebtoken = "9"
+# Cookie import/export from the profile's Chromium Cookies SQLite DB.
+# Values are v10 (AES-128-CBC) with a SHA-256 domain prefix; the OSCrypt
+# key is fixed because ShardX runs with --use-mock-keychain (patch 0041).
+# MCP bootstrap: download the server tarball from GitHub + extract.
+flate2 = "1"
+tar = "0.4"
+rusqlite = { version = "0.32", features = ["bundled"] }
+aes = "0.8"
+cbc = { version = "0.1", features = ["alloc"] }
+pbkdf2 = "0.12"
+hmac = "0.12"
+sha1 = "0.10"
+sha2 = "0.10"
+# Extension updates: CRX3 signatures as Chrome checks them, and the Web Store's
+# update2 answers. Both already in the tree (rustls, plist).
+ring = "0.17"
+quick-xml = "0.39"
+# Self-bootstrapping runtime: zip extraction of the chrome bundle
+# downloaded from Cloudflare R2 on first launch (src/runtime.rs).
+zip = { version = "2", default-features = false, features = ["deflate"] }
+
+# Per-profile window icon: superellipse + text. Pure Rust, no C deps.
+tiny-skia = "0.11"
+ab_glyph = "0.2"
+png = "0.17"
+# Not optional: besides the automation's CDP client, the GPU-capability
+# probe speaks the devtools protocol to decide which fingerprints this machine
+# can wear, and that has nothing to do with the automation being built in.
+tokio-tungstenite = { version = "0.24", default-features = false, features = ["connect"] }
+futures-util = { version = "0.3" }
+wasmtime = { version = "48.0.1", optional = true }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+# Windows cookie crypto: AES-256-GCM + DPAPI key from Local State.
+[target.'cfg(windows)'.dependencies]
+aes-gcm = "0.10"
+getrandom = "0.2"
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",            # HLOCAL + LocalFree live here in 0.59
+    "Win32_Security",              # CreateJobObjectW's attributes
+    "Win32_Security_Cryptography", # CryptProtectData / CryptUnprotectData
+    "Win32_System_WindowsProgramming", # QueryInterruptTime
+    "Win32_System_Threading",      # the reaper's wait on the launcher; a browser started held
+    "Win32_System_JobObjects",     # a team browser ends with the launcher
+    "Win32_System_Diagnostics_ToolHelp", # its thread, to let it go; who runs from the engine folder
+    "Win32_System_Registry",       # MachineGuid: a device id stays with its computer
+    "Win32_Storage_FileSystem",    # free disk space before an engine update unpacks
+    "Wdk_System_Threading",        # a process's command line: browser or helper
+    "Win32_UI_WindowsAndMessaging", # Stop's WM_CLOSE to a browser's windows, shown or not
+] }
+

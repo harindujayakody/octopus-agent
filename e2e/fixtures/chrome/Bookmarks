@@ -1,0 +1,152 @@
+{
+   "checksum": "6f1c2a0e8b9d4c3a2e1f0a9b8c7d6e5f",
+   "roots": {
+      "bookmark_bar": {
+         "children": [
+            {
+               "date_added": "13372089600000000",
+               "date_last_used": "0",
+               "guid": "23e0d619-6e65-5086-a613-c211b04275e7",
+               "id": "1",
+               "name": "Gmail",
+               "type": "url",
+               "url": "https://mail.google.com/mail/u/0/"
+            },
+            {
+               "children": [
+                  {
+                     "date_added": "13372089600000000",
+                     "date_last_used": "0",
+                     "guid": "508c8c8e-35be-57e1-b427-ca286d53d488",
+                     "id": "2",
+                     "name": "GitHub",
+                     "type": "url",
+                     "url": "https://github.com/"
+                  },
+                  {
+                     "children": [
+                        {
+                           "date_added": "13372089600000000",
+                           "date_last_used": "0",
+                           "guid": "0afab5d2-0b94-5617-a26c-228defab765e",
+                           "id": "3",
+                           "name": "MDN Web Docs",
+                           "type": "url",
+                           "url": "https://developer.mozilla.org/en-US/"
+                        }
+                     ],
+                     "date_added": "13372089600000000",
+                     "date_last_used": "0",
+                     "date_modified": "13372089600000000",
+                     "guid": "bfb76b0c-9dda-5316-82f4-47990ab7a9b9",
+                     "id": "4",
+                     "name": "Docs",
+                     "type": "folder"
+                  },
+                  {
+                     "date_added": "13372089600000000",
+                     "date_last_used": "0",
+                     "guid": "d41264bd-5830-5d83-ace3-37cf136e7022",
+                     "id": "5",
+                     "name": "Show page title",
+                     "type": "url",
+                     "url": "javascript:alert(document.title)"
+                  }
+               ],
+               "date_added": "13372089600000000",
+               "date_last_used": "0",
+               "date_modified": "13372089600000000",
+               "guid": "2d1a1423-be73-5bb8-8fd3-77bc5619e26c",
+               "id": "6",
+               "name": "Work",
+               "type": "folder"
+            },
+            {
+               "date_added": "13372089600000000",
+               "date_last_used": "0",
+               "guid": "f5f9412a-3379-5ec0-b5e2-a427bb1d5529",
+               "id": "7",
+               "name": "Hacker News",
+               "type": "url",
+               "url": "https://news.ycombinator.com/"
+            }
+         ],
+         "date_added": "13372089600000000",
+         "date_last_used": "0",
+         "date_modified": "13372089600000000",
+         "guid": "079107d8-c611-505a-8715-c7b4c05b2b71",
+         "id": "8",
+         "name": "Bookmarks bar",
+         "type": "folder"
+      },
+      "other": {
+         "children": [
+            {
+               "date_added": "13372089600000000",
+               "date_last_used": "0",
+               "guid": "310fd0f6-a343-58b1-b8ba-97042c3cbbf8",
+               "id": "9",
+               "name": "GitHub again",
+               "type": "url",
+               "url": "https://github.com/"
+            },
+            {
+               "children": [
+                  {
+                     "date_added": "13372089600000000",
+                     "date_last_used": "0",
+                     "guid": "2b624bf0-d7ac-5a8a-944f-5600f408e1fa",
+                     "id": "10",
+                     "name": "Amazon",
+                     "type": "url",
+                     "url": "https://www.amazon.com/"
+                  },
+                  {
+                     "date_added": "13372089600000000",
+                     "date_last_used": "0",
+                     "guid": "1b4db7eb-4057-5ddf-91e0-36dec72071f5",
+                     "id": "11",
+                     "name": "",
+                     "type": "url",
+                     "url": ""
+                  }
+               ],
+               "date_added": "13372089600000000",
+               "date_last_used": "0",
+               "date_modified": "13372089600000000",
+               "guid": "9374a437-6a9e-57e2-8158-a7df9acf9720",
+               "id": "12",
+               "name": "Shopping",
+               "type": "folder"
+            },
+            {
+               "date_added": "13372089600000000",
+               "date_last_used": "0",
+               "guid": "545dccae-328a-566e-a496-6e1ac298d8b8",
+               "id": "13",
+               "name": "pixelscan",
+               "type": "url",
+               "url": "https://pixelscan.net/"
+            }
+         ],
+         "date_added": "13372089600000000",
+         "date_last_used": "0",
+         "date_modified": "13372089600000000",
+         "guid": "3452febc-ca7c-5310-bb11-7a5788d33e6a",
+         "id": "14",
+         "name": "Other bookmarks",
+         "type": "folder"
+      },
+      "synced": {
+         "children": [],
+         "date_added": "13372089600000000",
+         "date_last_used": "0",
+         "date_modified": "13372089600000000",
+         "guid": "87fcc0f6-d1ea-57b4-a82f-cd064bebb9cb",
+         "id": "15",
+         "name": "Mobile bookmarks",
+         "type": "folder"
+      }
+   },
+   "version": 1
+}

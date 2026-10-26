@@ -1,0 +1,1669 @@
+/* ============================================================================
+ * Shardx UI Kit — design tokens.
+ *
+ * NO Preflight, NO global `html`/`body` styles here — this file is safe to
+ * ship inside the library CSS AND to be @imported by a Tailwind host.
+ *
+ * Tokens name ROLES, not shades (audit COLOR-01): a layer (canvas, surface,
+ * raised, sunken), an overlay (hover, active, selected, weak fill), a text
+ * level, a stroke, a state. Each role has one value per theme, so a theme can
+ * be tuned per role. Values are hex (spec: "Tokens stay in hex"); the OKLCH
+ * source is in the comment and in `ui-kit/scripts/colors.source.mjs`, and
+ * `npm run check:colors` (`gen-colors.mjs --check`) proves the two agree:
+ * retune a color there and run `gen-colors.mjs --write`, never by hand here.
+ * `npm run check:contrast` measures each text level, state color, indicator
+ * and fill on the layers it sits on (its header lists the pairs).
+ *
+ * The AlignUI names (bg-white-0, text-sub-600, …) stay as the names of the
+ * surface and text roles, so the dashboard's copy keeps compiling. The primary
+ * color is themed per app: an app overrides --color-primary-base and the
+ * per-theme --primary-text, --primary-tint, --primary-tint-hover, --focus and
+ * --bg-selected (formula in the kit README).
+ * ==========================================================================*/
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Spacing and radius in px, so no step turns fractional under a root size
+     (O1: the 14 px root drew 31.5 px buttons and 17.5 px icons). A no-op
+     where the root is 16 px (the dashboard). */
+  --spacing: 4px;
+
+  /* Radius roles (UI-07). A container's radius is its item's radius plus its
+     padding: a menu (12) with p-1 (4) holds items at 8. */
+  --radius-control: 8px;   /* buttons, fields, selects, menu items, nav items */
+  --radius-surface: 12px;  /* Peek, popovers, menus, the Select list, toasts, bulk bars */
+  --radius-dialog: 12px;   /* Modal, DialogModal, AlertModal: a panel's corner (borderless, 2026-10-01; 16 before) */
+  /* Borderless (owner, 2026-10-01): white panels on the gray ground, and
+     weak-fill tiles inside them (what were cards and list frames). A tile's
+     radius is a panel's less a step, so a tile 4 px in reads concentric. */
+  --radius-panel: 12px;    /* the shell's panels: the sidebar and the page */
+  --radius-tile: 10px;     /* a tile: a card or a list inside a panel */
+  --radius-chip: 6px;      /* badges, chips, the kit Tag, checkboxes, key caps */
+  --radius-chip-sm: 4px;   /* flags, inline code, the launcher's tag and folder label chips, a pill inside a p-1 track */
+  /* Tailwind's names and the numeric scale, pinned to px for the dashboard. */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 24px;
+  --radius-4: 4px;
+  --radius-6: 6px;
+  --radius-8: 8px;
+  --radius-10: 10px;
+  --radius-12: 12px;
+
+  /* Spacing roles (LAYOUT-03): one inset per level, so parallel edges line up. */
+  --spacing-gutter: 24px;   /* a page's side padding */
+  --spacing-inset: 16px;    /* Peek padding; the top and bottom of cards and dialog bodies */
+  /* Owner (Task 14 fix round): nothing larger than before the grid. */
+  --spacing-inset-side: 18px; /* card side padding: 17.5 before, rounded up so no inner width grows */
+  --spacing-inset-dialog: 14px; /* a dialog's side padding, header, body and footer alike: the header's 14 before */
+  --spacing-inset-bar: 14px;  /* above a dialog's header, and its footer's top and bottom: 14 before */
+  --spacing-cell: 12px;     /* a list cell's side padding */
+  --spacing-stack-sm: 8px;
+  --spacing-stack-md: 12px;
+  --spacing-stack-lg: 24px;
+  --spacing-bar: 10px;      /* between a bar's buttons: a dialog footer's */
+  --spacing-caption: 3px;   /* a title to the line under it */
+  --spacing-dialog-icon: 35px; /* a dialog header's icon circle: 35 before the grid */
+  /* The gray ground between the shell's panels and around them, to the
+     window's edges (`gap-panel`, `p-(--gap-panel)`). */
+  --gap-panel: 8px;
+
+  /* ============ Primitives (static; kept for the dashboard, not for kit components) ============ */
+  --background: #ffffff;
+  --color-gray-0: #ffffff;
+  --color-gray-50: #f7f7f7;
+  --color-gray-400: #a3a3a3;
+  --color-gray-500: #7b7b7b;
+  --color-gray-600: #5c5c5c;
+  --color-gray-700: #333333;
+  --color-gray-800: #262626;
+  --color-gray-900: #1c1c1c;
+  --color-gray-950: #171717;
+  --color-neutral-100: #f5f5f5;
+  --color-neutral-200: #ebebeb;
+  --color-neutral-400: #a3a3a3;
+  --color-neutral-500: #7b7b7b;
+  --color-neutral-600: #5c5c5c;
+  --color-neutral-700: #333333;
+  --color-red-50: #ffebec;
+  --color-red-200: #ffc0c5;
+  --color-red-400: #ff6875;
+  --color-red-500: #fb3748;
+  --color-red-600: #e93544;
+  --color-red-950: #681219;
+  --color-green-50: #e0faec;
+  --color-green-200: #c2f5da;
+  --color-green-400: #3ee089;
+  --color-green-500: #1fc16b;
+  --color-green-600: #1daf61;
+  --color-green-950: #0b4627;
+  --color-purple-50: #efebff;
+  --color-purple-200: #cac0ff;
+  --color-static-white: #ffffff;
+  --color-static-black: #171717;
+
+  /* Primary: brand blue #535efd, oklch(0.571 0.232 273.4). Fills only; text uses --color-primary-text. */
+  --color-primary-base: #535efd;
+  --color-primary-darker: #4348e6;     /* oklch(0.507 0.232 273.1), fill hover */
+  --color-primary-dark: #3a3fd0;       /* oklch(0.467 0.217 272.8) */
+  --color-primary-alpha-24: #535efd3d; /* deprecated: use --color-primary-tint(-hover) */
+  --color-primary-alpha-16: #535efd29;
+  --color-primary-alpha-10: #535efd1a;
+  --color-blue-feature: #535efd;
+  --color-blue-feature-dark: #4348e6;
+  --color-primary-text: var(--primary-text);
+  --color-primary-text-on-highlight: var(--primary-text-on-highlight);
+  --color-primary-tint: var(--primary-tint);
+  --color-primary-tint-hover: var(--primary-tint-hover);
+  --color-focus: var(--focus);
+
+  /* States (colors.md A.3): base = indicator (dot, icon, ring, progress);
+     text = colored text; tint / tint-hover = badge, chip and banner fills. */
+  --color-error-base: var(--error-base);
+  --color-error-text: var(--error-text);
+  --color-error-text-on-highlight: var(--error-text-on-highlight);
+  --color-error-tint: var(--error-tint);
+  --color-error-tint-hover: var(--error-tint-hover);
+  --color-error-tint-menu: var(--error-tint-menu);
+  --color-error-fill: var(--error-fill);
+  --color-error-fill-hover: var(--error-fill-hover);
+  --color-warning-base: var(--warning-base);
+  --color-warning-text: var(--warning-text);
+  --color-warning-text-on-highlight: var(--warning-text-on-highlight);
+  --color-warning-tint: var(--warning-tint);
+  --color-warning-tint-hover: var(--warning-tint-hover);
+  --color-warning-fill: var(--warning-fill);
+  --color-success-base: var(--success-base);
+  --color-success-text: var(--success-text);
+  --color-success-text-on-highlight: var(--success-text-on-highlight);
+  --color-success-tint: var(--success-tint);
+  --color-success-tint-hover: var(--success-tint-hover);
+  --color-success-fill: var(--success-fill);
+  --color-success-dark: #0b4627;
+  --color-information-base: var(--information-base);
+  --color-information-text: var(--information-text);
+  --color-information-text-on-highlight: var(--information-text-on-highlight);
+  --color-information-tint: var(--information-tint);
+  --color-information-tint-hover: var(--information-tint-hover);
+  --color-information-fill: var(--information-fill);
+  /* A filled Alert's fill per state, and its text and dismiss icon (below). */
+  --color-error-alert: var(--error-alert);
+  --color-warning-alert: var(--warning-alert);
+  --color-success-alert: var(--success-alert);
+  --color-information-alert: var(--information-alert);
+  --color-primary-alert: var(--primary-alert);
+  --color-error-alert-icon: var(--error-alert-icon);
+  --color-warning-alert-icon: var(--warning-alert-icon);
+  --color-success-alert-icon: var(--success-alert-icon);
+  --color-information-alert-icon: var(--information-alert-icon);
+  --color-primary-alert-icon: var(--primary-alert-icon);
+  --color-on-alert: var(--on-alert);
+  --color-on-alert-soft: var(--on-alert-soft);
+  /* Deprecated aliases (AlignUI): weak = tint, soft = tint-hover, alpha-16 = tint. */
+  --color-error-weak: var(--error-tint);
+  --color-error-soft: var(--error-tint-hover);
+  --color-error-alpha-16: var(--error-tint);
+  --color-warning-weak: var(--warning-tint);
+  --color-warning-soft: var(--warning-tint-hover);
+  --color-warning-alpha-16: var(--warning-tint);
+  --color-success-weak: var(--success-tint);
+  --color-success-soft: var(--success-tint-hover);
+  --color-success-alpha-16: var(--success-tint);
+  --color-information-weak: var(--information-tint);
+  --color-information-soft: var(--information-tint-hover);
+  --color-information-alpha-16: var(--information-tint);
+  /* No uses in the launcher; static, kept for the dashboard. */
+  --color-away-base: #f6b51e;
+  --color-away-soft: #ffecc0;
+  --color-away-weak: #fffaeb;
+  --color-verified-base: #47c2ff;
+  --color-verified-soft: #c0eaff;
+  --color-verified-weak: #ebf8ff;
+  --color-highlight-base: #fb4ba3;
+  --color-highlight-soft: #ffc0df;
+  --color-highlight-weak: #ffebf4;
+  --color-stable-base: #22d3bb;
+  --color-stable-soft: #c2f5ee;
+  --color-stable-weak: #e4fbf8;
+
+  /* ============ Roles exposed as Tailwind utilities (runtime vars below) ============ */
+  --color-bg-canvas: var(--bg-canvas);
+  --color-bg-surface: var(--bg-white-0);
+  --color-bg-white-0: var(--bg-white-0);
+  --color-bg-raised: var(--bg-raised);
+  --color-bg-popover: var(--bg-popover);
+  --color-bg-sunken: var(--bg-sunken);
+  --color-bg-weak-50: var(--bg-weak-50);
+  --color-bg-page: var(--bg-page);
+  --color-bg-tile: var(--bg-tile);
+  --color-bg-on-tile: var(--bg-on-tile);
+  --color-bg-hover: var(--bg-hover);
+  --color-bg-active: var(--bg-active);
+  --color-bg-selected: var(--bg-selected);
+  --color-bg-tooltip: var(--bg-tooltip);
+  --color-bg-strong-950: var(--bg-strong-950);
+  --color-bg-sub-300: var(--bg-sub-300);
+  --color-bg-soft-200: var(--bg-soft-200);
+
+  --color-text-strong-950: var(--text-strong-950);
+  --color-text-sub-600: var(--text-sub-600);
+  --color-text-soft-400: var(--text-soft-400);
+  --color-text-disabled-300: var(--text-disabled-300);
+  --color-text-white-0: var(--text-white-0);
+  --color-text-tooltip: var(--text-tooltip);
+
+  --color-stroke-strong-950: var(--stroke-strong-950);
+  --color-stroke-sub-300: var(--stroke-sub-300);
+  --color-stroke-soft-200: var(--stroke-soft-200);
+  --color-stroke-control: var(--stroke-control);
+  --color-stroke-image: var(--stroke-image);
+
+  --color-icon-strong-950: var(--icon-strong-950);
+  --color-icon-sub-600: var(--icon-sub-600);
+  --color-icon-soft-400: var(--icon-soft-400);
+  --color-icon-disabled-300: var(--icon-disabled-300);
+  --color-icon-white-0: var(--icon-white-0);
+
+  --color-idle: var(--idle);
+
+  /* Motion (animations.md S2; rulings 5 and 6). Tailwind's own names,
+     retuned: every ease-out, ease-in-out and bare transition-* utility picks
+     these up. One curve for every enter and exit: 42% of the way on the first
+     frame of a 150 ms move (Tailwind's was 32%, UI-25's proposal 18%). */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --default-transition-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  --default-transition-duration: 150ms;
+}
+
+/* Roles — LIGHT (colors.md A.1 to A.3) */
+:root {
+  --bg-canvas: #f5f5f5;           /* oklch(0.9702 0 0): the ground: under the shell's panels, the page in light, the first-run screen */
+  --bg-white-0: #ffffff;          /* surface, oklch(1 0 0): the shell's panels (sidebar, page), Peek */
+  --bg-raised: #ffffff;           /* dialogs, bulk bars, toasts; with --shadow-float */
+  --bg-popover: #ffffff;          /* popovers, menus, Select lists; white like the raised layer in light */
+  --bg-sunken: #efefef;           /* oklch(0.952 0 0): progress and slider tracks */
+  --bg-weak-50: #0000000a;        /* black 4%: tiles, fields and secondary buttons at rest, chips, key caps, skeleton */
+  /* Light flip (owner, 2026-10-01): content is white on the gray ground. */
+  --bg-page: var(--bg-canvas);    /* the page: the ground itself in light (a panel in dark) */
+  --bg-tile: #ffffff;             /* a tile as one opaque color: what covers its scrolling content (a list's pinned cells, row lines) */
+  --bg-tile-fill: #ffffff;        /* a tile: white on the ground */
+  --bg-tile-hover: #fafafa;       /* an interactive tile on hover: a slightly dusky white, no lift */
+  --bg-on-page: #ffffff;          /* a field, secondary button or track on the ground: white */
+  --bg-on-page-selected: #00000014; /* black 8%: a selected segment in a white track on the ground */
+  --bg-on-tile: #0000000a;        /* black 4%: a field, secondary button or track on a white tile or surface */
+--bg-control-on: var(--bg-raised); /* a selected segment on a tile or white surface: the raised layer (white) */
+  --bg-hover: #0000000d;          /* black 5%: pointer hover */
+  --bg-active: #00000014;         /* black 8%: keyboard-active item, pressed, the row in Peek, current nav item */
+  --bg-selected: #535efd1f;       /* primary 12%: checked rows and cards */
+  /* A list row's fills as one opaque color each, the overlay laid over what
+     it lies on (`row-fill-*`; owner, item 20): */
+  --bg-row-hover: #f2f2f2;        /* hover over the panel's white */
+  --bg-row-hover-tile: #f2f2f2;   /* hover over a tile */
+  --bg-row-active: #ebebeb;       /* pressed over the panel's white */
+  --bg-row-active-tile: #ebebeb;  /* pressed over a tile */
+  --bg-row-selected: #eaebff;     /* checked, over the panel's white */
+  --bg-row-selected-hover: #dedff2; /* checked and the target */
+  --bg-tooltip: #171717;          /* oklch(0.205 0 0) */
+  --bg-strong-950: #171717;
+  --bg-sub-300: #d1d1d1;          /* deprecated: use --stroke-control or --idle */
+  --bg-soft-200: #ebebeb;         /* deprecated: use --bg-hover or --bg-sunken */
+
+  --text-strong-950: #171717;     /* oklch(0.205 0 0) */
+  --text-sub-600: #4d4d4d;        /* oklch(0.42 0 0) */
+  --text-soft-400: #696969;       /* oklch(0.521 0 0): supplementary metadata only */
+  --text-disabled-300: #bebebe;   /* oklch(0.802 0 0) */
+  --text-white-0: #ffffff;
+  --text-tooltip: #ffffff;
+
+  --stroke-strong-950: #171717;
+  --stroke-sub-300: #00000024;    /* black 14%: strong hairline */
+  --stroke-soft-200: #00000012;   /* black 7%: hairline */
+  --stroke-control: #808080;      /* oklch(0.6 0 0): checkbox, radio and switch edges, 3:1 */
+  --stroke-image: #0000001a;      /* black 10%: the edge of a flag or an extension icon */
+
+  --icon-strong-950: #171717;
+  --icon-sub-600: #4d4d4d;
+  --icon-soft-400: #808080;       /* oklch(0.6 0 0), 3:1 */
+  --icon-disabled-300: #bebebe;
+  --icon-white-0: #ffffff;
+
+  --idle: #808080;                /* a stopped status dot, 3:1 */
+
+  --primary-text: #4348e6;        /* oklch(0.507 0.232 273.1) */
+  --primary-text-on-highlight: var(--primary-text);
+  --primary-tint: #535efd1f;      /* primary 12% */
+  --primary-tint-hover: #535efd2e;/* primary 18% */
+  --focus: #535efd;               /* the focus outline, 3:1 on every layer */
+
+  --error-base: #d81e2c;          /* oklch(0.566 0.215 24.9) */
+  --error-text: #b1001b;          /* oklch(0.48 0.2 25) */
+  --error-text-on-highlight: var(--error-text);
+  --error-tint: #d81e2c1f;
+  --error-tint-hover: #d81e2c2e;
+  --error-tint-menu: #d81e2c1f;   /* the danger menu item, aimed at: error 12% */
+  --error-fill: #d81e2c;          /* a filled danger button; white label 5.07:1 */
+  --error-fill-hover: #c01424;    /* oklch(0.515 0.2 24.9) */
+  --warning-base: #c66f01;        /* oklch(0.626 0.15 60.1) */
+  --warning-text: #8c4c00;        /* oklch(0.484 0.124 60.1) */
+  --warning-text-on-highlight: var(--warning-text);
+  --warning-tint: #c66f011f;
+  --warning-tint-hover: #c66f012e;
+  --warning-fill: #a65c00;        /* oklch(0.55 0.128 60.4): a filled Alert; white 5.06:1 */
+  --success-base: #149948;        /* oklch(0.6 0.16 149.9) */
+  --success-text: #016b2f;        /* oklch(0.462 0.13 150) */
+  --success-text-on-highlight: var(--success-text);
+  --success-tint: #1499481f;
+  --success-tint-hover: #1499482e;
+  --success-fill: #007f38;        /* oklch(0.52 0.144 149.9): white 5.13:1 */
+  --information-base: #0089c9;    /* oklch(0.601 0.137 239.8): hue 240, apart from the brand (ruling 12) */
+  --information-text: #006190;    /* oklch(0.47 0.114 239.9) */
+  --information-text-on-highlight: var(--information-text);
+  --information-tint: #0089c91f;
+  --information-tint-hover: #0089c92e;
+  --information-fill: #0176ae;    /* oklch(0.54 0.123 239.8): white 5.00:1 */
+  /* A filled Alert: the solid state fill with white text (4.5:1 or better)
+     and an 80% white dismiss icon. */
+  --error-alert: var(--error-fill);
+  --warning-alert: var(--warning-fill);
+  --success-alert: var(--success-fill);
+  --information-alert: var(--information-fill);
+  --primary-alert: var(--color-primary-base);
+  --on-alert: #ffffff;
+  --on-alert-soft: #ffffffcc;
+  --error-alert-icon: var(--on-alert);
+  --warning-alert-icon: var(--on-alert);
+  --success-alert-icon: var(--on-alert);
+  --information-alert-icon: var(--on-alert);
+  --primary-alert-icon: var(--on-alert);
+
+  --scrollbar-thumb: #00000033;
+  --scrollbar-thumb-hover: #0000004d;
+}
+
+/* Roles — DARK. Layers step lighter as they rise (ruling 2). */
+[data-theme="dark"] {
+  --bg-canvas: #121212;           /* oklch(0.182 0 0) */
+  --bg-white-0: #191919;          /* oklch(0.213 0 0) */
+  --bg-raised: #222222;           /* oklch(0.252 0 0) */
+  --bg-popover: #343434;          /* oklch(0.325 0 0): a popover, menu or Select list, a step lighter than the list tile (#222222) so it stands out from the rows */
+  --bg-sunken: #121212;           /* oklch(0.182 0 0) */
+  --bg-weak-50: #ffffff0a;        /* white 4% */
+  /* Dark keeps step 1: the page a panel, a tile the weak fill on it. */
+  --bg-page: var(--bg-white-0);
+  --bg-tile: #222222;             /* oklch(0.252 0 0): the weak fill over a panel, opaque */
+  --bg-tile-fill: #ffffff0a;      /* white 4%: the weak fill */
+  --bg-tile-hover: #ffffff17;     /* white 9%: the active fill */
+  --bg-on-page: #ffffff0a;        /* white 4%: the weak fill */
+  --bg-on-page-selected: var(--bg-control-on);
+  --bg-on-tile: #ffffff0a;        /* white 4%, stacking on the tile's own */
+--bg-control-on: #ffffff17;     /* white 9% (= --bg-active): a selected segment. The raised layer (#222) sat under its own track (tile #222 + white 4%), so the active tab vanished; a tint steps up and reads as on */
+  --bg-hover: #ffffff0d;          /* white 5% */
+  --bg-active: #ffffff17;         /* white 9% */
+  --bg-selected: #535efd38;       /* primary 22% */
+  --bg-row-hover: #252525;
+  --bg-row-hover-tile: #2d2d2d;
+  --bg-row-active: #2e2e2e;
+  --bg-row-active-tile: #363636;
+  --bg-row-selected: #26284b;
+  --bg-row-selected-hover: #313354;
+  --bg-tooltip: #2b2b2b;          /* oklch(0.289 0 0), with the hairline */
+  --bg-strong-950: #ededed;
+  --bg-sub-300: #333333;
+  --bg-soft-200: #262626;
+
+  --text-strong-950: #ededed;     /* oklch(0.946 0 0): off-white, less glare (6.2 default) */
+  --text-sub-600: #bababa;        /* oklch(0.789 0 0) */
+  --text-soft-400: #9e9e9e;       /* oklch(0.699 0 0) */
+  --text-disabled-300: #747474;   /* oklch(0.559 0 0) */
+  --text-white-0: #191919;
+  --text-tooltip: #ededed;
+
+  --stroke-strong-950: #ededed;
+  --stroke-sub-300: #ffffff1c;    /* white 11% */
+  --stroke-soft-200: #ffffff0f;   /* white 6% */
+  --stroke-control: #808080;
+  --stroke-image: #ffffff1a;      /* white 10% */
+
+  --icon-strong-950: #ededed;
+  --icon-sub-600: #bababa;
+  --icon-soft-400: #808080;
+  --icon-disabled-300: #747474;
+  --icon-white-0: #191919;
+
+  --idle: #808080;
+
+  --primary-text: #98abff;        /* oklch(0.76 0.123 273.4) */
+  --primary-text-on-highlight: #b1c1ff;
+  --primary-tint: #535efd38;      /* primary 22% */
+  --primary-tint-hover: #535efd4d;/* primary 30% */
+  --focus: #98abff;
+
+  --error-base: #ed4a49;          /* oklch(0.64 0.2 25.1) */
+  --error-text: #ff9088;          /* oklch(0.77 0.135 25) */
+  --error-text-on-highlight: #ffada5;
+  --error-tint: #ed4a492e;
+  --error-tint-hover: #ed4a4942;
+  --error-tint-menu: #ed4a491f;   /* error 12%: lighter than --error-tint (owner: a strong red bar) */
+  --error-fill: #d81e2c;
+  --error-fill-hover: #c01424;
+  --warning-base: #f28f29;        /* oklch(0.74 0.16 60.3) */
+  --warning-text: #ffb06e;        /* oklch(0.82 0.124 59.7) */
+  --warning-text-on-highlight: #ffc392;
+  --warning-tint: #f28f292e;
+  --warning-tint-hover: #f28f2942;
+  --warning-fill: #a65c00;        /* no dark use: a filled Alert is the state's tint in dark (below) */
+  --success-base: #3fc168;        /* oklch(0.719 0.17 150) */
+  --success-text: #6ed889;        /* oklch(0.799 0.149 150.1) */
+  --success-text-on-highlight: #7ae494;
+  --success-tint: #3fc1682e;
+  --success-tint-hover: #3fc16842;
+  --success-fill: #007f38;
+  --information-base: #37a8ec;    /* oklch(0.699 0.14 240.2) */
+  --information-text: #6dc4ff;    /* oklch(0.789 0.119 240.2) */
+  --information-text-on-highlight: #94d3ff;
+  --information-tint: #37a8ec2e;
+  --information-tint-hover: #37a8ec42;
+  --information-fill: #0176ae;
+  /* A filled Alert in dark (owner, Task 14 fix round): the state's tint, as
+     every other state surface, never a solid block; the theme's own text. */
+  --error-alert: var(--error-tint-hover);
+  --warning-alert: var(--warning-tint-hover);
+  --success-alert: var(--success-tint-hover);
+  --information-alert: var(--information-tint-hover);
+  --primary-alert: var(--primary-tint-hover);
+  --on-alert: var(--text-strong-950);
+  --on-alert-soft: var(--icon-sub-600);
+  /* Its status icon in the state's text color, as on every tinted surface. */
+  --error-alert-icon: var(--error-text);
+  --warning-alert-icon: var(--warning-text);
+  --success-alert-icon: var(--success-text);
+  --information-alert-icon: var(--information-text);
+  --primary-alert-icon: var(--primary-text);
+
+  --scrollbar-thumb: #ffffff2e;
+  --scrollbar-thumb-hover: #ffffff47;
+
+  /* No uses in the launcher: dark tints for the dashboard (Task 5b). */
+  --color-away-weak: #f6b51e2e;
+  --color-away-soft: #f6b51e42;
+  --color-verified-weak: #47c2ff2e;
+  --color-verified-soft: #47c2ff42;
+  --color-highlight-weak: #fb4ba32e;
+  --color-highlight-soft: #fb4ba342;
+}
+
+/* Stacking, neutral buttons, backdrop and elevation — LIGHT */
+:root {
+  /* One stacking scale. Portaled overlays share --layer-overlay and stack by
+     DOM order, so the last one opened is on top. */
+  --layer-raised: 10;
+  --layer-sticky: 20;
+  --layer-overlay: 50;
+  --layer-toast: 60;
+  /* The guided tour: over toasts (the page under it is dimmed and still), under
+     the window's own controls. */
+  --layer-tour: 65;
+  --layer-chrome: 70;
+  /* The tour's scrim: 50% black in both themes (onboarding spec 5.2). */
+  --tour-scrim: rgba(0, 0, 0, 0.5);
+
+  --btn-neutral-bg: #171717;
+  --btn-neutral-bg-hover: #333333;
+  --btn-neutral-fg: #ffffff;
+
+  --backdrop: rgba(23, 23, 23, 0.24);
+  --shadow-xs: 0 1px 2px 0 #0a0d1408;
+  --shadow-sm: 0 2px 4px 0 #1b1c1d0a;
+  --shadow-md: 0 16px 32px -12px #0e121b1a;
+  --shadow-lg: 0 12px 24px -6px #0e121b1f, 0 2px 6px #0e121b0f; /* floating Peek, bulk bars (UI-20) */
+  --shadow-tooltip: 0 12px 24px 0 #0e121b14;
+  /* Borderless (owner, 2026-10-01): a floating layer (a menu, popover,
+     Select list, toast or dialog) has no edge of its own, only this
+     shadow; its first layer is a 1 px blur, not a ring.
+     No lit top edge in dark either (owner, 2026-10-02: "remove it all"). */
+  --shadow-float: 0 0 1px 0 #0e121b33, 0 4px 10px -2px #0e121b14, 0 18px 36px -10px #0e121b2e;
+  /* Light flip (owner, 2026-10-01): a white tile on the gray ground carries
+     the softest shadow, no line (the dashboard's cards); hovered, the same
+     shadow: its fill turns a slightly dusky white instead, with no lift and
+     no edge (owner, 2026-10-02).
+     A selected segment in a white track on the ground has none. */
+  --shadow-tile: 0 1px 2px 0 #0a0d1408;
+  --shadow-tile-hover: 0 1px 2px 0 #0a0d1408;
+  --shadow-on-page-selected: 0 0 #0000;
+  --shadow-scroll-edge: 0 6px 6px -6px #0e121b29; /* a 6 px fade under a header while content scrolls under it (scroll-edge) */
+}
+
+/* Neutral buttons, backdrop and elevation — DARK. A shadow barely shows on
+   near-black, so a floating layer carries a 1 px light top edge in place of
+   the hairline it had (FEEL-14; borderless, owner 2026-10-01). */
+[data-theme="dark"] {
+  --btn-neutral-bg: #ededed;
+  --btn-neutral-bg-hover: #d4d4d4;
+  --btn-neutral-fg: #191919;
+
+  --backdrop: rgba(0, 0, 0, 0.5);
+  --shadow-xs: 0 1px 2px 0 #00000033;
+  --shadow-sm: 0 2px 4px 0 #00000033;
+  --shadow-md: 0 16px 32px -12px #00000066;
+  --shadow-lg: 0 16px 40px -8px #00000099;
+  --shadow-tooltip: 0 12px 24px 0 #00000066;
+  --shadow-float: 0 4px 10px -2px #00000080, 0 18px 40px -8px #000000bf; /* stronger since owner item 10: with the lighter popover surface the shadow is the edge, there is no border */
+  /* Dark keeps step 1: no tile shadow, the raised segment's own, the header flush. */
+  --shadow-tile: 0 0 #0000;
+  --shadow-tile-hover: 0 0 #0000;
+  --shadow-on-page-selected: var(--shadow-xs);
+  --shadow-scroll-edge: 0 6px 6px -6px #00000080;
+}
+
+/* Focus (ruling 7, UI-04): an outline in the focus color, never a box-shadow
+   ring (Windows contrast themes drop shadows) and never a transition (a fading
+   ring lags the Tab key). The runtime --focus is read directly, so the outline
+   works without Tailwind emitting --color-focus; --focus-color recolors one
+   field's ring (errors). */
+:root {
+  --focus-width: 2px;
+  /* The app's Interface size (CSS zoom on <html>) scales vh and vw too; these
+     stay the true viewport. The app sets --page-zoom with the zoom. */
+  --page-zoom: 1;
+  --viewport-h: calc(100vh / var(--page-zoom));
+  --viewport-w: calc(100vw / var(--page-zoom));
+}
+@utility focus-ring {
+  &:focus-visible {
+    outline: var(--focus-width) solid var(--focus-color, var(--focus));
+    outline-offset: 2px;
+  }
+}
+/* A selected card or tile (owner, 2026-09-30): it keeps its own surface and
+   colors, and the focus ring's own outline, at rest, says it is the one. A
+   focused selected card draws the same outline once: never two rings. */
+@utility selected-ring {
+  outline: var(--focus-width) solid var(--focus-color, var(--focus));
+  outline-offset: 2px;
+  /* Windows contrast themes draw the selected one in the system's Highlight. */
+  @media (forced-colors: active) {
+    outline-color: Highlight;
+  }
+}
+/* Rows, cells and items inside a scroll box that would clip a ring drawn
+   outside. On an element that also has focus-ring (a kit Button in a list
+   row) it wins by specificity, whatever order Tailwind emits them in. */
+@utility focus-ring-inset {
+  &:focus-visible,
+  &.focus-ring:focus-visible {
+    outline: var(--focus-width) solid var(--focus-color, var(--focus));
+    outline-offset: calc(var(--focus-width) * -1);
+  }
+}
+/* A field's frame: the ring covers the frame's own hairline. Its text box is
+   outline-hidden, and Tailwind's outline-hidden keeps a 2 px transparent
+   outline in forced colors, which the system paints: a second box inside the
+   frame, at rest too. The frame's ring is the field's one focus mark.
+   (The same outline is why a control with a focus-ring utility needs no
+   outline-hidden, and why panels and menu items take it on focus only:
+   focus-visible:outline-hidden.) */
+@utility focus-ring-within {
+  &:focus-within {
+    outline: var(--focus-width) solid var(--focus-color, var(--focus));
+    outline-offset: -1px;
+  }
+  @media (forced-colors: active) {
+    & :is(input, textarea) {
+      outline-style: none;
+    }
+  }
+}
+/* A bare field's frame (no ring or fill: the palette's search, UI-31). Its
+   text box is outline-hidden too, and in forced colors that paints a 2 px
+   box 2 px outside the text box, over the edge of what holds the field (the
+   palette panel's top edge, merge point 1). So in forced colors only, the
+   frame hides it and draws the field's one focus mark inside itself: 2 px
+   in from its edges, at a radius that clears a panel's corner (12 at the
+   frame: the mark's inner edge is a field's 8). Outside forced colors it
+   does nothing, and the field keeps its caret and its divider. */
+@utility forced-focus-within {
+  @media (forced-colors: active) {
+    border-radius: var(--radius-surface);
+    &:focus-within {
+      outline: var(--focus-width) solid var(--focus-color, var(--focus));
+      outline-offset: calc(-2px - var(--focus-width));
+    }
+    & :is(input, textarea) {
+      outline-style: none;
+    }
+  }
+}
+/* Windows contrast themes (forced colors, A11Y-03, COLOR-07). The system
+   repaints every color and drops box-shadows and author backgrounds; these
+   say what it must still draw. They do nothing outside forced colors. */
+@utility forced-edge {
+  @media (forced-colors: active) {
+    border: 1px solid CanvasText;
+  }
+}
+/* A selected element is the system's Highlight, and everything it holds
+   draws in HighlightText on that fill, as a native list's selected item
+   does. What it holds stays opted out of forced colors: handed back, the
+   system puts a Canvas backplate behind each run of text, a white box that
+   hid inherited HighlightText (a current nav item's name, a checked row's
+   name). So its own theme colors are replaced here, as the system would:
+   text, icons and edges in HighlightText, no fills, gradients or shadows (a
+   chip or a button inside gives way to the fill). Not a Highlight fill of
+   their own: Highlight may be translucent, and a second coat would show as
+   a darker patch. A layer that must still cover what passes under it paints
+   Highlight over Canvas, the row's own color (app.css, list rows). A swatch
+   or a status dot keeps its color (forced-content, [data-tone]), a flag its
+   image, and a native control (a row's select box) goes back to the system.
+   Opting out also keeps the focus ring's theme color: it takes a system
+   color instead. */
+@utility forced-selected {
+  @media (forced-colors: active) {
+    forced-color-adjust: none;
+    background-color: Highlight;
+    color: HighlightText;
+    --focus-color: CanvasText;
+    & *:not(.forced-content, [data-tone], input, .fi) {
+      color: HighlightText;
+      background-color: transparent;
+      background-image: none;
+      border-color: HighlightText;
+      box-shadow: none;
+    }
+    & input {
+      forced-color-adjust: auto;
+    }
+  }
+}
+/* Swatches and dots: the color is the content, so it stays. */
+@utility forced-content {
+  @media (forced-colors: active) {
+    forced-color-adjust: none;
+    outline: 1px solid CanvasText;
+  }
+}
+@utility forced-native {
+  @media (forced-colors: active) {
+    appearance: auto;
+  }
+}
+@utility forced-hidden {
+  @media (forced-colors: active) {
+    display: none;
+  }
+}
+
+/* Motion tokens (animations.md S2, S3; ruling 6). Durations: hover and color
+   150 ms; menus, tooltips and Select 100 in, 75 out; popovers 150 in, 100
+   out; dialogs and Peek 200 in, 150 out. List items, focus rings, checkboxes,
+   tabs and segments do not animate. Distances are px, never rem. */
+:root {
+  --motion-exit-fast: 75ms;
+  --motion-fast: 100ms;
+  --motion-base: 150ms;
+  --motion-slow: 200ms;
+  --motion-shift: 8px;       /* Peek enters on X; toasts and bulk bars on Y (ruling 11) */
+  --motion-nudge: 4px;       /* Peek and bulk bar exits */
+  --motion-scale-in: 0.97;   /* the start scale of menus, Select, popovers, dialogs */
+  --motion-press: 0.97;      /* :active on buttons 28 px and taller (ruling 8) */
+  --motion-icon-scale: 0.5;  /* icon swap (ruling 9) */
+  --motion-blur: 2px;        /* icon swap */
+  --motion-skeleton-delay: 200ms;
+
+  /* Live layer (spec 6): answers to what you do and signs the app is live. */
+  --motion-flash: 400ms;     /* row-flash: a started row's success tint fades */
+  --motion-count: 200ms;     /* CountRoll: a count rolls to its new number */
+  --motion-halo: 600ms;      /* animate-halo-once: the Running halo swells once on a start */
+  --motion-breathe: 3s;      /* animate-breathe: one breath of the one loop on screen */
+  --motion-tint: 1s;         /* slide-in: a new row's accent tint fades */
+  --motion-lift: 1px;        /* hover-lift: a card rises this far */
+  /* The Running halo (spec 6.2): a ring of the success tint this wide around
+     the dot; one swell grows it to this scale and softens it to this
+     opacity; a breath softens it to this opacity. */
+  --halo-ring: 2px;
+  --halo-swell-scale: 1.4;
+  --halo-swell-opacity: 0.7;
+  --halo-breathe-opacity: 0.4;
+  /* The spring (spec 6.3): whatever moves position (a card arriving, a row
+     sliding in, animateFrom). Critically damped, response 0.3 s: from rest,
+     x(t) = 1 - (1 + ωt) * e^(-ωt), ω = 2π / 0.3 s, never past 1, so no
+     overshoot. 20 samples of x(t), evenly spaced over its settle time
+     (--motion-spring: within 0.1 % of the end at 450 ms; 97 % at 250 ms).
+     Computed by springLinear() in ui-kit/src/lib/motion/spring.ts; its test
+     fails when this copy drifts. Runs on --motion-spring, or on
+     --motion-count for CountRoll. */
+  --motion-spring: 450ms;
+  --ease-spring: linear(0, 0.089, 0.261, 0.438, 0.59, 0.709, 0.797, 0.861, 0.906, 0.937, 0.958, 0.972, 0.982, 0.988, 0.992, 0.995, 0.997, 0.998, 0.999, 1);
+}
+/* Where linear() is unsupported (WebKit before 17.2), the ease-out curve. */
+@supports not (transition-timing-function: linear(0, 1)) {
+  :root {
+    --ease-spring: var(--ease-out);
+  }
+}
+/* Reduced motion, from the OS or from Settings (either is enough, 6.2):
+   nothing travels, scales or blurs; fades and spinners stay (ANIM-05). */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-shift: 0px;
+    --motion-nudge: 0px;
+    --motion-scale-in: 1;
+    --motion-press: 1;
+    --motion-icon-scale: 1;
+    --motion-blur: 0px;
+    --motion-lift: 0px;
+  }
+}
+:root[data-reduce-motion="true"] {
+  --motion-shift: 0px;
+  --motion-nudge: 0px;
+  --motion-scale-in: 1;
+  --motion-press: 1;
+  --motion-icon-scale: 1;
+  --motion-blur: 0px;
+  --motion-lift: 0px;
+}
+/* Loops and moves that stop under reduced motion from either source (the
+   skeleton pulse, a Peek's slide, a chevron's turn). A spinner and a pending
+   status dot are status and keep going: never use it there. */
+@custom-variant reduced {
+  @media (prefers-reduced-motion: reduce) {
+    @slot;
+  }
+  &:where([data-reduce-motion="true"], [data-reduce-motion="true"] *) {
+    @slot;
+  }
+}
+/* A theme change snaps (PERF-07): ThemeProvider sets this for two frames. */
+:root[data-theme-switching] *,
+:root[data-theme-switching] *::before,
+:root[data-theme-switching] *::after {
+  transition: none !important;
+}
+
+/* macOS "Increase contrast" and similar settings (COLOR-12): secondary text
+   and hairlines move at least 0.15 L away from their layers and the ring
+   thickens. Hover and active fills stay: a darker fill lowers the contrast
+   of everything drawn on it (measured: labels 2.66:1, the control edge
+   2.58:1, primary text 4.41:1 with COLOR-12's darker fills). */
+@media (prefers-contrast: more) {
+  :root {
+    --text-sub-600: #262626;      /* oklch(0.269 0 0) */
+    --text-soft-400: #404040;     /* oklch(0.371 0 0) */
+    --stroke-soft-200: #00000033; /* black 20% */
+    --focus-width: 3px;
+  }
+  [data-theme="dark"] {
+    --text-sub-600: #ebebeb;      /* oklch(0.94 0 0) */
+    --text-soft-400: #cecece;     /* oklch(0.851 0 0) */
+    --stroke-soft-200: #ffffff29; /* white 16% */
+  }
+}
+
+/* Hover feedback on controls: colors and fills fade, the focus outline never
+   does (transition-colors would include outline-color). `scale` carries a
+   button's press (ruling 8, `--motion-press`). */
+@utility transition-hover {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, scale;
+  transition-duration: var(--motion-base);
+  transition-timing-function: var(--ease-out);
+}
+
+/* Two icons in one grid cell: the one with `data-on` shows. A state change
+   (Start to Stop, busy to done) cross-fades with a small scale and blur
+   (ruling 9: 150 ms, scale 0.5, blur 2 px). Reduced motion keeps the fade
+   (the tokens drop scale and blur). */
+@utility icon-swap {
+  grid-area: 1 / 1;
+  opacity: 0;
+  scale: var(--motion-icon-scale);
+  filter: blur(var(--motion-blur));
+  transition:
+    opacity var(--motion-base) var(--ease-out),
+    scale var(--motion-base) var(--ease-out),
+    filter var(--motion-base) var(--ease-out);
+  &[data-on] {
+    opacity: 1;
+    scale: 1;
+    filter: none;
+  }
+}
+
+/* ===== Live layer motion (spec 6) =====
+   Answers to what you do and signs the app is live, restrained: only
+   transform and opacity move, nothing loops but the Running card's dot, and
+   under Reduce motion (the OS or Settings) nothing travels, swells or
+   breathes. The color fades (row-flash, slide-in's tint) stay: a fade is
+   not motion (ANIM-05). CountRoll and animateFrom are in lib/motion. */
+
+/* The Running dot's halo (spec 6.2), the one glow in the app: a soft disc
+   of the success tint around the dot, 2 px wide, drawn under a copy of the
+   dot so the dot itself stays solid. It swells and breathes (below) on its
+   own, the dot never. Decoration: forced colors drop it. */
+@utility halo {
+  position: relative;
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  &::before {
+    inset: calc(var(--halo-ring) * -1);
+    background: var(--success-tint-hover);
+  }
+  &::after {
+    inset: 0;
+    background: inherit;
+  }
+  @media (forced-colors: active) {
+    &::before {
+      display: none;
+    }
+  }
+}
+/* The swell peaks at 40 % of --motion-halo: a quick rise and a slower
+   settle (a keyframe offset cannot read a token). */
+@keyframes halo-swell {
+  40% {
+    transform: scale(var(--halo-swell-scale));
+    opacity: var(--halo-swell-opacity);
+  }
+}
+@keyframes halo-breathe {
+  50% {
+    opacity: var(--halo-breathe-opacity);
+  }
+}
+/* With `halo`: one gentle swell when a profile starts from this window. */
+@utility animate-halo-once {
+  &::before {
+    animation: halo-swell var(--motion-halo) var(--ease-in-out);
+  }
+  @variant reduced {
+    &::before {
+      animation: none;
+    }
+  }
+}
+/* With `halo`: a slow breath, for the Running action card's dot only (at
+   most one loop on screen). */
+@utility animate-breathe {
+  &::before {
+    animation: halo-breathe var(--motion-breathe) var(--ease-in-out) infinite;
+  }
+  @variant reduced {
+    &::before {
+      animation: none;
+    }
+  }
+}
+
+/* The Live tint: a started row's flash and a new row's accent tint. A layer
+   over the whole element (its ::before), the state's low-alpha tint, that
+   only fades: an opacity animation runs on the compositor, so a bulk Undo
+   that tints the whole view restyles nothing per frame (merge point 3: the
+   animated, inherited --live-tint it replaces restyled every cell of every
+   tinted row, every frame). It lies above everything in the element, cells
+   that stack included (app.css lifts it over the lists' pinned cells), and
+   never takes the pointer. The element must be positioned (a list row is).
+   A highlight that decays runs its whole token on --ease-in-out, so it
+   holds near its peak before it fades and reads for its length (Tasks 5-6
+   review, B-I1). Reduce motion keeps it: a fade is not motion (ANIM-05).
+   Forced colors would paint the layer as Canvas over the row: none there. */
+@keyframes row-flash {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes slide-in-tint {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* A started row: one success-tint flash that fades out. */
+@utility row-flash {
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: var(--success-tint);
+    opacity: 0;
+    animation: row-flash var(--motion-flash) var(--ease-in-out);
+  }
+  @media (forced-colors: active) {
+    &::before {
+      display: none;
+    }
+  }
+}
+
+/* A new row (create, import, restore, clone): it comes up 4 px and fades in
+   on the spring, and its accent tint fades over a second. Under Reduce
+   motion --motion-nudge is 0: a short fade in place; the tint stays. */
+@keyframes slide-in {
+  from {
+    transform: translateY(var(--motion-nudge));
+    opacity: 0;
+  }
+}
+@utility slide-in {
+  animation: slide-in var(--motion-spring) var(--ease-spring);
+  @variant reduced {
+    animation-duration: var(--motion-base);
+    animation-timing-function: var(--ease-out);
+  }
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: var(--primary-tint);
+    opacity: 0;
+    animation: slide-in-tint var(--motion-tint) var(--ease-in-out);
+  }
+  @media (forced-colors: active) {
+    &::before {
+      display: none;
+    }
+  }
+}
+
+/* ===== Material and depth (spec 7) =====
+   A sticky header (the page header, a list's column header) sits on a
+   light translucent material: what scrolls under it shows through,
+   blurred. Under it, a soft 6 px fade in place of the hard divider, only
+   while content is under it: the header carries `data-scrolled` then
+   (the scroll handler sets it). Reduce transparency makes the material
+   solid and keeps a 1 px divider; forced colors draw a solid Canvas and a
+   system divider. The divider is a 1 px line laid over the header's bottom
+   edge (its ::after), so it takes no layout in any mode: the header's
+   content keeps its whole height and centers on a whole pixel (F24). Not
+   a box-shadow: forced colors drop shadows. The header is positioned (a
+   sticky or raised header is); the line lies over its cells, pinned ones
+   (z-index 2) included. On a tile (`list-tile`) the material is the
+   tile's own color (`--material-fill`), so the header reads as the tile. */
+@utility material-bar {
+  background-color: color-mix(in oklch, var(--material-fill, var(--bg-white-0)) 80%, transparent);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(160%);
+  /* No blur to read through (an engine without backdrop-filter): solid. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    background-color: var(--material-fill, var(--bg-white-0));
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    background-color: var(--material-fill, var(--bg-white-0));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  @media (forced-colors: active) {
+    background-color: Canvas;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@utility scroll-edge {
+  transition-property: box-shadow;
+  transition-duration: var(--motion-base);
+  transition-timing-function: var(--ease-out);
+  &::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 3;
+    height: 1px;
+    pointer-events: none;
+    background-color: transparent;
+  }
+  &[data-scrolled] {
+    @apply shadow-[var(--shadow-scroll-edge)];
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    &::after {
+      background-color: var(--stroke-soft-200);
+    }
+    &[data-scrolled] {
+      --tw-shadow: 0 0 #0000;
+    }
+  }
+  @media (forced-colors: active) {
+    &::after {
+      forced-color-adjust: none;
+      background-color: CanvasText;
+    }
+  }
+}
+
+/* A card on hover: 1 px up (--motion-lift, 0 under Reduce motion) with the
+   soft shadow, and back. It carries its own transition, naming only what a
+   card changes: its fill and edge, the lift, the shadow and its fade in
+   (five, well under "everything", PERF-06). So it replaces transition-hover or any
+   transition-* on the same element, never joins one: Tailwind prints those
+   after it, and their transition-property, which has no transform or
+   box-shadow, would win and make the lift and the shadow snap
+   (`check:classes` flags the pair). The shadow joins a ring-* edge rather
+   than replacing it. */
+@utility hover-lift {
+  transition-property: background-color, border-color, opacity, transform, box-shadow;
+  transition-duration: var(--motion-base);
+  transition-timing-function: var(--ease-out);
+  @apply hover:shadow-[var(--shadow-sm)];
+  @media (hover: hover) {
+    &:hover {
+      transform: translateY(calc(var(--motion-lift) * -1));
+    }
+  }
+}
+
+/* ===== A list's target row (owner bug, 2026-10-01) =====
+   The target (the active row: the one the keys act on) is drawn while it is
+   the target in sight: while the keys drive (`data-input`, useInputModality),
+   while the pointer is on it, or while its menu is open. The keys, not the
+   focus: a focus that followed the pointer, or a click's, is no reason. The
+   pointer picks a target by moving onto it or pressing it; once it leaves,
+   the row looks like any other ("when mouse not hovering anymore it stuck
+   like its hovering"), though the keys still act on it.
+   `row-target:row-fill-active` on a row: its fill token (`--row-fill`,
+   below) is what the row's pinned cells paint too (app.css). */
+@custom-variant row-target (&:is(:root:not([data-input="pointer"]) *, :hover, [data-menu-open], :has([data-menu-open])));
+
+/* ===== Tiles (borderless, owner 2026-10-01; light flip the same day) =====
+   What was a card or a list's frame is a tile: a 10 px corner, no border.
+   In light, content is white on the gray ground, never gray on white (owner:
+   "we need to make that we have a bit darker or greyer bg and white on top
+   of it, not reverse"): the page is the ground itself (`--bg-page`), a tile
+   is white on it (`--bg-tile-fill`) with the softest shadow, no line
+   (`--shadow-tile`, the dashboard's cards). In dark (unchanged) the page is
+   a panel and a tile the weak fill on it, with no shadow.
+   What sits on what steps the other way: a tile, or any white surface (a
+   dialog, a popover, the sidebar, Peek: `white-surface`), holds a nested
+   tile at the weak fill with no shadow (gray inside white), and its fields,
+   secondary buttons and tracks at `--bg-on-tile`; on the page's ground they
+   rest at `--bg-on-page` (white in light), a selected segment a gray step
+   (`page-ground`, on the page). The vars a tile sets for what it holds go
+   on its children, so they never paint the tile itself.
+   Under Increase contrast a tile gets its 1 px edge back, at the strong
+   hairline. The kit Card is a tile by default; `tile` dresses any other
+   element the same way. */
+@utility page-ground {
+  --control-fill: var(--bg-on-page);
+  --control-on: var(--bg-on-page-selected);
+  --control-on-shadow: var(--shadow-on-page-selected);
+}
+@utility white-surface {
+  --control-fill: var(--bg-on-tile);
+  --control-on: var(--bg-control-on);
+  --control-on-shadow: var(--shadow-xs);
+  --tile-fill: var(--bg-weak-50);
+  --tile-shadow: 0 0 #0000;
+}
+@utility tile {
+  --control-fill: var(--bg-on-tile);
+  --control-on: var(--bg-control-on);
+  --control-on-shadow: var(--shadow-xs);
+  border-radius: var(--radius-tile);
+  background-color: var(--tile-fill, var(--bg-tile-fill));
+  box-shadow: var(--tile-shadow, var(--shadow-tile));
+  & > * {
+    --tile-fill: var(--bg-weak-50);
+    --tile-shadow: 0 0 #0000;
+  }
+  @media (prefers-contrast: more) {
+    box-shadow: inset 0 0 0 1px var(--stroke-sub-300), var(--tile-shadow, var(--shadow-tile));
+  }
+  /* Forced colors drop the fill and the shadow: the edge is a system line, as on `list-tile`. */
+  @media (forced-colors: active) {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
+}
+
+/* A table on a tile (`list-tile`): rows always sit on a tile, never on the
+   bare ground or panel, and a table has no border, as no card has one
+   (owner, 2026-10-01: "if we dont have borders on all cards - lets dont
+   have it on table too"). The tile is the wrapper round the list's scroll
+   box: white with the cards' soft shadow edge in light, the weak fill in
+   dark, border 0, never a ring. Its 4 px padding at the sides and bottom is
+   the inner inset round the scroll box (the header sits flush at its top),
+   so a row never passes through it as the list scrolls; the
+   sticky header and the pinned cells keep to the scroll box's own edges,
+   and a layout reads the scroll box's width (`clientWidth`), as before.
+   The header is the standard `list-head`, on the tile's own fill.
+   A tile that holds a table paints its fill as the one opaque color its
+   header, rows and pinned cells paint (`--list-fill`, `--bg-tile`), never
+   the weak fill over the panel: the two read the same in sRGB, but a
+   translucent layer and an opaque one can composite apart on a display
+   with its own color profile, and the pinned cells showed as lighter
+   blocks on a cheap monitor (owner, item 20).
+   A row is the tile's color at rest; hovered, the hover fill over it, one
+   step darker; the target and a checked row keep their fills over the
+   panel's white (`row-fill-active`, `row-fill-selected`), which in dark
+   keeps the soft text under them at 4.5:1. A row has the control radius,
+   and clips to it what it holds (the pinned cells' fills too; `clip` keeps
+   them sticky); checked rows in a run join into one block. Increase
+   contrast and forced colors draw the tile's edge as a 1 px outline inside
+   it, never a border. */
+@utility list-tile {
+  --list-fill: var(--bg-tile);
+  --list-row-hover: var(--bg-row-hover-tile);
+  --list-row-active: var(--bg-row-active-tile);
+  --control-fill: var(--bg-on-tile);
+  --control-on: var(--bg-control-on);
+  --control-on-shadow: var(--shadow-xs);
+  padding: 0 4px 4px;
+  border-width: 0;
+  border-radius: var(--radius-tile);
+  background-color: var(--bg-tile-fill);
+  box-shadow: var(--shadow-tile);
+  @media (prefers-contrast: more) {
+    outline: 1px solid var(--stroke-sub-300);
+    outline-offset: -1px;
+  }
+  @media (forced-colors: active) {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
+  /* A list with a header: the sticky header spans the tile edge to edge, so
+     the 4 px side inset moves from the tile onto the rows. The tile clips
+     to its own radius so the header's corners follow it (owner,
+     2026-10-02: "fix table radius"); clip, not hidden, so nothing inside
+     becomes a scroll box and the sticky header and columns keep working. */
+  &:has([data-list-header]) {
+    padding-inline: 0;
+    overflow: clip;
+    background-color: var(--list-fill);
+    --list-row-inset: 4px;
+    /* Forced colors: the sticky header's Canvas fill covered the outline's
+       top and sides; the edge is drawn over everything instead. */
+    @media (forced-colors: active) {
+      position: relative;
+      &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        border: 1px solid CanvasText;
+        border-radius: inherit;
+        pointer-events: none;
+      }
+    }
+  }
+  &:has([data-list-header]) [role="row"]:not([data-list-header]) {
+    margin-inline: 4px;
+  }
+  /* The header's fill spans the tile; its cells keep the rows' 4 px inset,
+     so its checkbox and columns line up with theirs (owner, 2026-10-02).
+     A transparent border, not padding: the row keeps its own cell padding
+     (px-cell or list-select-row) and its fill still paints under it. */
+  &:has([data-list-header]) [data-list-header] {
+    border-inline: 4px solid transparent;
+    @media (forced-colors: active) {
+      border-inline-color: Canvas;
+    }
+  }
+  & [role="row"]:not([data-list-header]) {
+    overflow: clip;
+    border-radius: var(--radius-control);
+  }
+  & [role="row"][aria-selected="true"] + [role="row"][aria-selected="true"] {
+    border-start-start-radius: 0;
+    border-start-end-radius: 0;
+  }
+  & [role="row"][aria-selected="true"]:has(+ [role="row"][aria-selected="true"]) {
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+  }
+}
+
+/* The standard list header row (owner, 2026-10-01: "all top rows need to be
+   standartized, like on main tables with profiles"): one header for every
+   table, with the Profiles header's metrics (32 px, the 12 px medium soft
+   label; its first label 12 px in from the row, which the host's row
+   padding gives: `px-cell`, or `list-select-row` in a list that selects).
+   No band of its own ("remove grey bg under tables headers rows"): it sits
+   inside the list's tile, on the tile's own fill, as the rows do. It is the
+   tile's own fill, opaque (owner, 2026-10-02: no blur, no translucent
+   tint): what scrolls under it simply disappears, and it spans the tile
+   edge to edge (a list with a header takes the tile's side inset on its
+   rows instead, below). Under it, the list's first divider
+   ("add divider under header row"): its ::after, the row dividers' own line
+   (the soft stroke laid over the list's surface, inset 12 px from both
+   ends, 1 px over its bottom edge, taking no layout); rows draw theirs
+   under themselves, so one line parts the header from the first row. No
+   border. While rows pass under it a soft edge fades in too
+   (`data-scrolled`, set by the host). Forced colors draw it Canvas, its
+   line a system line across it. Its pinned cells paint `--list-head-fill`
+   while columns pass under them (app.css). The host makes it sticky and
+   positions it. */
+:root {
+  --list-head-height: 32px;
+}
+@utility list-head {
+  --list-head-fill: var(--list-fill, var(--bg-white-0));
+  min-height: var(--list-head-height);
+  border-bottom-width: 0;
+  background-color: var(--list-fill, var(--bg-white-0));
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: var(--tracking-small);
+  color: var(--text-soft-400);
+  transition-property: box-shadow;
+  transition-duration: var(--motion-base);
+  transition-timing-function: var(--ease-out);
+  &[data-scrolled] {
+    box-shadow: var(--shadow-scroll-edge);
+  }
+  &::after {
+    content: "";
+    position: absolute;
+    inset-inline: 12px;
+    bottom: 0;
+    z-index: 3;
+    height: 1px;
+    pointer-events: none;
+    background-color: var(--list-fill, var(--bg-white-0));
+    background-image: linear-gradient(var(--stroke-soft-200), var(--stroke-soft-200));
+  }
+  @media (forced-colors: active) {
+    background-color: Canvas;
+    &::after {
+      inset-inline: 0;
+      forced-color-adjust: none;
+      background-color: CanvasText;
+      background-image: none;
+    }
+  }
+}
+/* A field's, a secondary button's or a chip's rest fill: the weak fill, or
+   what the surface under it says (`--control-fill`: white on the page's
+   ground in light, the weak fill on a tile or a white surface). No ring at
+   rest (borderless, owner 2026-10-01). */
+@utility control-fill {
+  background-color: var(--control-fill, var(--bg-weak-50));
+}
+/* A row's target and checked fills. Active equals hover (owner,
+   2026-10-01): the target is the hover gray over the list's own surface,
+   as a hovered row is; a checked row keeps its own fill over the panel's
+   white, and a checked target has the hover gray over that. Pressed, a row
+   is one step darker at once (below).
+   Each state is one token on the row, `--row-fill`, which the row paints
+   and its pinned cells paint too (app.css): one value, never a second rule
+   that could drift from it (owner, 2026-10-07, item 20). The token is one
+   opaque color (`--bg-row-*`: the overlay laid over what it lies on, made
+   by colors.source.mjs), never a translucent layer: a layer is dithered as
+   it paints, which left the pinned cells and the row up to 1/255 apart
+   pixel by pixel, and an overlay can composite apart from its opaque twin
+   on a display with its own color profile. On a tile (`list-tile`) the
+   hover and pressed fills lie over the tile (`--list-row-*`), elsewhere
+   over the panel's white. Forced colors paint the row in the system's. */
+@utility row-fill-active {
+  --row-fill: var(--list-row-hover, var(--bg-row-hover));
+  background: var(--row-fill);
+}
+@utility row-fill-selected {
+  --row-fill: var(--bg-row-selected);
+  background: var(--row-fill);
+}
+@utility row-fill-selected-active {
+  --row-fill: var(--bg-row-selected-hover);
+  background: var(--row-fill);
+}
+
+/* Row dividers, variant b (owner, 2026-10-01): a soft line inset 12 px from
+   both ends of the row, the list's cell padding (`--spacing-cell`), so the
+   line starts where the row's text does. It is the row's `row-line`, the one
+   divider every list uses: the kit DataList's rows, the Profiles and Proxies
+   rows, and the hand-rolled lists (a dialog's or a tile's rows, Settings'
+   Tags and Views), which put their text at `px-cell` to match (merge point
+   12). The line sits on the row's top edge (its ::after), so each line is
+   the edge between a row and the one above it, and takes no layout: the
+   host positions the row (a table's rows are absolute, a plain one's
+   `relative`). A table's row (`role="row"`) lays the stroke over the list's
+   own opaque color, as it passes over pinned cells and arrival tints and
+   must read the same over each (owner bug, 2026-10-01: "hovering the row
+   dont need to make bottom border thicker"); a plain row's is the stroke
+   alone, so it reads true on whatever tile it sits, a tile inside a tile
+   too. A focused row's ring takes its place. Windows contrast themes draw
+   it in CanvasText.
+
+   It hides on a row with a fill (hovered, checked, in Peek, the target in
+   sight, or a plain row that is open, `data-open`, filled, `data-filled`,
+   or hovered with a hover fill, `row-line-hover`) and on the row after
+   one, so no line runs along a fill's edge, and on the first row: the
+   header's own divider (`list-head`) is the one line under it, and a plain
+   list with no header has none above its first row (a header row before
+   it keeps the first row's line as its divider). With lines on top edges
+   the last row has none under it (owner: no divider under the last row).
+   The row after a fill is found with a sibling combinator, which the
+   browser invalidates cheaply: the `:has(+ row)` this replaced, on the row
+   above, cost a bulk Undo about 30 ms of style at 4x (merge point 11). */
+@utility row-line {
+  &::after {
+    content: "";
+    position: absolute;
+    inset-inline: var(--spacing-cell);
+    top: 0;
+    z-index: 3;
+    height: 1px;
+    pointer-events: none;
+    background-image: linear-gradient(var(--stroke-soft-200), var(--stroke-soft-200));
+  }
+  &[role="row"]::after {
+    background-color: var(--list-fill, var(--bg-tile));
+  }
+  &:focus-visible::after {
+    content: none;
+  }
+  /* A table row's ring (owner, 2026-10-07, item 20: the ring ran into the
+     select box's fade at the row's start): its line's layer drawn as the
+     ring, the row's own 2 px edge inside it, with its corners, above the
+     pinned cells and the select box (z-index 3), so it runs whole round the
+     row and never past it. The row's own outline (`focus-ring-inset`) lies
+     under it, the same ring, where nothing covers it. */
+  &[role="row"]:focus-visible::after {
+    content: "";
+    inset: 0;
+    height: auto;
+    border: var(--focus-width) solid var(--focus-color, var(--focus));
+    border-radius: inherit;
+    background: none;
+  }
+  @media (forced-colors: active) {
+    &::after,
+    &[role="row"]::after {
+      forced-color-adjust: none;
+      background-color: CanvasText;
+      background-image: none;
+    }
+    /* The system colors the ring, as it does every focus outline. */
+    &[role="row"]:focus-visible::after {
+      forced-color-adjust: auto;
+      background: none;
+    }
+  }
+}
+[role="row"]:not([data-list-header], :focus-visible):is(:hover, [aria-selected="true"], [data-peek-open], [data-active]:is(:root:not([data-input="pointer"]) *, [data-menu-open], :has([data-menu-open])))::after,
+[role="row"]:not([data-list-header]):is(:hover, [aria-selected="true"], [data-peek-open], [data-active]:is(:root:not([data-input="pointer"]) *, [data-menu-open], :has([data-menu-open]))) + [role="row"]:not(:focus-visible)::after,
+[role="row"][aria-rowindex="2"]:not(:focus-visible)::after,
+.row-line:not([role="row"]):is(:first-child, [data-open], [data-filled], .row-line-hover:hover)::after,
+.row-line:not([role="row"]):is([data-open], [data-filled], .row-line-hover:hover) + .row-line::after {
+  opacity: 0;
+}
+/* The header's own divider (`list-head`) hides the same way over a
+   highlighted first row (owner, 2026-10-08: "hide top heading row bottom
+   divider when first row is active or highlited"): the row right under the
+   header, `aria-rowindex="2"`, hovered, pressed, focused by the keys,
+   checked, open in Peek or the target in sight (what `row-target` draws), so
+   no line cuts the top of its fill or its ring. The header is found from the
+   row by a sibling `:has`, so no JS state: its rows box is a later sibling of
+   it in every list (ListHeader and the DataList's own header alike). Not
+   while the list is scrolled (`data-scrolled`, set by ListHeader): the row
+   right under the header is then another one, and the header floats over
+   rows, line and edge kept. The target's menu in its actions is a second
+   selector, as `:has` cannot nest. Forced colors take the same hide (the
+   rule is outside their block), as the row dividers do. */
+[data-list-header]:not([data-scrolled]):has(~ * > [role="row"][aria-rowindex="2"]:is(:hover, :active, :focus-visible, [aria-selected="true"], [data-peek-open], [data-active]:is(:root:not([data-input="pointer"]) *, [data-menu-open])))::after,
+[data-list-header]:not([data-scrolled]):has(~ * > [role="row"][aria-rowindex="2"][data-active] [data-menu-open])::after {
+  opacity: 0;
+}
+/* Pressing a row (owner, 2026-10-01: "when clicks it getting darker and
+   then to active same as hover color"): one step darker than hover, at once,
+   its pinned cells too (the row's `--row-fill`, above); on release it
+   settles to the hover gray. Not a checked row (it keeps its selected fill),
+   and not while a control inside the row is the one pressed. */
+[role="row"]:not([data-list-header], [aria-selected="true"]):active:not(:has(:is(button, a, input, label, [role="menuitem"]):active)) {
+  --row-fill: var(--list-row-active, var(--bg-row-active));
+  background: var(--row-fill);
+  transition: none;
+}
+
+/* ===== Selection mode (owner, 2026-10-01) =====
+   A list that selects keeps its select column in every state: the 28 px box
+   and the 10 px gap after it, before Name (owner, 2026-10-07, item 9: a box
+   laid over the start of the name on hover hid it, "ile test"). At rest a
+   row's box shows on its hover only, in its own slot, so nothing moves and
+   nothing is covered. Once a row is selected the list is in selection mode:
+   one class on the list (`has-selection`, beside `list-select`), never per
+   row; every box shows and so does the header's Select all. Name never
+   moves, on hover or as the mode comes and goes.
+
+   Geometry: a selecting row's leading padding is the cell padding less the
+   10 px gap between tracks (`list-select-row`), and its select track is
+   `--list-select`, which the header and every row's grid read: the box
+   column and its gap. A box sits at the cell padding (`list-select-box`). */
+.list-select {
+  --list-select: 38px; /* the 28 px select column and the 10 px gap after it */
+}
+@utility list-select-row {
+  padding-inline: calc(var(--spacing-cell) - 10px) var(--spacing-cell);
+}
+/* The box, in its select cell (which is positioned: pinned, or `relative`),
+   out of the cell's flow from the row's left edge. Hidden boxes leave the
+   Tab order and the accessibility tree (`visibility`); a box that has focus
+   stays shown, so focus never sits on a hidden one. */
+.list-select-box {
+  position: absolute;
+  inset-block: 0;
+  left: calc(10px - var(--spacing-cell));
+  display: flex;
+  align-items: center;
+  padding-inline-start: var(--spacing-cell);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity var(--motion-base) var(--ease-out), visibility 0s linear var(--motion-base);
+}
+/* A touch held on a row selects it (`useLongPress`): no callout over it. */
+.list-select [role="row"][aria-selected] {
+  -webkit-touch-callout: none;
+}
+.list-select.has-selection .list-select-box,
+.list-select [role="row"][aria-selected]:not([data-editing]):hover .list-select-box,
+.list-select-box:focus-within {
+  visibility: visible;
+  opacity: 1;
+  transition-delay: 0s;
+}
+
+/* Owner feedback 5v: "make sure we have cursor pointer over all actionable
+ * things." One rule in one place (base, so any component or app class can
+ * still opt out with a utility — utilities always outrank base in Tailwind's
+ * layer order, regardless of selector specificity or source order), instead
+ * of ~15 files each hand-adding `cursor-pointer`/`cursor-default` and a new
+ * control forgetting it. Text fields are untouched (the browser's own text
+ * cursor is correct there). */
+@layer base {
+  /* A kit Button that is disabled or busy is `aria-disabled` (still
+   * focusable, its tooltip still shows), not `:disabled` (audit Phase C). */
+  button:not(:disabled):not([aria-disabled="true"]),
+  a[href],
+  summary,
+  select:not(:disabled),
+  label[for],
+  /* The kit's own Checkbox/Radio/Switch nest the input inside the label
+   * (never as a direct child — a wrapping `<span>` holds it for the custom
+   * box/track), so this covers their real markup, not just a plain
+   * `<label><input></label>`. */
+  label:has(input[type="checkbox"], input[type="radio"]),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="file"]:not(:disabled),
+  input[type="range"]:not(:disabled),
+  input[type="color"]:not(:disabled),
+  /* `:not(:disabled)` too (owner feature 2026-09-26, the kit Menu's checkbox
+   * and radio items): a role can sit on a native disabled `<button>` with no
+   * `aria-disabled` set, and the role selector's higher specificity would
+   * otherwise beat `button:disabled` below and show a pointer over a
+   * disabled item. Harmless where the role never sits on a native control
+   * (`[role="button"]` on a div, say): `:not(:disabled)` is always true there. */
+  [role="button"]:not([aria-disabled="true"]):not(:disabled),
+  [role="link"]:not([aria-disabled="true"]):not(:disabled),
+  [role="menuitem"]:not([aria-disabled="true"]):not(:disabled),
+  [role="menuitemcheckbox"]:not([aria-disabled="true"]):not(:disabled),
+  [role="menuitemradio"]:not([aria-disabled="true"]):not(:disabled),
+  [role="option"]:not([aria-disabled="true"]):not(:disabled),
+  [role="tab"]:not([aria-disabled="true"]):not(:disabled),
+  [role="switch"]:not([aria-disabled="true"]):not(:disabled),
+  [role="checkbox"]:not([aria-disabled="true"]):not(:disabled),
+  [role="radio"]:not([aria-disabled="true"]):not(:disabled),
+  [role="treeitem"]:not([aria-disabled="true"]):not(:disabled),
+  [data-clickable] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  button[aria-disabled="true"],
+  select:disabled,
+  input[type="checkbox"]:disabled,
+  input[type="radio"]:disabled,
+  input[type="file"]:disabled,
+  input[type="range"]:disabled,
+  input[type="color"]:disabled,
+  [role="button"][aria-disabled="true"],
+  [role="link"][aria-disabled="true"],
+  [role="menuitem"][aria-disabled="true"],
+  [role="menuitemcheckbox"][aria-disabled="true"],
+  [role="menuitemradio"][aria-disabled="true"],
+  [role="option"][aria-disabled="true"],
+  [role="tab"][aria-disabled="true"],
+  [role="switch"][aria-disabled="true"],
+  [role="checkbox"][aria-disabled="true"],
+  [role="radio"][aria-disabled="true"],
+  [role="treeitem"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
+
+/* Type roles (typography.md 3.2). Each declares size, line-height, weight and
+   tracking, so nothing leaks from a parent and two roles never race by source
+   order (TYPE-09): one role per element (check:classes enforces it). Color is
+   a separate utility. In @layer components, so a utility (font-medium,
+   tabular-nums, a color) still wins. */
+/* Tracking (owner, 2026-10-01: "never make positive tracking on text, also
+   make sure we add from -0.01em to -0.02em to texts to balance them"):
+   small and body text (11 to 14 px) -0.01em, medium (15 to 18 px) -0.015em,
+   titles, stats and display text (20 px and up) -0.02em. Never positive
+   (check:classes fails on it). Chinese stays at 0: Han glyphs are full
+   width and crowd when tightened (TYPE-03); monospace stays at 0 for its
+   columns (`.text-mono`, code, key caps). */
+:root {
+  --tracking-small: -0.01em;
+  --tracking-medium: -0.015em;
+  --tracking-large: -0.02em;
+}
+:root:lang(zh) {
+  --tracking-small: 0em;
+  --tracking-medium: 0em;
+  --tracking-large: 0em;
+}
+
+@layer components {
+  .text-page-title    { font-size: 18px; line-height: 24px; font-weight: 600; letter-spacing: var(--tracking-medium); text-wrap: balance; }
+  .text-panel-title   { font-size: 15px; line-height: 20px; font-weight: 600; letter-spacing: var(--tracking-medium); text-wrap: balance; }
+  .text-section-title { font-size: 13px; line-height: 20px; font-weight: 600; letter-spacing: var(--tracking-small); text-wrap: balance; }
+  .text-ui            { font-size: 13px; line-height: 20px; font-weight: 500; letter-spacing: var(--tracking-small); }
+  .text-body          { font-size: 13px; line-height: 20px; font-weight: 400; letter-spacing: var(--tracking-small); }
+  .text-field-label   { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: var(--tracking-small); }
+  .text-secondary     { font-size: 12px; line-height: 16px; font-weight: 400; letter-spacing: var(--tracking-small); }
+  .text-help          { font-size: 12px; line-height: 18px; font-weight: 400; letter-spacing: var(--tracking-small); text-wrap: pretty; }
+  .text-micro         { font-size: 11px; line-height: 16px; font-weight: 500; letter-spacing: var(--tracking-small); }
+  /* A section's label: the sidebar's groups, the Profiles overview's folds,
+     Peek's sections, a step's and a rule's groups. Sentence case, small and
+     medium, as Linear, Raycast and the macOS sidebars draw them (owner,
+     2026-10-01: "make it more like in premium products"): never uppercase
+     with tracking (it was 11 px caps at 0.55px). */
+  .text-section-label { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: var(--tracking-small); }
+  .text-mono          { font-family: var(--font-mono); font-size: 12px; line-height: 16px; font-weight: 400; letter-spacing: 0; font-variant-ligatures: none; }
+  /* The number a person came for (owner, "more air, clearer hierarchy"): big,
+     bold and dark, everything around it small and soft. Its unit sits beside
+     it in .text-body soft. -sm inside Peek and in stat tiles. The only roles
+     that carry a color: the strong text one, so a number is never grey by
+     accident (a color utility still wins). */
+  .text-stat          { font-size: 26px; line-height: 32px; font-weight: 600; letter-spacing: var(--tracking-large); font-variant-numeric: tabular-nums; color: var(--text-strong-950); }
+  .text-stat-sm       { font-size: 20px; line-height: 26px; font-weight: 600; letter-spacing: var(--tracking-large); font-variant-numeric: tabular-nums; color: var(--text-strong-950); }
+  /* About 70 characters at any role size: Inter averages 0.52em a character. */
+  .measure            { max-inline-size: 36em; }
+
+  /* 11 px Han loses stroke detail: Chinese micro and overline text is 12 px. */
+  :root:lang(zh) :is(.text-micro, .text-section-label) { font-size: 12px; letter-spacing: 0; }
+}
+
+/* Helpers */
+@layer utilities {
+  .scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar::-webkit-scrollbar-track {
+    border-radius: 100vh;
+    background: transparent;
+  }
+  .scrollbar::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 100vh;
+  }
+  .scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+  /* Thin, and only drawn while the list scrolls (the host sets data-scrolling). */
+  .scrollbar-on-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scrollbar-on-scroll::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-on-scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: 100vh; }
+  .scrollbar-on-scroll[data-scrolling]::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); }
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hidden {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+}
+
+/* Range slider thumb (scoped to the kit's .slider inputs to avoid touching host inputs) */
+.slider[type="range"]::-webkit-slider-thumb,
+input[type="range"].sx-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-primary-base);
+  border: 4px solid var(--bg-white-0);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--motion-fast) var(--ease-out);
+}
+/* Fix round 1 (M12): the thumb's own `cursor: pointer` was unconditional,
+   so it still showed a pointer over a disabled slider once Slider dropped
+   its own `cursor-not-allowed` utility (these pseudo-elements are outside
+   the base-layer cursor rule's reach). */
+.slider[type="range"]:not(:disabled)::-webkit-slider-thumb,
+input[type="range"].sx-slider:not(:disabled)::-webkit-slider-thumb {
+  cursor: pointer;
+}
+.slider[type="range"]:disabled::-webkit-slider-thumb,
+input[type="range"].sx-slider:disabled::-webkit-slider-thumb {
+  cursor: not-allowed;
+}
+.slider[type="range"]::-webkit-slider-thumb:hover,
+input[type="range"].sx-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+/* Reduced motion (the OS or Settings): the thumb does not grow. */
+@media (prefers-reduced-motion: reduce) {
+  .slider[type="range"]::-webkit-slider-thumb:hover,
+  input[type="range"].sx-slider::-webkit-slider-thumb:hover {
+    transform: none;
+  }
+}
+:root[data-reduce-motion="true"] :is(.slider[type="range"], input[type="range"].sx-slider)::-webkit-slider-thumb:hover {
+  transform: none;
+}
+.slider[type="range"]::-moz-range-thumb,
+input[type="range"].sx-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-primary-base);
+  border: 4px solid var(--bg-white-0);
+  box-shadow: var(--shadow-sm);
+}
+.slider[type="range"]:not(:disabled)::-moz-range-thumb,
+input[type="range"].sx-slider:not(:disabled)::-moz-range-thumb {
+  cursor: pointer;
+}
+.slider[type="range"]:disabled::-moz-range-thumb,
+input[type="range"].sx-slider:disabled::-moz-range-thumb {
+  cursor: not-allowed;
+}
+/* WIG-13: the thumb draws the slider's focus. One rule per engine: a
+   selector list with the other engine's pseudo-element is dropped whole. */
+.slider[type="range"]:focus-visible::-webkit-slider-thumb,
+input[type="range"].sx-slider:focus-visible::-webkit-slider-thumb {
+  outline: var(--focus-width) solid var(--focus-color, var(--focus));
+  outline-offset: 2px;
+}
+.slider[type="range"]:focus-visible::-moz-range-thumb,
+input[type="range"].sx-slider:focus-visible::-moz-range-thumb {
+  outline: var(--focus-width) solid var(--focus-color, var(--focus));
+  outline-offset: 2px;
+}

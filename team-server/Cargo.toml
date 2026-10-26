@@ -1,0 +1,55 @@
+[package]
+name = "octopus-agent-team-server"
+version = "2.1.2"
+description = "Self-hosted team server for Octopus Agent: team profiles, member tokens and live permissions."
+authors = ["Harindu Jayakody"]
+edition = "2021"
+
+# A library too, so a launcher test can run a real server in-process.
+[lib]
+# The library keeps its old crate name so the launcher's tests import it unchanged.
+name = "shardbrowser_team_server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "octopus-agent-team-server"
+path = "src/main.rs"
+
+[dependencies]
+# The rights model, shared with the launcher so both decide the same way.
+team-model = { path = "../crates/team-model" }
+# Same versions the launcher already builds with, so one vocabulary across
+# the two crates and no second copy of a transitive tree.
+axum = { version = "0.7", features = ["ws"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time", "sync", "signal"] }
+tokio-test = "0.4"
+tower-http = { version = "0.6", features = ["trace", "limit"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+jsonwebtoken = "9"
+# `blob`: sessions and packages are written and read in place, not copied twice.
+rusqlite = { version = "0.32", features = ["bundled", "blob"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+rand = "0.8"
+sha2 = "0.10"
+base64 = "0.22"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+ed25519-dalek = { version = "2", features = ["pkcs8", "pem", "rand_core"] }
+# The encrypted link, shared with the launcher; TLS on the ring the JWTs already use.
+team-wire = { path = "../crates/team-wire" }
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring"] }
+# The at-rest cipher, same version the launcher uses.
+aes-gcm = "0.10"
+# Serving by hand: axum::serve sets no header timeout. Both already come in
+# with axum, at these versions and features.
+hyper = { version = "1", features = ["http1", "server"] }
+hyper-util = { version = "0.1", features = ["tokio", "server", "service", "http1"] }
+
+[dev-dependencies]
+# `oneshot` on the router, so the tests go through routing and the gates the
+# way a real request does — the same version the launcher already builds.
+tower = { version = "0.5", features = ["util"] }
+# A body that never sends, to test the stall timeout; already in the tree via axum.
+http-body = "1"

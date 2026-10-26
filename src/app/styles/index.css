@@ -1,0 +1,289 @@
+/* ============================================================================
+ * App global styles — built on the Shardx UI Kit design system.
+ * Tokens (palette, semantic theme vars, typography) come from the kit;
+ * this file only wires Tailwind, scans the kit dist for used utilities,
+ * and adds app-chrome basics (scrollbars, base font).
+ * ==========================================================================*/
+@import "tailwindcss";
+@import "@proxyshard/shardx-ui-kit/tokens.css";
+
+/* Generate Tailwind utilities used inside the kit's prebuilt components. */
+@source "../../../node_modules/@proxyshard/shardx-ui-kit/dist";
+
+/* The launcher's spacing scale (owner, 2026-09-28: nothing larger than before
+   Phase B). Before the kit's 4 px `--spacing`, a step here was 0.25rem at the
+   14 px root, 3.5 px; each step is that value floored to a whole pixel. Tailwind
+   reads `p-*` from `--padding-*`, `m-*` from `--margin-*`, `gap-*` from
+   `--gap-*`, `space-*` from `--space-*` and `inset-*`, `top-*`, `left-*`, ...
+   from `--inset-*` before the 4 px multiplier, so no call site changes; sizes
+   (`h-*`, `w-*`, `size-*`) and the named roles (`p-inset`, `px-cell`) keep
+   the kit's px. Kit components write their spacing in px (`px-[8px]`), so
+   they draw the same here and in the dashboard. `npm run check:classes` fails
+   on a step this table lacks. */
+@theme {
+  --padding-0\.5: 1px; --padding-1: 3px; --padding-1\.5: 5px; --padding-2: 7px; --padding-2\.5: 8px; --padding-3: 10px; --padding-3\.5: 12px; --padding-4: 14px;
+  --padding-5: 17px; --padding-6: 21px; --padding-7: 24px; --padding-8: 28px; --padding-9: 31px; --padding-10: 35px; --padding-12: 42px; --padding-20: 70px;
+  --margin-0\.5: 1px; --margin-1: 3px; --margin-1\.5: 5px; --margin-2: 7px; --margin-2\.5: 8px; --margin-3: 10px; --margin-3\.5: 12px; --margin-4: 14px;
+  --margin-5: 17px; --margin-6: 21px; --margin-7: 24px; --margin-8: 28px; --margin-9: 31px; --margin-10: 35px; --margin-12: 42px; --margin-20: 70px;
+  --gap-0\.5: 1px; --gap-1: 3px; --gap-1\.5: 5px; --gap-2: 7px; --gap-2\.5: 8px; --gap-3: 10px; --gap-3\.5: 12px; --gap-4: 14px;
+  --gap-5: 17px; --gap-6: 21px; --gap-7: 24px; --gap-8: 28px; --gap-9: 31px; --gap-10: 35px; --gap-12: 42px; --gap-20: 70px;
+  --space-0\.5: 1px; --space-1: 3px; --space-1\.5: 5px; --space-2: 7px; --space-2\.5: 8px; --space-3: 10px; --space-3\.5: 12px; --space-4: 14px;
+  --space-5: 17px; --space-6: 21px; --space-7: 24px; --space-8: 28px; --space-9: 31px; --space-10: 35px; --space-12: 42px; --space-20: 70px;
+  --inset-0\.5: 1px; --inset-1: 3px; --inset-1\.5: 5px; --inset-2: 7px; --inset-2\.5: 8px; --inset-3: 10px; --inset-3\.5: 12px; --inset-4: 14px;
+  --inset-5: 17px; --inset-6: 21px; --inset-7: 24px; --inset-8: 28px; --inset-9: 31px; --inset-10: 35px; --inset-12: 42px; --inset-20: 70px;
+  /* A page's side padding inside its panel: 16 (borderless, owner
+     2026-10-01; 21 on the bare canvas before, so with the panel's 8 px inset
+     content moves 3 px). The kit's role is 24. */
+  --spacing-gutter: 16px;
+}
+
+/* The official Inter 4.1 variable file (TYPE-04). It is read from the app
+   bundle, so `block` costs nothing and avoids a fallback frame. */
+@font-face {
+  font-family: "Inter Variable";
+  src: url("../fonts/InterVariable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: block;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+    background: var(--bg-canvas);
+    color: var(--text-strong-950);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* A desktop window, not a web page (WIG-04, WIG-05; owner decision O-2).
+     Chrome text is never selectable; what a person copies always is: fields,
+     code, .mono values and anything marked data-selectable (hosts, IPs, IDs,
+     user agents, notes, error text, the API URL and token). The window never
+     rubber-bands; panels keep their scroll to themselves (overscroll-contain
+     on each scroll box). */
+  html,
+  body {
+    overscroll-behavior: none;
+  }
+  /* Every scroll box keeps its scroll to itself, by the classes that make one
+     (app and kit alike) and the one UA scroller, so none can be left out
+     (H5 review, I1; desktop.spec scans every page). `:where` keeps a box's
+     own `overscroll-*` utility in charge. */
+  :where(
+    .overflow-auto, .overflow-scroll,
+    .overflow-x-auto, .overflow-y-auto, .overflow-x-scroll, .overflow-y-scroll,
+    textarea
+  ) {
+    overscroll-behavior: contain;
+  }
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: default;
+  }
+  input,
+  textarea,
+  [contenteditable="true"],
+  code,
+  pre,
+  .mono,
+  [data-selectable],
+  [data-selectable] * {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  /* The default arrow above is for chrome; a field keeps its text caret. */
+  input,
+  textarea,
+  [contenteditable="true"] {
+    cursor: auto;
+  }
+
+  /* The rem base stays 14 px. Sizes and radii are px (the kit's
+     `--spacing: 4px`, O1), spacing steps come from the table above. A few
+     widths still read the rem: Tailwind's container
+     sizes (the Tooltip's `max-w-xs`, the Modal's default `max-w-lg`,
+     ConfirmHost's `max-w-md`), ExtensionPicker's `max-w-[13rem]`,
+     SyncPanel's `max-w-[9rem]` and the dialogs'
+     `max-w-[calc(var(--viewport-w)-2rem)]`. UI text is 13/20 (O1, TYPE-02);
+     the type roles set everything else. */
+  html {
+    font-size: 14px;
+  }
+  body,
+  #root {
+    font-size: 13px;
+    line-height: 20px;
+  }
+
+  /* Emphasis is one step up, not the heaviest weight on screen (TYPE-06).
+     Not :where(): Tailwind's preflight sets `b, strong { font-weight: bolder }`
+     in this layer, and the same specificity, later in the layer, is enough. */
+  strong,
+  b {
+    font-weight: 500;
+    color: var(--text-strong-950);
+  }
+  /* Inside a 600 title, emphasis keeps the title's weight, never a lighter 500. */
+  :is(h1, h2, h3, .text-page-title, .text-panel-title, .text-section-title) :is(strong, b) {
+    font-weight: inherit;
+  }
+  /* Values the user copies keep their exact glyphs: no code ligatures (TYPE-08). */
+  :where(code, kbd, samp, pre) {
+    font-variant-ligatures: none;
+    letter-spacing: 0;
+  }
+  /* Numbers in lists and grids line up (FEEL-09). */
+  :where([role="grid"], [role="treegrid"], [role="row"], table, [data-numeric]) {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Titles balance; running text avoids a one-word last line (FEEL-10). */
+  :where(h1, h2, h3) {
+    text-wrap: balance;
+  }
+  :where(p, li, dd, [role="alert"]) {
+    text-wrap: pretty;
+  }
+  /* Selection carries the brand; the text keeps its own color (TYPE-13): no
+     `color` here, since under highlight inheritance (WebView2) `inherit`
+     resolves through the parent's ::selection, not the text. */
+  ::selection {
+    background-color: var(--primary-tint-hover);
+  }
+  :where(input, textarea) {
+    caret-color: var(--color-primary-base);
+  }
+
+  html {
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+  }
+
+  button {
+    font-family: inherit;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+
+}
+
+/* Chinese (TYPE-03): Latin stays in Inter, and Han never depends on the
+   engine's locale guess (`lang` is zh-CN since Phase A Task 21). */
+:root:lang(zh) {
+  --font-sans: "Inter Variable", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", sans-serif;
+}
+
+/* ===== Utility aliases ===== */
+@layer utilities {
+  /* JetBrains Mono for data (hosts, IDs, arguments), combined with any type role. */
+  .mono {
+    font-family: var(--font-mono);
+    font-variant-ligatures: none;
+    letter-spacing: 0;
+  }
+}
+
+/* Folder (and Tag) palette, stored by id (colors.md A.5). One lightness and
+   95% of the sRGB chroma limit per hue, so no color is louder than another,
+   and each keeps 3:1 on the canvas, the surface, a hover, a checked row, a
+   chip and the current sidebar item (npm run check:contrast). Light green
+   sits at L 0.586, not 0.6: at equal L it is the brightest hue and fell to
+   2.89:1 on the current sidebar item. */
+:root {
+  --label-blue: #1783dc;     /* oklch(0.6 0.162 250.2) */
+  --label-violet: #9f45f9;   /* oklch(0.6 0.251 302) */
+  --label-magenta: #d61cad;  /* oklch(0.599 0.247 339.9) */
+  --label-red: #eb1d2f;      /* oklch(0.601 0.232 24.9) */
+  --label-orange: #c56015;   /* oklch(0.601 0.151 50.2) */
+  --label-yellow: #9b7c15;   /* oklch(0.599 0.117 90) */
+  --label-green: #189447;    /* oklch(0.586 0.153 150.1) */
+  --label-sky: #198db1;      /* oklch(0.6 0.108 225.3) */
+  /* A label chip (.label-chip, below): its hue at this share over the row
+     for the fill, and at this share mixed with the ink for the text.
+     npm run check:contrast measures the text on the fill for every hue. */
+  --label-chip-tint: 14%;
+  --label-chip-text: 62%;
+  --label-chip-text-highlight: 62%; /* a chip on a highlighted popover row: the same in light */
+  --label-chip-ink: #000;
+}
+[data-theme="dark"] {
+  --label-blue: #56aafb;
+  --label-violet: #b988fb;
+  --label-magenta: #fb5dd0;
+  --label-red: #fb756e;
+  --label-orange: #fb7c1e;
+  --label-yellow: #c7a01e;
+  --label-green: #24c460;
+  --label-sky: #23b5e1;
+  --label-chip-tint: 22%;
+  --label-chip-text: 70%;
+  --label-chip-text-highlight: 45%; /* a chip on a highlighted popover row: more ink, 4.5:1 on the lighter popover's highlight */
+  --label-chip-ink: #fff;
+}
+
+/* Owner feedback 5j (2026-09-26): Folder and Tag chips are tinted in their
+   label color, no dot. Each chip sets --label (e.g. `var(--label-blue)`)
+   inline; color-mix keeps every LABEL_COLORS entry readable in both themes
+   without eight hand-picked pairs. Owner feedback 2026-09-28: no ring
+   either, the tint alone ("we have less borders in other products
+   designs"). A Folder with no color keeps the plain neutral chip (inline
+   utilities in FolderChip.tsx) instead. The mix is the --label-chip-*
+   tokens above: 14 % and 62 % toward black in light, 22 % and 70 % toward
+   white in dark. */
+@layer components {
+  .label-chip {
+    background: color-mix(in oklch, var(--label) var(--label-chip-tint), transparent);
+    color: color-mix(in oklch, var(--label) var(--label-chip-text), var(--label-chip-ink));
+  }
+  /* On a highlighted or pressed row of a popover (an option, a menu item) the
+     row's fill lies under the chip's tint, so the chip's text takes
+     --label-chip-text-highlight (npm run check:contrast measures it on
+     hover/popover and active/popover). */
+  :is([role="option"][data-highlighted], [role^="menuitem"]:focus) .label-chip {
+    --label-chip-text: var(--label-chip-text-highlight);
+  }
+}
+
+/* Fix round 1 (I2): the Remove button (Peek's tag chips) follows the chip's
+   text color, but the kit's ghost-neutral Button sets `text-text-sub-600`
+   as a utility in @layer utilities — a later layer always wins over
+   @layer components regardless of specificity, so these have to live in
+   @layer utilities too (their two-class selector then wins inside that
+   layer, over the kit's one-class utility). */
+@layer utilities {
+  /* A Folder with no color (the plain chip, sub gray on the weak fill) reads
+     strong on a highlighted or pressed popover row, as its pill does in
+     OptionBadgeMark. */
+  :is([role="option"][data-highlighted], [role^="menuitem"]:focus) [data-folder-chip]:not(.label-chip) {
+    color: var(--text-strong-950);
+  }
+  .label-chip [data-chip-remove] {
+    color: color-mix(in oklch, var(--label) var(--label-chip-text), var(--label-chip-ink));
+  }
+}
+
