@@ -86,7 +86,7 @@ const key = (d: ProfileFormDraft) => JSON.stringify({
 const sameTags = (a: ProfileFormDraft, b: ProfileFormDraft) =>
   JSON.stringify([[...a.tagIds].sort(), [...a.newTags].sort()]) === JSON.stringify([[...b.tagIds].sort(), [...b.newTags].sort()]);
 
-const BASICS = new Set<keyof ProfileForm>(["name", "color", "notes"]);
+const BASICS = new Set<keyof ProfileForm>(["name", "color", "icon", "notes"]);
 const PROXY = new Set<keyof ProfileForm>(["proxy_id"]);
 const EXTENSIONS = new Set<keyof ProfileForm>(["extensions"]);
 /** Not the person's to change: never counted as a change. */
@@ -219,7 +219,9 @@ async function loadCreate(session: number, proxyId: string | null, preset?: Part
   };
   const folder = useProfileUi.getState().folder;
   show({
-    form: { ...base, id: "", rev: 0, name: nextName(), proxy_id: proxyId, ...preset, gpu_preset_id: fp.id },
+    // No notes: the template's own description of its device is not the
+    // person's note about this profile (owner, 2026-10-27).
+    form: { ...base, id: "", rev: 0, name: nextName(), notes: "", proxy_id: proxyId, ...preset, gpu_preset_id: fp.id },
     // The Folder the list shows; none from All profiles.
     folder: folder !== "all" ? folder : "",
     tagIds: [],

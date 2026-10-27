@@ -1,11 +1,12 @@
 import { t } from "../../shared/i18n";
 import {
-  AddIcon, CloseIcon, CopyIcon, DeleteIcon, DownloadIcon, EditIcon, FolderIcon, FolderMinusIconApp, IdCardIcon, PeekIcon, PinIconApp,
+  AddIcon, ClearCacheIcon, CloseIcon, CopyIcon, DeleteIcon, DownloadIcon, EditIcon, FolderIcon, FolderMinusIconApp, IdCardIcon, PeekIcon, PinIconApp,
   PlayIcon, RegenerateIcon, RenameIcon, RouteIcon, StopIcon, SyncIcon, SyncedIcon, SyncOffIcon, TagIcon, UnpinIconApp, UploadIcon,
 } from "../../shared/icons";
 import { syncConnected, useSync } from "../../entities/sync";
 import { openHereInstead, setProfilesSync } from "../profile-sync";
-import { processList, profileFocusWindow } from "../../entities/profile";
+import { processList, profileCacheClear, profileFocusWindow } from "../../entities/profile";
+import { fmtBytes } from "../../shared/lib/format";
 import { clip } from "../../shared/lib/clipboard";
 import { toast } from "../../shared/model/toast";
 import { useNav } from "../../shared/model/navigation";
@@ -398,6 +399,24 @@ export const PROFILE_COMMANDS: readonly Command[] = [
     // click (Pair 18 review, M6), rather than a toast after it.
     disabled: (s) => (s.ids.some(isRunning) ? t("profileRow.stopFirst") : null),
     run: async (s) => { const p = metas(s)[0]; if (p) await data().importCookies(p); },
+  },
+  {
+    // Only what the browser rebuilds by itself: cookies, logins and history stay.
+    ...LIST, id: "profile.clearCache", scope: "active", group: "copy", icon: ClearCacheIcon,
+    label: () => t("commands.clearCache"),
+    surfaces: ["rowMenu", "paletteActions", "peekMenu"],
+    when: personalRows,
+    disabled: (s) => (s.ids.some(isRunning) ? t("profileRow.stopFirst") : null),
+    run: async (s) => {
+      const p = metas(s)[0];
+      if (!p) return;
+      try {
+        const freed = await profileCacheClear(p.id);
+        toast.ok(t("profileRow.cacheCleared", { name: p.name, size: fmtBytes(freed) }));
+      } catch (e) {
+        toast.fail({ title: t("profileRow.cacheClearFailed", { name: p.name }), detail: e, subject: p.name });
+      }
+    },
   },
   {
     ...LIST, id: "profile.trash", scope: "selection", group: "danger", icon: DeleteIcon, danger: true,

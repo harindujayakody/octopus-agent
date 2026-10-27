@@ -8,7 +8,7 @@ import type { MockTeamServer } from "./teamServer";
 import type { MockSync } from "./syncServer";
 import type { SpaceData } from "./spaces";
 import type { ProfileSync } from "../../entities/sync/model/types";
-import type { ProfileMeta } from "../../entities/profile/model/types";
+import type { EngineId, ProfileMeta } from "../../entities/profile/model/types";
 import type { ProxyEntry, ProxyTestSnapshot } from "../../entities/proxy/model/types";
 import type { FingerprintEntry } from "../../entities/fingerprint/model/types";
 import type { ExtensionEntry, ExtensionUpdate } from "../../entities/extension/model/types";
@@ -286,6 +286,8 @@ export function metaOf(p: StoredProfile): ProfileMeta {
     ...(p._meta.launches !== undefined ? { launches: p._meta.launches } : {}),
     ...(p._meta.traffic_bytes !== undefined ? { traffic_bytes: p._meta.traffic_bytes } : {}),
     color: p._meta.color ?? null,
+    ...((p._meta as { engine?: string }).engine ? { engine: (p._meta as { engine?: EngineId }).engine } : {}),
+    ...((p._meta as { icon?: string }).icon ? { icon: (p._meta as { icon?: string }).icon } : {}),
     extensions: p._meta.extensions,
     mobile: /android/i.test(ua),
     ...(sync ? { sync } : {}),

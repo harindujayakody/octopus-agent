@@ -15,7 +15,7 @@ const stored = (page: Page) => page.evaluate(() => JSON.parse(localStorage.getIt
 type Launch = { id: string };
 const launched = (page: Page) =>
   page.evaluate(() => ((window as unknown as { __shardxMockLaunches?: Launch[] }).__shardxMockLaunches ?? []).map((l) => l.id));
-const ALL = ["Name", "Status", "Folder", "Tags", "Proxy", "Last run", "Created", "Run time", "Device", "Extensions", "Notes"];
+const ALL = ["Name", "Status", "Folder", "Tags", "Proxy", "Browser", "Last run", "Created", "Run time", "Device", "Extensions", "Notes"];
 const TAGS = { version: 1, tags: [{ id: "t-warm", name: "Warm-up", color: "orange" }], byProfile: { aed41005: ["t-warm"] } };
 
 // A tag exists, so the Tags column is there whatever later rules decide (audit Phase F Task 20).
@@ -237,7 +237,7 @@ test("a column turned on in a list too narrow for it joins the list, which scrol
   await page.setViewportSize({ width: 1024, height: 680 });
   await openApp(page);
   await header(page).getByRole("button", { name: "Columns" }).click();
-  for (const n of ["Last run", "Created", "Run time", "Device", "Extensions"]) {
+  for (const n of ["Browser", "Last run", "Created", "Run time", "Device", "Extensions"]) {
     await page.getByRole("menuitemcheckbox", { name: n }).click();
   }
   const extensions = page.getByRole("menuitemcheckbox", { name: "Extensions" });

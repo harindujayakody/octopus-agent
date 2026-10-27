@@ -1,6 +1,6 @@
 [package]
 name = "octopus-agent"
-version = "2.2.0"
+version = "2.3.0"
 description = "Octopus Agent: an anti-detect browser for profiles, proxies, fingerprints and automation."
 authors = ["Harindu Jayakody"]
 edition = "2021"

@@ -38,6 +38,7 @@ import {
   Folder01Icon,
   InformationCircleIcon,
   ArrowDown01Icon,
+  CleanIcon,
   Delete02Icon,
   Globe02Icon,
   Clock01Icon,
@@ -185,6 +186,8 @@ export const LockedIcon = make(LockIcon);
 export const ChevronDownIcon = make(ArrowDown01Icon);
 export const BackIcon = make(ArrowLeft01Icon);
 export const DeleteIcon = make(Delete02Icon);
+/** Empties a profile's browser cache. */
+export const ClearCacheIcon = make(CleanIcon);
 export const GlobeIcon = make(Globe02Icon);
 export const ClockIcon = make(Clock01Icon);
 export const BuildingIcon = make(Building02Icon);

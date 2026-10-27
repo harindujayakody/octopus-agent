@@ -1,6 +1,7 @@
 //! Browsers a profile can start in besides the Octopus Agent engine: stock
 //! Chrome, Chromium and Firefox, installed by the launcher into its own folder
-//! (the Browsers page in Settings) or found where this computer has them.
+//! from the Browsers page in Settings. Copies installed on the computer are
+//! never used.
 //!
 //! They get the profile's own data folder, its proxy and its WebRTC choice,
 //! and nothing of the fingerprint: none of them reads `--fingerprint-profile`
@@ -58,62 +59,13 @@ impl Engine {
         !matches!(self, Engine::Firefox)
     }
 
-    /// The executable: `engine_paths` in Settings first, then the launcher's
-    /// own install (kept apart and updated from the Browsers page), then where
-    /// the computer's installers put it.
+    /// The executable: only the copy the launcher installed (Settings >
+    /// Browsers). A browser installed on the computer, or a path set by
+    /// hand, is never started: what a profile runs is installed, updated and
+    /// removed here, so its version is always the one the page shows.
     pub fn locate(self) -> Option<PathBuf> {
-        if let Some(p) = crate::settings::load().ok().and_then(|s| s.engine_paths.get(self.id()).cloned()) {
-            let p = PathBuf::from(p.trim());
-            if p.is_file() {
-                return Some(p);
-            }
-        }
-        download::downloaded(self).or_else(|| known_places(self).into_iter().find(|p| p.is_file()))
+        download::downloaded(self)
     }
-}
-
-#[cfg(target_os = "windows")]
-fn known_places(engine: Engine) -> Vec<PathBuf> {
-    let roots: Vec<PathBuf> = ["LOCALAPPDATA", "ProgramFiles", "ProgramFiles(x86)", "ProgramW6432"]
-        .iter()
-        .filter_map(|v| std::env::var_os(v).map(PathBuf::from))
-        .collect();
-    let tail: &[&str] = match engine {
-        Engine::Chrome => &["Google", "Chrome", "Application", "chrome.exe"],
-        Engine::Chromium => &["Chromium", "Application", "chrome.exe"],
-        Engine::Firefox => &["Mozilla Firefox", "firefox.exe"],
-        Engine::ShardX => return Vec::new(),
-    };
-    roots.into_iter().map(|r| tail.iter().fold(r, |p, s| p.join(s))).collect()
-}
-
-#[cfg(target_os = "macos")]
-fn known_places(engine: Engine) -> Vec<PathBuf> {
-    let app = match engine {
-        Engine::Chrome => "Google Chrome.app/Contents/MacOS/Google Chrome",
-        Engine::Chromium => "Chromium.app/Contents/MacOS/Chromium",
-        Engine::Firefox => "Firefox.app/Contents/MacOS/firefox",
-        Engine::ShardX => return Vec::new(),
-    };
-    let mut roots = vec![PathBuf::from("/Applications")];
-    if let Some(home) = std::env::var_os("HOME") {
-        roots.push(PathBuf::from(home).join("Applications"));
-    }
-    roots.into_iter().map(|r| r.join(app)).collect()
-}
-
-#[cfg(target_os = "linux")]
-fn known_places(engine: Engine) -> Vec<PathBuf> {
-    let names: &[&str] = match engine {
-        Engine::Chrome => &["google-chrome", "google-chrome-stable"],
-        Engine::Chromium => &["chromium", "chromium-browser"],
-        Engine::Firefox => &["firefox"],
-        Engine::ShardX => return Vec::new(),
-    };
-    let dirs: Vec<PathBuf> = std::env::var_os("PATH")
-        .map(|p| std::env::split_paths(&p).collect())
-        .unwrap_or_default();
-    dirs.iter().flat_map(|d| names.iter().map(move |n| d.join(n))).collect()
 }
 
 /// Where a stock engine keeps the profile's data: inside the profile's own
@@ -126,6 +78,8 @@ pub fn data_dir(udd: &Path, engine: Engine) -> PathBuf {
 /// What a plain start is made from.
 pub struct Plain<'a> {
     pub dir: &'a Path,
+    /// The windows' title, the profile's name (Chromium family's `--window-name`), "" for none.
+    pub title: &'a str,
     pub proxy: Option<&'a ProxyEntry>,
     /// The profile's `webrtc`: "block", "tcp_only" or "auto".
     pub webrtc: &'a str,
@@ -174,6 +128,10 @@ pub fn command_line(engine: Engine, plain: &Plain) -> Vec<String> {
     }
 
     args.push(format!("--user-data-dir={}", plain.dir.display()));
+    // The profile's name on its windows, so the taskbar thumbnail says which one it is.
+    if !plain.title.is_empty() {
+        args.push(format!("--window-name={}", plain.title));
+    }
     args.push("--no-first-run".into());
     args.push("--no-default-browser-check".into());
     if !plain.extensions.is_empty() {
@@ -348,7 +306,7 @@ mod tests {
     }
 
     fn plain<'a>(dir: &'a Path, p: Option<&'a ProxyEntry>, cdp: bool) -> Plain<'a> {
-        Plain { dir, proxy: p, webrtc: "auto", extensions: &[], cdp, headless: false, extra: Vec::new() }
+        Plain { dir, title: "", proxy: p, webrtc: "auto", extensions: &[], cdp, headless: false, extra: Vec::new() }
     }
 
     #[test]

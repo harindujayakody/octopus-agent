@@ -68,6 +68,12 @@ pub struct ProfileMeta {
     /// browser does on its own.
     #[serde(default)]
     pub color: Option<String>,
+    /// The browser it starts in (`_meta.engine`); None = the Octopus Agent engine.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub engine: Option<String>,
+    /// The site icon the person picked for it ("facebook", "pinterest"…); None = its initials.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
     /// Extension ids from the library, loaded at launch.
     #[serde(default)]
     pub extensions: Vec<String>,
@@ -158,6 +164,9 @@ pub struct StoredMeta {
     /// Icon accent, `#rrggbb`; absent = derived from the name.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub color: Option<String>,
+    /// A site icon to tell it apart in the list ("facebook", "pinterest"…).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
     /// Extension ids from the library.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub extensions: Vec<String>,
@@ -294,6 +303,8 @@ pub(in crate::space) fn list_all() -> Result<Vec<ProfileMeta>> {
             folder: stored.meta.folder,
             total_runtime_ms: stored.meta.total_runtime_ms,
             color: stored.meta.color,
+            engine: stored.meta.engine,
+            icon: stored.meta.icon,
             extensions: stored.meta.extensions,
             mobile: claims_mobile(&stored.config),
             android_media: stored.meta.android_media,
@@ -615,6 +626,8 @@ pub(in crate::space) fn clone_profile(id: &str) -> Result<ProfileMeta> {
         folder: src.meta.folder,
         total_runtime_ms: 0,
         color: src.meta.color,
+        engine: src.meta.engine,
+        icon: src.meta.icon,
         extensions: src.meta.extensions,
         mobile: claims_mobile(&src.config),
         android_media: src.meta.android_media,

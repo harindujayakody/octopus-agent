@@ -5,6 +5,8 @@ import { deferDelete } from "../../../shared/lib/deferDelete";
 import { focusAfterRowDelete } from "../rowDelete";
 import { DeleteIcon } from "../../../shared/icons";
 import { ColorRadios } from "../../../shared/ui/ColorRadios";
+import { CustomColorSwatch } from "../../../shared/ui/CustomColorSwatch";
+import { isHexColor } from "../../../shared/constants";
 import { useT } from "../../../shared/i18n";
 import { SettingsGroup } from "../SettingRow";
 import { queueTagOp, usePendingTag } from "../useSettingsDraft";
@@ -94,11 +96,17 @@ function TagRow({ tag, count }: { tag: Tag; count: number }) {
         />
       </div>
       </Tooltip>
-      <fieldset disabled={!!noEdit} className="m-0 min-w-0 border-0 p-0">
+      <fieldset disabled={!!noEdit} className="m-0 flex min-w-0 items-center gap-[5px] border-0 p-0">
         <ColorRadios
           label={t("settings.tagColor", { name: tag.name })}
-          value={color}
+          value={isHexColor(color) ? null : color}
           onChange={(c) => { if (c && !noEdit) queueTagOp({ kind: "recolor", id: tag.id, color: c }); }}
+        />
+        {/* A color of one's own, after the palette's eight. */}
+        <CustomColorSwatch
+          label={t("settings.tagColor", { name: tag.name })}
+          value={color}
+          onChange={(c) => { if (!noEdit) queueTagOp({ kind: "recolor", id: tag.id, color: c }); }}
         />
       </fieldset>
       <span className="ml-auto whitespace-nowrap text-secondary tabular-nums text-text-soft-400">

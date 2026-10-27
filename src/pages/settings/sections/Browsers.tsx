@@ -9,9 +9,9 @@ import { SettingRow, SettingsGroup } from "../SettingRow";
 const BROWSERS: StockEngine[] = ["chrome", "chromium", "firefox"];
 
 /// Browsers: Google Chrome, Chromium and Firefox, each installed on its own
-/// into the launcher's folder, apart from any copy the computer has, so a
-/// profile always starts the version shown here. Each row installs, updates
-/// or removes its browser; opening the page checks the vendors for newer
+/// into the launcher's folder. A profile only ever starts the copy installed
+/// here, never one the computer has, so its version is the one shown here.
+/// Each row installs, updates or removes its browser; opening the page checks the vendors for newer
 /// versions, and the launcher checks on its own every few hours and says so
 /// in a notification. Nothing here is saved by Save: each button acts at once.
 export function BrowsersSection() {
@@ -50,7 +50,6 @@ function BrowserRow({ id }: { id: StockEngine }) {
     : e?.managed
       ? update ? t("browsers.updateAvailable", { have: e.version ?? "", v: latest ?? "" })
         : e.version ? t("browsers.installedVersion", { v: e.version }) : t("browsers.installed")
-    : e?.path ? t("browsers.systemCopy")
     : t("browsers.notInstalled");
 
   return (
@@ -72,7 +71,7 @@ function BrowserRow({ id }: { id: StockEngine }) {
               </Button>
             </>
           ) : (
-            <Button variant="primary" mode={e?.path ? "stroke" : "filled"} size="xsmall" disabled={busy} onClick={() => void downloadEngine(id)}>
+            <Button variant="primary" mode="filled" size="xsmall" disabled={busy} onClick={() => void downloadEngine(id)}>
               {t("browsers.install")}
             </Button>
           )}

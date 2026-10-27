@@ -350,10 +350,10 @@ function emptyAfterReset(s: MockState, backups: string[]) {
   delete s.folders;
 }
 
-/** Stock browsers on the mock computer; Chromium is missing until installed,
- *  Firefox is the launcher's own copy with a newer version out. */
+/** Browsers installed in the launcher: Chrome and Chromium not yet, Firefox
+ *  with a newer version out. A copy on the computer is never used (engines.rs). */
 const stockEngines: { id: string; name: string; path: string | null; managed: boolean; version: string | null }[] = [
-  { id: "chrome", name: "Google Chrome", path: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", managed: false, version: null },
+  { id: "chrome", name: "Google Chrome", path: null, managed: false, version: null },
   { id: "chromium", name: "Chromium", path: null, managed: false, version: null },
   { id: "firefox", name: "Firefox", path: "/Users/you/Library/Application Support/octopus-agent/runtime/stock/firefox/Firefox.app/Contents/MacOS/firefox", managed: true, version: "140.0" },
 ];
@@ -374,15 +374,31 @@ export const handlers: Record<string, Handler> = {
     e.version = latestEngines[id] ?? null;
     return { ...e };
   },
+  // A profile's browser cache: a steady size per id, nothing once cleared.
+  profile_cache_size: ({ id }, { state }) => {
+    const p = state.profiles[String(id)];
+    if (!p) return 0;
+    if ((p._meta as { cacheCleared?: boolean }).cacheCleared) return 0;
+    return 40_000_000 + (String(id).charCodeAt(0) % 9) * 12_500_000;
+  },
+  profile_cache_clear: async ({ id }, ctx) => {
+    await sleep(200);
+    const p = ctx.state.profiles[String(id)];
+    if (!p) throw `profile ${id} not found`;
+    if (ctx.state.running[String(id)]) throw "Close the profile first: a running browser keeps its cache open.";
+    const freed = (p._meta as { cacheCleared?: boolean }).cacheCleared ? 0 : 40_000_000 + (String(id).charCodeAt(0) % 9) * 12_500_000;
+    (p._meta as { cacheCleared?: boolean }).cacheCleared = true;
+    ctx.save();
+    return freed;
+  },
   engines_latest: async ({ id }) => { await sleep(150); return latestEngines[String(id)] ?? ""; },
   engines_remove: async ({ id }) => {
     await sleep(200);
     const e = stockEngines.find((s) => s.id === String(id));
     if (!e) throw new Error(`${id} is not a browser that can be installed here`);
-    // The system's own copy is what is left (Chrome here), else nothing.
     e.managed = false;
     e.version = null;
-    e.path = e.id === "chrome" ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" : null;
+    e.path = null;
     return { ...e };
   },
   runtime_status: () => {

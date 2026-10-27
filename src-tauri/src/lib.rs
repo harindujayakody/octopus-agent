@@ -1,6 +1,7 @@
 // Octopus Agent — Tauri backend.
 
 mod profile_icon;
+mod profile_cache;
 mod api;
 mod fingerprints;
 mod gpu_caps;
@@ -2053,10 +2054,6 @@ fn settings_save(mut value: settings::Settings) -> Result<(), String> {
         if value.api_secret.is_empty() {
             value.api_secret = cur.api_secret;
         }
-        // Set in the file by hand; a form that does not know the key sends none.
-        if value.engine_paths.is_empty() {
-            value.engine_paths = cur.engine_paths;
-        }
     }
     settings::save(&value).map_err(|e| e.to_string())
 }
@@ -2377,6 +2374,8 @@ pub fn run() {
             engines::engines_install,
             engines::engines_latest,
             engines::engines_remove,
+            profile_cache::profile_cache_size,
+            profile_cache::profile_cache_clear,
             profile_list,
             profile_get,
             profile_save,

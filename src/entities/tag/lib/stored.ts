@@ -13,7 +13,7 @@ const LEGACY_VERSION = 1;
 export function whole(rawTags: unknown, rawByProfile: unknown, colors: readonly string[]): Shown {
   if (!Array.isArray(rawTags)) return { tags: [], byProfile: {} };
   const tags = rawTags.filter((t): t is Tag =>
-    !!t && typeof t.id === "string" && typeof t.name === "string" && colors.includes(t.color));
+    !!t && typeof t.id === "string" && typeof t.name === "string" && (colors.includes(t.color) || /^#[0-9a-f]{6}$/i.test(t.color)));
   const known = new Set(tags.map((t) => t.id));
   const byProfile: Record<string, string[]> = {};
   const given = rawByProfile && typeof rawByProfile === "object" ? rawByProfile as Record<string, unknown> : {};

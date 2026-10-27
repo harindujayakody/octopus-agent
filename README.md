@@ -73,6 +73,17 @@ Configuration details are available in [Usage](#usage).
 * **A profile keeps its browser.** The browser is chosen when a profile is
   made and stays fixed after that, so a profile's data is never opened by a
   different browser.
+* **Profile icons.** Give a profile the icon of the site it is for
+  (Facebook, Pinterest, TikTok and 30 more) and spot it in the list at a glance.
+* **Browser column.** *Display → Browser* shows which browser each profile
+  starts in, with its logo.
+* **Clear cache per profile.** See a profile's cache size in its editor and
+  empty it from there or from the row's menu; cookies and logins stay.
+* **Your own tag colors.** Any hex color, beside the eight in the palette.
+* **Names on windows.** Each profile's browser window carries its name, so
+  the taskbar thumbnail and Alt-Tab tell profiles apart.
+* **Only Octopus Agent's browsers.** Profiles start only the Chrome, Chromium
+  and Firefox installed in Octopus Agent, never the copy on the computer.
 * **No store, no upsells, no tracking.** The proxy store, its trial popup,
   the setup checklist and the usage statistics are gone. Your own proxies
   work as before.

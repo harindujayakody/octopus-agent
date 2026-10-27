@@ -3,7 +3,8 @@ import { t, type Lang } from "../../shared/i18n";
 import { stampMs } from "../../shared/lib/utils";
 import { fmtDuration } from "../../shared/lib/format";
 import { tagChipsWidth } from "../../shared/lib/measureText";
-import { formatRelativeRun, type ProfileColumnId, type ProfileMeta } from "../../entities/profile";
+import { engineLabel, formatRelativeRun, type ProfileColumnId, type ProfileMeta } from "../../entities/profile";
+import { siteIcon } from "../../shared/brands";
 import type { ProxyEntry } from "../../entities/proxy";
 
 // The px ProfileRow's cells draw beside their text. Keep in step with it.
@@ -108,7 +109,7 @@ export function profileFits({ proxyOf, tagsOf, lang, now }: {
   const desktop = t("profileTable.deviceDesktop");
   const when = runWords(lang, now);
   return {
-    name: (p, m) => m(p.name, "ui") + (p.pinned ? PIN : 0) + (p.sync?.on ? PIN : 0),
+    name: (p, m) => (siteIcon(p.icon) ? PIN : 0) + m(p.name, "ui") + (p.pinned ? PIN : 0) + (p.sync?.on ? PIN : 0),
     status: statusFit(lang, now),
     folder: (p, m) => (p.folder ? CHIP + m(p.folder, "secondary") : 0),
     // The width at which TagChips' own fold (F18) shows the first two chips
@@ -123,6 +124,8 @@ export function profileFits({ proxyOf, tagsOf, lang, now }: {
     // The stored total: a running session adds minutes, rarely a digit.
     runTime: (p, m) => m(p.total_runtime_ms > 0 ? fmtDuration(p.total_runtime_ms, lang) : "—", "tabular"),
     device: (p, m) => m(p.mobile ? phone : desktop, "secondary"),
+    // The logo and its 6 px gap, then the name.
+    engine: (p, m) => PIN + m(engineLabel(p.engine, t), "secondary"),
     extensions: (p, m) => m(String(p.extensions.length), "tabular"),
     notes: (p, m) => (p.notes ? m(p.notes, "secondary") : 0),
   };

@@ -413,6 +413,8 @@ pub mod profile {
             folder: stored.meta.folder.clone(),
             total_runtime_ms: stored.meta.total_runtime_ms,
             color: stored.meta.color.clone(),
+            engine: stored.meta.engine.clone(),
+            icon: stored.meta.icon.clone(),
             extensions: stored.meta.extensions.clone(),
             mobile: claims_mobile(&stored.config),
             android_media: stored.meta.android_media,

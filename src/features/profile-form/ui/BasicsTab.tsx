@@ -3,12 +3,12 @@ import { Input } from "@proxyshard/shardx-ui-kit";
 import { PropertySheet } from "../../../shared/ui/peek";
 import { useT } from "../../../shared/i18n";
 import { addTagName, patchDraft, patchForm, problemsOf, useProfileForm, type ProfileFormDraft } from "../model/useProfileForm";
-import { ColorRow, CookiesRow, NotesRow } from "./fields";
+import { CacheRow, ColorRow, CookiesRow, IconRow, NotesRow } from "./fields";
 import { FolderField } from "./FolderField";
 import { teamRefusal, useInTeam, useRightsChange } from "../../../entities/space";
 import { TagsField } from "./TagsField";
 
-/// Basics: the name (required), its Folder, tags, color and notes. The parts
+/// Basics: the name (required), its Folder, tags, icon, color and notes. The parts
 /// the walk through this form points at carry `data-tour`.
 export function BasicsTab({ draft, nameRef }: { draft: ProfileFormDraft; nameRef: RefObject<HTMLInputElement | null> }) {
   const t = useT();
@@ -50,9 +50,12 @@ export function BasicsTab({ draft, nameRef }: { draft: ProfileFormDraft; nameRef
               onCreate={teamRefusal("create") ? undefined : addTagName}
             />
           </div>
+          <IconRow value={f.icon} onChange={(icon) => patchForm({ icon })} />
           <ColorRow value={f.color} onChange={(color) => patchForm({ color })} />
           <NotesRow value={f.notes} onChange={(notes) => patchForm({ notes })} />
           {!team && <CookiesRow value={draft.cookies} onChange={(cookies) => patchDraft({ cookies })} />}
+          {/* An existing profile's cache on this computer: its size, and Clear. */}
+          {!team && f.id && <CacheRow id={f.id} name={f.name} />}
         </div>
       </PropertySheet>
     </div>

@@ -36,7 +36,7 @@ export function forgetForm(id: string) {
 /** The fields a row and a form share differ: the form is older than the row. */
 const differs = (row: ProfileMeta, form: ProfileForm) =>
   row.name !== form.name || row.notes !== form.notes || row.proxy_id !== form.proxy_id
-  || (row.color ?? "") !== form.color || row.extensions.join("\n") !== form.extensions.join("\n");
+  || (row.color ?? "") !== form.color || (row.icon ?? "") !== form.icon || row.extensions.join("\n") !== form.extensions.join("\n");
 
 /** A row that changed (an edit elsewhere, a reload with news) in a field the
  *  form shows has left the form stale; a row gone takes its form with it.

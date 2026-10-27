@@ -4,7 +4,7 @@ import { useTheme } from "@proxyshard/shardx-ui-kit";
 import { settingsGet, settingsSave, type Settings } from "../../entities/settings";
 import { clean as cleanTagName, tagNameTaken, useTags, type Tag } from "../../entities/tag";
 import { builtinNames, useViews, viewNameTaken, type ProfileView } from "../../entities/profile";
-import type { LabelColorId } from "../../shared/constants";
+import type { TagColor } from "../../shared/constants";
 import { riskyLaunchArgs } from "../../shared/lib/launchArgs";
 import { confirmModal } from "../../shared/lib/confirm";
 import { toast } from "../../shared/model/toast";
@@ -21,7 +21,7 @@ export type SaveState = "idle" | "saving" | "error";
 
 /** A change to a tag or a view that waits for Save (tags and views live on
  *  this computer, not in the settings file; they join the page's draft). */
-export type TagOp = { kind: "rename"; id: string; name: string } | { kind: "recolor"; id: string; color: LabelColorId };
+export type TagOp = { kind: "rename"; id: string; name: string } | { kind: "recolor"; id: string; color: TagColor };
 export type ViewOp = { kind: "rename"; id: string; name: string } | { kind: "pin"; id: string; pinned: boolean };
 
 type Patch = Partial<Settings>;

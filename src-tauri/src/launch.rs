@@ -514,6 +514,18 @@ async fn launch_using(
     }
 }
 
+/// The profile's name as its windows' title (`--window-name`), or none for an unnamed one.
+fn window_name(input: &LaunchInput) -> Option<String> {
+    input
+        .stored
+        .config
+        .get("name")
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_owned)
+}
+
 /// A profile set to a stock Chrome, Chromium or Firefox: its own data folder,
 /// its proxy and its WebRTC choice, and no fingerprint (engines.rs).
 async fn start_plain(input: LaunchInput, opts: &LaunchOpts<'_>) -> Result<LaunchOutcome> {
@@ -521,12 +533,12 @@ async fn start_plain(input: LaunchInput, opts: &LaunchOpts<'_>) -> Result<Launch
     let engine = Engine::of(input.stored.meta.engine.as_deref());
     let bin = engine.locate().ok_or_else(|| {
         anyhow::anyhow!(
-            "{} is not installed on this computer. Install it, set its path under engine_paths              in the settings file, or start this profile in the ShardX browser engine.",
+            "{} is not installed in Octopus Agent. Install it from Settings > Browsers, then start the profile again.",
             engine.name()
         )
     })?;
     if opts.sync_group.is_some() {
-        anyhow::bail!("Only the ShardX browser engine can start profiles in sync; {} cannot.", engine.name());
+        anyhow::bail!("Only the Octopus Agent engine can start profiles in sync; {} cannot.", engine.name());
     }
     let s = settings::load()?;
     let extra = if engine.chromium_family() {
@@ -537,8 +549,10 @@ async fn start_plain(input: LaunchInput, opts: &LaunchOpts<'_>) -> Result<Launch
     };
     let dir = engines::data_dir(&input.udd, engine);
     let webrtc = input.stored.config.get("webrtc").and_then(|v| v.as_str()).unwrap_or("auto").to_string();
+    let title = window_name(&input).unwrap_or_default();
     let plain = engines::Plain {
         dir: &dir,
+        title: &title,
         proxy: input.proxy.as_ref(),
         webrtc: &webrtc,
         // Unpacked Chrome extensions; Firefox reads none of them.
@@ -890,6 +904,11 @@ fn command_line(
     args.push(format!("--user-data-dir={}", input.udd.display()));
     if let Some(icon) = ready.icon {
         args.push(format!("--shardx-profile-icon={}", icon.display()));
+    }
+    // The window's title is the profile's name, so the taskbar thumbnail and
+    // Alt-Tab say which profile a window is, not only its icon.
+    if let Some(name) = window_name(input) {
+        args.push(format!("--window-name={name}"));
     }
     // Same accent behind the profile-name pill in the omnibox, so the icon and
     // the window never disagree about a profile's colour. Left off for "auto":
@@ -1728,6 +1747,7 @@ mod tests {
                 "--fingerprint-profile=/data/user-data/p1/fingerprint.json",
                 "--user-data-dir=/data/user-data/p1",
                 "--shardx-profile-icon=/runtime/profile-icons/p1.png",
+                "--window-name=Plain",
                 "--shardx-profile-pill-color=#3366ff",
                 "--no-first-run",
                 "--disable-features=WebGPU",
@@ -1760,6 +1780,7 @@ mod tests {
                 "--fingerprint-profile=/data/user-data/p2/fingerprint.json",
                 "--user-data-dir=/data/user-data/p2",
                 "--shardx-profile-icon=/runtime/profile-icons/p2.png",
+                "--window-name=Phone",
                 "--no-first-run",
                 "--disable-extensions-except=/data/extensions/e1,/data/extensions/e2",
                 "--load-extension=/data/extensions/e1,/data/extensions/e2",

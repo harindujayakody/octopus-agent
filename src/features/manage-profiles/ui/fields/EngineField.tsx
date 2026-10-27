@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Button } from "@proxyshard/shardx-ui-kit";
 import { SelectField } from "../../../../shared/ui/SelectField";
+import { EngineIcon } from "../../../../shared/brands";
 import { useT } from "../../../../shared/i18n";
 import type { EngineId } from "../../../../entities/profile";
 import { detectEngines, downloadEngine, isMissing, useEngines } from "../../lib/engineDownloads";
@@ -32,6 +33,7 @@ export function EngineField({ f, u }: FieldProps) {
     return {
       value: id,
       label: nameOf(id),
+      icon: <EngineIcon engine={id} />,
       // Still pickable: picking it starts the download.
       ...(running
         ? { badge: { label: t("profileForm.engineDownloadingBadge"), color: "information" as const } }

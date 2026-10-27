@@ -790,7 +790,7 @@ export const useProfile = create<ProfileStore>((set, get) => ({
     if (refused) { opts?.onFailed?.(refused); return "failed"; }
     // The list shows Peek's name, notes, proxy and color as the save starts (PERF-13).
     const edit = before
-      ? beginEdit(draft.id, { name: draft.name, notes: draft.notes, proxy_id: draft.proxy_id, color: draft.color || null }, before)
+      ? beginEdit(draft.id, { name: draft.name, notes: draft.notes, proxy_id: draft.proxy_id, color: draft.color || null, icon: draft.icon || null }, before)
       : null;
     if (edit) showLocal(set, get);
     try {

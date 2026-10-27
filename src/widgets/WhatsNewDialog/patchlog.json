@@ -3,6 +3,90 @@
   "repoUrl": "https://github.com/harindujayakody/octopus-agent",
   "releases": [
     {
+      "version": "2.3.0",
+      "date": "2026-10-27",
+      "entries": [
+        {
+          "id": "profile-icons",
+          "title": "Profile icons",
+          "lead": "Give a profile the icon of the site it is for, such as Facebook, Pinterest or TikTok, and find it in the list at a glance.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Pick it under Icon in the profile's editor. It shows before the name in the list and in Peek."
+            }
+          ]
+        },
+        {
+          "id": "browser-column",
+          "title": "Browser column",
+          "lead": "The list can show which browser each profile starts in, with its logo.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Turn on Browser under Display. The browser picker in the editor shows the logos too."
+            }
+          ]
+        },
+        {
+          "id": "clear-cache",
+          "title": "Clear a profile's cache",
+          "lead": "See how much disk a profile's cache takes, and empty it.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Clear cache is in a profile's menu, and the editor shows the size with Clear beside it. Cookies, logins and history stay; the profile has to be closed."
+            }
+          ]
+        },
+        {
+          "id": "tag-colors",
+          "title": "Your own tag colors",
+          "lead": "A tag can take any color, not only the eight in the palette.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "In Settings > Tags, the last swatch of a tag opens a field for its hex color."
+            }
+          ]
+        },
+        {
+          "id": "window-names",
+          "title": "Profile names on windows",
+          "lead": "A profile's browser windows carry its name, so the taskbar thumbnail and Alt-Tab say which profile each one is.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "This works for the Octopus Agent engine, Chrome and Chromium. Firefox has no way to set its window title."
+            }
+          ]
+        },
+        {
+          "id": "own-browsers-only",
+          "title": "Only browsers installed here",
+          "lead": "Profiles start only the browsers installed in Octopus Agent, never the copy on the computer.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Install, update and remove Chrome, Chromium and Firefox in Settings > Browsers. A new profile no longer copies its fingerprint's description into its notes."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "2.2.0",
       "date": "2026-10-27",
       "entries": [

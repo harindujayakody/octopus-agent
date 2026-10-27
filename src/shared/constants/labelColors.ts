@@ -14,8 +14,15 @@ export const LABEL_COLORS = [
 
 export type LabelColorId = (typeof LABEL_COLORS)[number]["id"];
 
-/** The CSS color for a palette id, or undefined for none/unknown. */
+/** A tag's color: a palette id, or a custom "#rrggbb" the person picked. */
+export type TagColor = LabelColorId | `#${string}`;
+
+/** "#rrggbb", the only custom color form kept. */
+export const isHexColor = (v: string | null | undefined): v is `#${string}` => !!v && /^#[0-9a-f]{6}$/i.test(v);
+
+/** The CSS color for a palette id or a custom "#rrggbb", or undefined for none/unknown. */
 export function labelColor(id: string | null | undefined): string | undefined {
+  if (isHexColor(id)) return id;
   return LABEL_COLORS.find((c) => c.id === id)?.css;
 }
 

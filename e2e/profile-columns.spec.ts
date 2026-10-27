@@ -105,7 +105,7 @@ test("Display lists every column in the list's order; Name and Status are always
   const display = page.getByRole("dialog", { name: "Display" });
   await expect(display).toBeVisible();
   const boxes = display.getByRole("checkbox");
-  const names = ["Name", "Status", "Notes", "Folder", "Tags", "Proxy", "Last run", "Created", "Run time", "Device", "Extensions"];
+  const names = ["Name", "Status", "Notes", "Folder", "Tags", "Proxy", "Browser", "Last run", "Created", "Run time", "Device", "Extensions"];
   await expect(boxes).toHaveCount(names.length);
   for (const [i, n] of names.entries()) await expect(boxes.nth(i)).toHaveAccessibleName(n);
   await expect(display.getByRole("checkbox", { name: "Name" })).toBeDisabled();

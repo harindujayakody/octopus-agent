@@ -4,6 +4,7 @@ import { flushSync } from "react-dom";
 import { focusCellButton, focusProfileRow } from "../../shared/lib/focusRow";
 import { Checkbox, clientScale, cn, pageZoom, rectToLayout, swallowFollowUpClick, Tooltip, useLongPress, type ContextMenuApi } from "@proxyshard/shardx-ui-kit";
 import { PinIconApp, SyncConflictIcon, SyncedIcon } from "../../shared/icons";
+import { EngineIcon, ProfileIcon } from "../../shared/brands";
 import { ProxyFlag } from "../../shared/ui/ProxyFlag";
 import { StatusPill } from "../../shared/ui/StatusPill";
 import { CellEditButton } from "../../shared/ui/CellEditButton";
@@ -13,7 +14,7 @@ import { fmtDuration } from "../../shared/lib/format";
 import { slideDelayOf } from "../../shared/lib/arrival";
 import { useReducedMotion } from "../../shared/hooks/useReducedMotion";
 import {
-  formatExactRun, formatRelativeRun,
+  engineLabel, engineOf, formatExactRun, formatRelativeRun,
   may, profileFocusWindow,
   profileStatus, useFolderLook, useProfile, useProfileUi, useSaving, PROFILE_EDITABLE, type ProfileColumnId, type ProfileMeta,
 } from "../../entities/profile";
@@ -314,6 +315,8 @@ export const ProfileRow = memo(function ProfileRow({ profile, proxy, top, column
               <>
                 {/* Name is as wide as its names need (owner, 2026-09-30): a
                     rare long one is cut, and shows whole on hover. */}
+                {/* The site it is for, before the name, so a glance finds it. */}
+                <ProfileIcon id={p.icon} />
                 <Tooltip content={p.name} whenTruncated warm={false} delay={700}>
                   <span data-name className="truncate">{p.name}</span>
                 </Tooltip>
@@ -498,6 +501,13 @@ export const ProfileRow = memo(function ProfileRow({ profile, proxy, top, column
           </div>
         );
       }
+      case "engine":
+        return (
+          <div key="engine" role="gridcell" data-cell="engine" data-engine={engineOf(p.engine)} className="flex min-w-0 items-center gap-1.5 text-secondary text-text-sub-600">
+            <EngineIcon engine={engineOf(p.engine)} />
+            <span className="truncate">{engineLabel(p.engine, t)}</span>
+          </div>
+        );
       case "device":
         return (
           <div key="device" role="gridcell" data-cell="device" className="min-w-0 truncate text-secondary text-text-sub-600">

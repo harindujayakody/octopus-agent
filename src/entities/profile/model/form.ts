@@ -10,6 +10,7 @@ export const defaultForm = (): ProfileForm => ({
   notes: "",
   proxy_id: null,
   color: "",
+  icon: "",
   extensions: [],
   android_media: false,
   engine: "shardx",
@@ -66,6 +67,7 @@ export function fromStored(stored: any): ProfileForm {
   f.name = stored?.name ?? "";
   f.notes = stored?.notes ?? "";
   f.color = stored?._meta?.color ?? "";
+  f.icon = typeof stored?._meta?.icon === "string" ? stored._meta.icon : "";
   f.extensions = Array.isArray(stored?._meta?.extensions) ? stored._meta.extensions : [];
   f.android_media = stored?._meta?.android_media === true;
   const engine = stored?._meta?.engine;
@@ -137,6 +139,8 @@ export function toStored(f: ProfileForm, lib: FingerprintEntry | null, prev?: an
     ...(f.real_gpu ? { real_gpu: true } : {}),
     // Absent, not empty: that is what "derive it" means on disk.
     ...(f.color ? { color: f.color } : {}),
+    // Absent when none was picked: the list shows the initials.
+    ...(f.icon ? { icon: f.icon } : {}),
     extensions: f.extensions,
     ...(f.android_media ? { android_media: true } : {}),
     // Absent is the ShardX engine, so profiles that never chose stay as they were.

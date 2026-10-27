@@ -2,8 +2,9 @@ import { expect, test, type Page } from "@playwright/test";
 import { openApp, row } from "./support/app";
 
 // Settings > Browsers: Google Chrome, Chromium and Firefox, each installed,
-// updated or removed on its own. The mock's computer has Chrome's own system
-// copy, no Chromium, and the launcher's Firefox 140.0 with 144.0.2 out.
+// updated or removed on its own; a copy installed on the computer is never
+// used. The mock has no Chrome or Chromium installed in the launcher, and its
+// Firefox 140.0 with 144.0.2 out.
 // A profile's browser is chosen once, when it is made.
 
 const tab = (page: Page, name: string) =>
@@ -24,8 +25,8 @@ test("the Browsers tab lists Chrome, Chromium and Firefox with what each has", a
   await expect(browserRow(page, "chromium")).toContainText("Chromium");
   await expect(browserRow(page, "firefox")).toContainText("Firefox");
 
-  // Chrome: the copy on this computer, which can still be installed apart.
-  await expect(status(page, "chrome")).toHaveText(/^Using the copy installed on this computer\./);
+  // Chrome: not installed here (a copy on the computer would not count).
+  await expect(status(page, "chrome")).toHaveText("Not installed");
   await expect(browserRow(page, "chrome").getByRole("button", { name: "Install" })).toBeVisible();
   // Chromium: missing.
   await expect(status(page, "chromium")).toHaveText("Not installed");

@@ -25,6 +25,10 @@ export type ProfileMeta = {
   traffic_bytes?: number | null;
   /// Icon accent, "#rrggbb"; null = derived from the name, as the browser does.
   color: string | null;
+  /** The browser it starts in (`_meta.engine`); absent = the Octopus Agent engine. */
+  engine?: EngineId | null;
+  /** The site icon picked for it (shared/brands); absent = its initials. */
+  icon?: string | null;
   /// Extension ids from the library, loaded at launch.
   extensions: string[];
   /// Phone/tablet fingerprint, decided in Rust by the core's own rule.
@@ -60,6 +64,8 @@ export type ProfileForm = {
   proxy_id: string | null;
   /// "" = derive from the name, which is what the browser does on its own.
   color: string;
+  /// The site icon picked to tell it apart (shared/brands), "" = its initials.
+  icon: string;
   /// Extension ids from the library.
   extensions: string[];
   /// Answer media questions the Android way. Phone profiles only.

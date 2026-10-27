@@ -44,10 +44,6 @@ pub struct Settings {
     /// straight from this computer's IP, not through a profile's proxy.
     #[serde(default = "default_true")]
     pub ext_update_check: bool,
-    /// Stock browsers a profile may start in, by engine id ("chrome",
-    /// "chromium", "firefox"), when they are not where their installer puts them.
-    #[serde(default)]
-    pub engine_paths: std::collections::HashMap<String, String>,
 
     // ---- Local automation HTTP API (axum + JWT bearer) ----
     /// Whether the local API server listens on 127.0.0.1:`api_port`.
@@ -100,7 +96,6 @@ fn defaults() -> Settings {
         extra_args: String::new(),
         data_root: None,
         ext_update_check: default_true(),
-        engine_paths: Default::default(),
         api_enabled: default_api_enabled(),
         api_port: default_api_port(),
         api_secret: String::new(),

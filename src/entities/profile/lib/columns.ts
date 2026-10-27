@@ -6,7 +6,7 @@ import type { ProfileSort } from "./listing";
 
 /** The Profiles list's data columns. */
 export type ProfileColumnId =
-  | "name" | "status" | "folder" | "tags" | "proxy"
+  | "name" | "status" | "folder" | "tags" | "proxy" | "engine"
   | "lastRun" | "created" | "runTime" | "device" | "extensions"
   | "notes";
 /** Which Profiles columns show and in what order: what a View saves. */
@@ -45,6 +45,9 @@ export const PROFILE_COLUMNS: readonly ColumnDef<ProfileColumnId>[] = [
   { id: "folder", title: (t) => t("profileTable.colFolder"), need: 110, min: 72, max: 320, shown: true, hideable: true, movable: true },
   { id: "tags", title: (t) => t("profileTable.colTags"), need: 96, min: 64, max: 480, shown: true, hideable: true, movable: true },
   { id: "proxy", title: (t) => t("profileTable.colProxy"), need: 110, min: 80, max: 480, shown: true, hideable: false, movable: true },
+  // The browser it starts in, with its logo (owner, 2026-10-27): in Display,
+  // off until chosen, so the default set still fits a 1024 px window.
+  { id: "engine", title: (t) => t("profileTable.colEngine"), need: 120, min: 72, max: 240, grow: 24, shown: false, hideable: true, movable: true },
   // New with the owner feature (2026-09-26): hidden until chosen, placed
   // before Notes (Notes stays last: the row actions float over it). Run
   // time is wide enough for "1234 小时 59 分钟".

@@ -3,6 +3,10 @@ import type { ProfileMeta } from "./types";
 
 export const profileList = () => invoke<ProfileMeta[]>("profile_list");
 export const profileGet = (id: string) => invoke<any>("profile_get", { id });
+/** Bytes the profile's browser cache takes on disk (profile_cache.rs). */
+export const profileCacheSize = (id: string) => invoke<number>("profile_cache_size", { id });
+/** Empties the profile's browser cache; cookies, logins and history stay. Returns the bytes freed. */
+export const profileCacheClear = (id: string) => invoke<number>("profile_cache_clear", { id });
 export const profileSave = (payload: any) => invoke<ProfileMeta>("profile_save", { payload });
 export const profileDelete = (id: string) => invoke("profile_delete", { id });
 export const profileClone = (id: string) => invoke<ProfileMeta>("profile_clone", { id });

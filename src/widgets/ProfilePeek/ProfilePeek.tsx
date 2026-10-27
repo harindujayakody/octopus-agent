@@ -14,6 +14,7 @@ import { ActivityLine } from "./rows/ActivityLine";
 import { capOf, command, labelOf, menuItemsFor } from "../../features/commands";
 import { openProfileForm, type ProfileFormTab } from "../../features/profile-form";
 import { openHereInstead } from "../../features/profile-sync";
+import { ProfileIcon } from "../../shared/brands";
 
 /// The side panel that shows one profile while the list stays in view
 /// (CONTEXT: Peek). It only shows: the header's Edit, and each section's,
@@ -130,7 +131,12 @@ function ProfilePeekHeader({ profile, onClose }: { profile: ProfileMeta; onClose
   return (
     <PeekHeader
       subject={profile.id}
-      title={<h2 className="m-0 min-w-0 truncate text-panel-title text-text-strong-950">{profile.name}</h2>}
+      title={(
+        <span className="flex min-w-0 items-center gap-2">
+          <ProfileIcon id={profile.icon} size={16} />
+          <h2 className="m-0 min-w-0 truncate text-panel-title text-text-strong-950">{profile.name}</h2>
+        </span>
+      )}
       status={note ? <Tooltip content={note}>{pill}</Tooltip> : pill}
       extra={
         // Its word goes first when the header is tight (PeekHeader): the tooltip says it then.

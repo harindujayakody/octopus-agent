@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { LABEL_COLORS, type LabelColorId } from "../../../shared/constants";
+import { LABEL_COLORS, type LabelColorId, type TagColor } from "../../../shared/constants";
 import { handOver, windowStorage } from "../../../shared/lib/handOver";
 import { writeQueue } from "../../../shared/lib/writeQueue";
 import { onSpaceMoved } from "../../../shared/api/invoke";
@@ -67,10 +67,10 @@ export type TagStore = {
   /** Reads them again (a change made elsewhere, another space). Never rejects. */
   reload: () => Promise<void>;
   /** A new tag, or the one that already has this name (any case). Null for an empty name. */
-  create: (name: string, color?: LabelColorId) => Tag | null;
+  create: (name: string, color?: TagColor) => Tag | null;
   /** False when the name is empty or another tag has it. */
   rename: (id: string, name: string) => boolean;
-  recolor: (id: string, color: LabelColorId) => void;
+  recolor: (id: string, color: TagColor) => void;
   /** Deletes the tag and takes it off every profile. */
   remove: (id: string) => void;
   /** Puts a deleted tag back with the profiles it was on (Undo), at its old place in the list;

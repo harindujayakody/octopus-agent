@@ -121,4 +121,4 @@ export function matchesOs(platform: string, os: string): boolean {
   return p === os.toLowerCase();
 }
 
-export { ACCENT_HEX, LABEL_COLORS, labelColor, type LabelColorId } from "./labelColors";
+export { ACCENT_HEX, LABEL_COLORS, isHexColor, labelColor, type LabelColorId, type TagColor } from "./labelColors";

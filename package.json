@@ -1,7 +1,7 @@
 {
   "name": "octopus-agent",
   "private": true,
-  "version": "2.2.0",
+  "version": "2.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -43,6 +43,7 @@
     "flag-icons": "^7.5.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "simple-icons": "^16.36.0",
     "tailwindcss": "^4.3.1",
     "zustand": "^5.0.14"
   },

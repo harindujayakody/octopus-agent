@@ -151,6 +151,8 @@ pub fn meta(team: &str, row: &ProfileRow, detail: Option<&StoredProfile>, device
         folder: row.folder.clone(),
         total_runtime_ms: 0,
         color: some_text(&row.card.color),
+        engine: detail.and_then(|d| d.meta.engine.clone()),
+        icon: detail.and_then(|d| d.meta.icon.clone()),
         extensions: detail.map(|d| d.meta.extensions.clone()).unwrap_or_default(),
         mobile: detail.is_some_and(|d| claims_mobile(&d.config)),
         android_media: detail.is_some_and(|d| d.meta.android_media),
