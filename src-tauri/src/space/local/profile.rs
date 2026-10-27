@@ -167,6 +167,9 @@ pub struct StoredMeta {
     /// A site icon to tell it apart in the list ("facebook", "pinterest"…).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
+    /// The page it opens on when it starts, over Settings' own; absent = Settings'.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub start_url: Option<String>,
     /// Extension ids from the library.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub extensions: Vec<String>,

@@ -525,12 +525,14 @@ test.describe("elsewhere", () => {
     await expect.poll(() => page.evaluate(() => (window as unknown as { __shardxMockSettingsSaves?: { ext_update_check?: boolean }[] }).__shardxMockSettingsSaves?.at(-1)?.ext_update_check)).toBe(false);
   });
 
-  test("the profile form's extensions say which one has an update, in words", async ({ page }) => {
-    await records(page, { "cookie-editor": AVAILABLE });
+  test("the profile form's extensions list the whole library, none picked per profile", async ({ page }) => {
     await openApp(page);
     const form = await openEditForm(page, "Sandbox", "Extensions");
-    await expect(form.getByRole("option", { name: /Cookie-Editor/ })).toContainText("1.13.0, update available");
-    await expect(form.getByRole("option", { name: /uBlock Origin Lite/ })).not.toContainText("update available");
+    const tab = form.locator("[data-extensions-global]");
+    await expect(tab).toContainText("Every Chrome extension in the library loads into this profile");
+    await expect(tab.getByRole("listitem").filter({ hasText: "Cookie-Editor" })).toHaveCount(1);
+    await expect(tab.getByRole("listitem").filter({ hasText: "uBlock Origin Lite" })).toHaveCount(1);
+    await expect(form.getByRole("combobox", { name: "Extensions" })).toHaveCount(0);
   });
 
   test("a synced extension kept here: the warning in the person's language", async ({ page }) => {

@@ -5,6 +5,7 @@ export const SECTIONS = [
   "extensions",
   "bookmarks",
   "automation",
+  "authenticator",
   "trash",
   "settings",
   "team",

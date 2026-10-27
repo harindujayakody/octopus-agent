@@ -316,12 +316,10 @@ pub fn launch_input(start: &Granted<Start>, cdp: Option<&Granted<Cookies>>) -> R
     }
 
     let proxy = bound_proxy(&stored, profile_id, proxy::get)?;
-    // Extensions from the library; an id the library no longer has is skipped.
-    let (ext_ids, extensions) = stored
-        .meta
-        .extensions
-        .iter()
-        .filter_map(|id| extensions::load_path(id).map(|p| (id.clone(), p)))
+    // Every extension in the library, for every profile; one whose files are gone is skipped.
+    let (ext_ids, extensions) = extensions::global_ids()
+        .into_iter()
+        .filter_map(|id| extensions::load_path(&id).map(|p| (id, p)))
         .unzip();
     let exit = if stored.meta.temporary { ExitHook::Temporary } else { ExitHook::Local };
     let bookmarks = bookmarks::mine().unwrap_or_else(|e| {
@@ -514,6 +512,36 @@ async fn launch_using(
     }
 }
 
+/// The page a profile opens on when it starts: its own, else Settings', made
+/// a web address ("example.com" is https). None for a run driven over CDP,
+/// which opens its own pages, or when neither names one.
+pub(crate) fn start_page(input: &LaunchInput, s: &settings::Settings) -> Option<String> {
+    if input.cdp {
+        return None;
+    }
+    let raw = input
+        .stored
+        .meta
+        .start_url
+        .as_deref()
+        .map(str::trim)
+        .filter(|u| !u.is_empty())
+        .unwrap_or_else(|| s.start_url.trim());
+    if raw.is_empty() {
+        return None;
+    }
+    let lower = raw.to_ascii_lowercase();
+    if lower.starts_with("http://") || lower.starts_with("https://") || lower == "about:blank" {
+        return Some(raw.to_string());
+    }
+    // A bare host or path: the web, as an address bar reads it. Nothing with
+    // a scheme of its own (file:, javascript:, chrome:) is passed on.
+    if raw.contains("://") || lower.starts_with("javascript:") || lower.starts_with("file:") || lower.starts_with("data:") {
+        return None;
+    }
+    Some(format!("https://{raw}"))
+}
+
 /// The profile's name as its windows' title (`--window-name`), or none for an unnamed one.
 fn window_name(input: &LaunchInput) -> Option<String> {
     input
@@ -550,9 +578,11 @@ async fn start_plain(input: LaunchInput, opts: &LaunchOpts<'_>) -> Result<Launch
     let dir = engines::data_dir(&input.udd, engine);
     let webrtc = input.stored.config.get("webrtc").and_then(|v| v.as_str()).unwrap_or("auto").to_string();
     let title = window_name(&input).unwrap_or_default();
+    let start_url = start_page(&input, &crate::settings::load().unwrap_or_default());
     let plain = engines::Plain {
         dir: &dir,
         title: &title,
+        start_url: start_url.as_deref(),
         proxy: input.proxy.as_ref(),
         webrtc: &webrtc,
         // Unpacked Chrome extensions; Firefox reads none of them.
@@ -567,11 +597,64 @@ async fn start_plain(input: LaunchInput, opts: &LaunchOpts<'_>) -> Result<Launch
     std::fs::create_dir_all(&dir).with_context(|| format!("create {}", dir.display()))?;
     if engine == Engine::Firefox {
         engines::write_firefox_prefs(&plain)?;
+        // Every add-on of the Firefox library, in this profile.
+        crate::firefox_addons::install_into(&dir);
     }
     let args = engines::command_line(engine, &plain);
+    // Every library extension pinned on the toolbar the first time it comes.
+    let over_cdp = (engine == Engine::Chrome).then(|| input.extensions.clone()).filter(|e| !e.is_empty());
+    if engine.chromium_family() {
+        crate::ext_pin::pin_new(&dir, &input.extensions);
+    }
+    if over_cdp.is_some() {
+        let _ = std::fs::remove_file(dir.join("DevToolsActivePort"));
+    }
     eprintln!("[launcher] {} starts in {} without a fingerprint", input.profile_id, engine.name());
     check_cancel(&input.profile_id)?;
-    spawn_tracked(&bin, args, input, dir, engine.name()).await
+    let out = spawn_tracked(&bin, args, input, dir.clone(), engine.name()).await?;
+    if let Some(roots) = over_cdp {
+        tokio::spawn(load_over_cdp(dir, roots));
+    }
+    Ok(out)
+}
+
+/// Chrome Stable: the library's extensions sent over its debugging port once
+/// it is up, as `--load-extension` was. Nothing is kept by Chrome between
+/// starts, so this runs on each.
+async fn load_over_cdp(dir: PathBuf, roots: Vec<PathBuf>) {
+    use futures_util::{SinkExt, StreamExt};
+    use tokio_tungstenite::tungstenite::Message;
+    let Some(c) = read_devtools_endpoint(&dir).await else {
+        eprintln!("[extensions] Chrome did not open its debugging port; extensions not loaded");
+        return;
+    };
+    let (mut ws, _) = match tokio_tungstenite::connect_async(&c.web_socket_debugger_url).await {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("[extensions] Chrome's debugging port refused: {e}");
+            return;
+        }
+    };
+    for (i, root) in roots.iter().enumerate() {
+        let msg = serde_json::json!({ "id": i + 1, "method": "Extensions.loadUnpacked", "params": { "path": root } });
+        if ws.send(Message::Text(msg.to_string())).await.is_err() {
+            return;
+        }
+    }
+    let mut left = roots.len();
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(20);
+    while left > 0 {
+        let Ok(Some(Ok(Message::Text(t)))) = tokio::time::timeout_at(deadline, ws.next()).await else { break };
+        let Ok(v) = serde_json::from_str::<serde_json::Value>(&t) else { continue };
+        if v.get("id").is_none() {
+            continue;
+        }
+        left -= 1;
+        if let Some(e) = v.get("error") {
+            eprintln!("[extensions] Chrome refused one: {e}");
+        }
+    }
+    let _ = ws.close(None).await;
 }
 
 /// A team profile: its session downloaded under a lease into a folder of its
@@ -804,6 +887,8 @@ async fn start_browser(bin: &Path, input: LaunchInput, opts: &LaunchOpts<'_>) ->
         &s,
     );
     let udd = input.udd.clone();
+    // Every library extension pinned on the toolbar the first time it comes.
+    crate::ext_pin::pin_new(&udd, &input.extensions);
     spawn_tracked(bin, args, input, udd, "the browser engine").await
 }
 
@@ -1060,6 +1145,10 @@ fn command_line(
 
     // Operator's own switches, last so they win a repeat.
     args.extend(extra);
+    // The start page goes after every switch: a browser reads it as the page to open.
+    if let Some(url) = start_page(input, s) {
+        args.push(url);
+    }
     args
 }
 

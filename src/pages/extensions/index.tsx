@@ -21,6 +21,7 @@ import { useScrollMemory } from "../../shared/model/scrollMemory";
 import { refocusPageFilter } from "../../shared/lib/focus";
 import { showMeAround } from "../../features/tour";
 import { ProfileExtensions } from "./ProfileExtensions";
+import { FirefoxAddons } from "./FirefoxAddons";
 
 /** `copies`: how many times it is installed, by Web Store item or else name and version (1 when once).
  *  `update`: where its Web Store update stands, when it has a record. */
@@ -184,8 +185,9 @@ function useUpdateMenu() {
 
 export function ExtensionsPage() {
   const t = useT();
-  // The library, or the extensions profiles installed by themselves (with a Chromium / Firefox filter).
-  const [view, setView] = useState<"library" | "profiles">("library");
+  // The Chrome library, the Firefox add-ons library, or the extensions profiles
+  // installed by themselves (with a Chromium / Firefox filter).
+  const [view, setView] = useState<"library" | "firefox" | "profiles">("library");
   const [family, setFamily] = useState<"all" | ExtensionFamily>("all");
   // The grid scrolls itself; it keeps its place across page switches (WIG-06).
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -260,37 +262,10 @@ export function ExtensionsPage() {
         count={!loading && status === "ready" && !empty ? shown.length : undefined}
         help={{ title: t("pageHelp.extensions.title"), body: t("pageHelp.extensions.body"), onTour: () => showMeAround("extensions") }}
         filter={empty && view === "library" ? undefined : { value: search, onChange: setSearch }}
-        after={
-          <div className="flex flex-wrap items-center gap-2">
-            <SegmentControl
-              size="xsmall"
-              aria-label={t("extensions.viewLabel")}
-              value={view}
-              items={[
-                { value: "library", label: t("extensions.viewLibrary") },
-                { value: "profiles", label: t("extensions.inProfiles") },
-              ]}
-              onChange={(v) => setView(v as "library" | "profiles")}
-            />
-            {view === "profiles" && (
-              <SegmentControl
-                size="xsmall"
-                aria-label={t("extensions.familyLabel")}
-                value={family}
-                items={[
-                  { value: "all", label: t("extensions.familyAll") },
-                  { value: "chromium", label: t("extensions.familyChromium") },
-                  { value: "firefox", label: t("extensions.familyFirefox") },
-                ]}
-                onChange={(v) => setFamily(v as "all" | ExtensionFamily)}
-              />
-            )}
-          </div>
-        }
         actions={
           <>
             {/* Its words in a tooltip only while a narrow header shows its icon alone. */}
-            {anyLinked && !empty && (
+            {view === "library" && anyLinked && !empty && (
               <Tooltip content={t("extensions.checkUpdates")} whenTruncated>
                 <Button variant="neutral" mode="stroke" size="xsmall" leftIcon={<RefreshIcon className="size-3.5" />} isLoading={checking} onClick={() => void useExtensionUpdates.getState().check()}>
                   {checking ? t("extensions.checking") : t("extensions.checkUpdates")}
@@ -298,14 +273,14 @@ export function ExtensionsPage() {
               </Tooltip>
             )}
             {/* Stays while it runs: the first one going in drops the count. */}
-            {(updatable >= 2 || updatingAll) && (
+            {view === "library" && (updatable >= 2 || updatingAll) && (
               <Tooltip content={t("extensions.updateAll")} whenTruncated>
                 <Button variant="neutral" mode="stroke" size="xsmall" leftIcon={<DownloadIcon className="size-3.5" />} isLoading={updatingAll} onClick={() => void useExtensionUpdates.getState().updateAll()}>
                   {t("extensions.updateAll")}
                 </Button>
               </Tooltip>
             )}
-            <AddExtensionMenu />
+            {view === "library" && <AddExtensionMenu />}
           </>
         }
       />
@@ -314,7 +289,37 @@ export function ExtensionsPage() {
           above and below, Remove in a card's menu and on the Delete key (it
           asks first). The states center in the same tile a table sits on. */}
       <PageBody scroll={false}>
-        {view === "profiles" ? <ProfileExtensions family={family} search={search} /> : (
+        {/* The library, or what profiles installed by themselves: a switch over the list, so the header keeps its room. */}
+        <div className="mb-3 flex flex-wrap items-center gap-2 [&_button]:whitespace-nowrap">
+          {/* Scrolls sideways in a narrow window rather than cutting off a choice. */}
+          <div className="max-w-full overflow-x-auto">
+          <SegmentControl
+            size="xsmall"
+            aria-label={t("extensions.viewLabel")}
+            value={view}
+            items={[
+              { value: "library", label: t("extensions.viewLibrary") },
+              { value: "firefox", label: t("extensions.viewFirefox") },
+              { value: "profiles", label: t("extensions.inProfiles") },
+            ]}
+            onChange={(v) => setView(v as "library" | "firefox" | "profiles")}
+          />
+          </div>
+          {view === "profiles" && (
+            <SegmentControl
+              size="xsmall"
+              aria-label={t("extensions.familyLabel")}
+              value={family}
+              items={[
+                { value: "all", label: t("extensions.familyAll") },
+                { value: "chromium", label: t("extensions.familyChromium") },
+                { value: "firefox", label: t("extensions.familyFirefox") },
+              ]}
+              onChange={(v) => setFamily(v as "all" | ExtensionFamily)}
+            />
+          )}
+        </div>
+        {view === "firefox" ? <FirefoxAddons search={search} /> : view === "profiles" ? <ProfileExtensions family={family} search={search} /> : (
         <DataList<ExtensionEntry>
           variant="grid"
           // Wide enough for a name and its version on a line (a narrower card cuts both).

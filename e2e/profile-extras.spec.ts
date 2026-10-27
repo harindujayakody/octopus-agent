@@ -70,8 +70,8 @@ test("Extensions shows the ones profiles installed, Chromium or Firefox, and add
   await page.getByRole("radio", { name: "In profiles" }).click();
   await expect(page.locator("[data-in-profile]")).toHaveCount(3);
   await expect(page.locator("[data-in-profile='hlkenndednhfkekhgcdicdfddnkalmdm'] [data-in-library]")).toBeVisible();
-  await expect(page.locator("[data-family='firefox']")).toContainText("Stays with its Firefox profiles");
-  await page.getByRole("radio", { name: "Firefox" }).click();
+  await expect(page.locator("[data-family='firefox']").getByRole("button", { name: "Add to library" })).toBeVisible();
+  await page.getByRole("radio", { name: "Firefox", exact: true }).click();
   await expect(page.locator("[data-in-profile]")).toHaveCount(1);
   await page.getByRole("radio", { name: "Chromium" }).click();
   await expect(page.locator("[data-in-profile]")).toHaveCount(2);

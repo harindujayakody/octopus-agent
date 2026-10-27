@@ -40,6 +40,7 @@ import {
   ArrowDown01Icon,
   CleanIcon,
   Shield01Icon,
+  TwoFactorAccessIcon,
   Delete02Icon,
   Globe02Icon,
   Clock01Icon,
@@ -189,6 +190,8 @@ export const BackIcon = make(ArrowLeft01Icon);
 export const DeleteIcon = make(Delete02Icon);
 /** Empties a profile's browser cache. */
 export const ClearCacheIcon = make(CleanIcon);
+/** The Authenticator page (two-factor codes). */
+export const AuthenticatorIcon = make(TwoFactorAccessIcon);
 /** An ad blocker (Extensions > Add extension). */
 export const AdBlockIcon = make(Shield01Icon);
 export const GlobeIcon = make(Globe02Icon);

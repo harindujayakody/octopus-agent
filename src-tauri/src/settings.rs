@@ -36,6 +36,10 @@ pub struct Settings {
     /// Appended to every launch, one per line. Applied last, so a repeat wins.
     #[serde(default)]
     pub extra_args: String,
+    /// The page every profile opens on when it starts, unless the profile names
+    /// its own; "" leaves the browser to open what it would.
+    #[serde(default)]
+    pub start_url: String,
     /// Where profiles, user-data, extensions and the trash live. None = the
     /// config dir. Changed through `data_root_migrate`, never by hand.
     #[serde(default)]
@@ -94,6 +98,7 @@ fn defaults() -> Settings {
         helper_triggers: Vec::new(),
         minimize_to_tray: default_minimize_to_tray(),
         extra_args: String::new(),
+        start_url: String::new(),
         data_root: None,
         ext_update_check: default_true(),
         api_enabled: default_api_enabled(),

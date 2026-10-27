@@ -4,6 +4,9 @@ mod profile_icon;
 mod profile_cache;
 mod profile_backup;
 mod profile_extensions;
+mod authenticator;
+mod ext_pin;
+mod firefox_addons;
 mod api;
 mod fingerprints;
 mod gpu_caps;
@@ -2381,6 +2384,14 @@ pub fn run() {
             profile_backup::profile_backup,
             profile_backup::profile_restore,
             profile_extensions::extensions_in_profiles,
+            authenticator::totp_list,
+            authenticator::totp_add,
+            authenticator::totp_remove,
+            authenticator::totp_quick,
+            firefox_addons::firefox_addon_list,
+            firefox_addons::firefox_addon_import_url,
+            firefox_addons::firefox_addon_import_file,
+            firefox_addons::firefox_addon_delete,
             profile_list,
             profile_get,
             profile_save,

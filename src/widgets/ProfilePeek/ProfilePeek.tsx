@@ -65,6 +65,7 @@ export function ProfilePeek() {
     <PeekPanel kind="profile" label={t("peek.label", { name: shown.name })} presence={presence} tour="details-panel">
       <ProfilePeekHeader profile={shown} onClose={close} />
       <PeekBody>
+        <OpenElsewhereWarning profile={shown} />
         <PropertySheet>
           <PeekSection id="profile" title={t("peek.profile")} action={edit("basics")}>
             <ProfileDetails profile={shown} />
@@ -177,5 +178,20 @@ function ProfilePeekHeader({ profile, onClose }: { profile: ProfileMeta; onClose
       closeShortcut={capOf(command("profile.closePeek"))}
       onClose={onClose}
     />
+  );
+}
+
+/// A synced or team profile open on another computer: why it won't start
+/// here, in plain words. Two browsers writing one profile at once would
+/// overwrite each other's cookies and logins, so the launcher waits.
+function OpenElsewhereWarning({ profile }: { profile: ProfileMeta }) {
+  const t = useT();
+  const device = profile.sync?.open_on ?? (profile.open_on && !profile.open_on.this_device ? profile.open_on.device_name : null);
+  if (!device) return null;
+  return (
+    <div role="note" data-open-elsewhere className="mb-3 flex flex-col gap-1 rounded-control bg-warning-tint p-3 ring-1 ring-inset ring-warning-base/30">
+      <span className="text-secondary font-medium text-text-strong-950">{t("peek.openElsewhereTitle", { device })}</span>
+      <span className="text-secondary text-text-sub-600">{t("peek.openElsewhereBody")}</span>
+    </div>
   );
 }

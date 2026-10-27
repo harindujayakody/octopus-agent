@@ -364,6 +364,18 @@ const latestEngines: Record<string, string> = {
   chrome: "156.0.8078.48", chromium: "r1529133", firefox: "144.0.2", brave: "1.98.60", thorium: "156.0.8078.28", helium: "0.20.1.1",
 };
 
+const firefoxAddons: { id: string; name: string; version: string; source: string; added_at: number }[] = [];
+/** The mock's authenticator: accounts kept for the session; codes follow the
+ *  clock and the secret, not RFC 6238 (the backend's own tests cover that). */
+const totpAccounts: { id: string; label: string; issuer: string; secret: string; profile_id: string | null }[] = [];
+const totpNow = (secret: string) => {
+  const step = Math.floor(Date.now() / 30000);
+  let h = step;
+  for (const ch of secret) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return { code: String(h % 1_000_000).padStart(6, "0"), remaining: 30 - (Math.floor(Date.now() / 1000) % 30), period: 30 };
+};
+const totpSecretOk = (s: string) => /^otpauth:\/\/totp\//i.test(s.trim()) || /^[A-Z2-7 =-]{16,}$/i.test(s.trim());
+
 /** Profile backups written this session, by path (profile_backup.rs); a restore of an unknown path takes the last. */
 const backups = new Map<string, StoredProfile>();
 
@@ -411,6 +423,31 @@ export const handlers: Record<string, Handler> = {
       { ext_id: "uBlock0@raymondhill.net", name: "uBlock Origin", version: "1.62.0", description: "Finally, an efficient blocker.", icon: "", path: "/mock/user-data/c/engines/firefox/extensions/uBlock0@raymondhill.net.xpi", family: "firefox", profiles: some(1) },
     ];
   },
+  firefox_addon_list: () => firefoxAddons,
+  firefox_addon_import_url: ({ url }) => {
+    const slug = String(url).replace(/\/+$/, "").split("/").pop() || String(url);
+    if (!slug || slug.includes(" ")) throw "that is not an addons.mozilla.org add-on link";
+    const a = { id: slug === "ublock-origin" ? "uBlock0@raymondhill.net" : `${slug}@mock`, name: slug === "ublock-origin" ? "uBlock Origin" : slug, version: "1.0.0", source: `https://addons.mozilla.org/firefox/addon/${slug}/`, added_at: Math.floor(Date.now() / 1000) };
+    const i = firefoxAddons.findIndex((x) => x.id === a.id);
+    if (i >= 0) firefoxAddons.splice(i, 1);
+    firefoxAddons.push(a);
+    return a;
+  },
+  firefox_addon_import_file: () => { throw "this .xpi does not name its add-on id. Add it from its addons.mozilla.org page instead."; },
+  firefox_addon_delete: ({ id }) => { const i = firefoxAddons.findIndex((a) => a.id === id); if (i >= 0) firefoxAddons.splice(i, 1); return null; },
+  totp_list: () => totpAccounts.map((a) => ({ id: a.id, label: a.label, issuer: a.issuer, profile_id: a.profile_id, ...totpNow(a.secret) })),
+  totp_add: ({ account }) => {
+    const a = account as { label: string; issuer: string; secret: string; profile_id: string | null };
+    if (!totpSecretOk(a.secret)) throw "“!” is not part of a Base32 secret";
+    if (!a.label && !a.issuer) throw "Give the account a name.";
+    const kept = { id: newId(), label: a.label, issuer: a.issuer, secret: a.secret, profile_id: a.profile_id };
+    totpAccounts.push(kept);
+    return { id: kept.id, label: kept.label, issuer: kept.issuer, profile_id: kept.profile_id, ...totpNow(kept.secret) };
+  },
+  totp_remove: ({ id }) => { const i = totpAccounts.findIndex((a) => a.id === id); if (i < 0) throw "That account is already gone."; totpAccounts.splice(i, 1); return null; },
+  totp_quick: ({ lines }) => (lines as string[]).map((l) => (totpSecretOk(l)
+    ? { label: "", ...totpNow(l), error: null }
+    : { label: "", code: null, remaining: 0, period: 30, error: "the secret is too short to be an authenticator key" })),
   profile_backup: async ({ id, path }, { state }) => {
     await sleep(300);
     const p = state.profiles[String(id)];

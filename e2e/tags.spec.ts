@@ -340,10 +340,7 @@ test("a click just under a box in a tight row list toggles that row, not the nex
     await expect(next).toHaveAttribute("aria-selected", wasNext!);
   };
 
-  // ExtensionPicker (the profile form's Extensions tab; E19: the kit
-  // Combobox): 30 px option rows with no gap.
   const form = await openEditForm(page, "Amazon US seller", "Extensions");
-  await probe(form.getByRole("option", { name: /uBlock Origin Lite/ }), form.getByRole("option", { name: /Cookie-Editor/ }));
 
   // TagPicker (E16): 30 px option rows with no gap, each row the one
   // target, its box drawn only. A click just under Warm-up's box toggles

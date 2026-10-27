@@ -25,6 +25,14 @@
 </p>
 
 <p align="center">
+  <b>Documentation:</b>
+  <a href="docs/SYNC-SERVER.md">Set up cloud sync</a> |
+  <a href="ROADMAP.md">Roadmap</a> |
+  <a href="mcp/README.md">MCP server</a> |
+  <a href="docs/automation-module-example/README.md">Automation module example</a>
+</p>
+
+<p align="center">
   <b>If Octopus Agent helps you, please <a href="https://github.com/harindujayakody/octopus-agent">⭐ star the repo</a>.</b> It is the easiest way to support the project.
 </p>
 
@@ -79,6 +87,17 @@ Configuration details are available in [Usage](#usage).
   an update.
 * **Profile backups.** Back up a profile with its cookies, logins and
   browser data to one file, and restore it on this or another computer.
+* **Extensions in every profile.** An extension added to the library loads
+  into every profile and is pinned on its toolbar: Chrome extensions in every
+  Chromium browser (Google Chrome included), Firefox add-ons from
+  addons.mozilla.org in every Firefox profile.
+* **Authenticator.** Two-factor codes in the sidebar, with saved keys sealed
+  on this computer.
+* **Start page.** The page profiles open on, for all of them in Settings or
+  for one on its Basics tab.
+* **Cloud sync across computers.** A synced profile open on another computer
+  says so before it starts here. [Set up cloud sync](docs/SYNC-SERVER.md)
+  shows how to run the server.
 * **Extensions from profiles.** Extensions a profile installed inside its
   browser show on the Extensions page, marked Chromium or Firefox, and a
   Chrome one can be added to the library. *Add extension → Add ad blocker*
@@ -853,6 +872,10 @@ server you run yourself. **Personal sync** carries your own profiles to
 your other computers through the same kind of server. Nothing goes through
 our infrastructure: the server, its database and the profiles' sessions
 stay on a machine you control.
+
+For the full walkthrough (hosting, Docker and service setup, connecting a
+Windows PC and a Mac, backups and troubleshooting), see
+[Set up cloud sync](docs/SYNC-SERVER.md).
 
 #### Run the server
 

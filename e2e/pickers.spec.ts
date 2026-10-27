@@ -209,16 +209,11 @@ test("Spread: search, Unused only, and each proxy's last test (IFACE-03)", async
   await expect(dialog.getByRole("option", { name: /^Old datacenter/ })).toContainText("Failed");
 });
 
-// E19 (IFACE-04): the profile form's Extensions tab lists the library as the
-// kit Combobox, so typing filters and Enter adds the highlighted extension.
-// The mock's `ublock` is "uBlock Origin Lite".
-test("the form's extensions: type and Enter add one, from the keyboard", async ({ page }) => {
+// Extensions are global: the profile form's Extensions tab only lists what
+// the profile's browser gets, with nothing to pick.
+test("the form's extensions: the library, with nothing to pick", async ({ page }) => {
   await openApp(page);
   const form = await openEditForm(page, "Sandbox", "Extensions");
-  const field = form.getByRole("combobox", { name: "Extensions" });
-  await field.click();
-  await field.fill("ublock");
-  await page.keyboard.press("Enter");
-  await expect(form.getByRole("option", { name: /uBlock Origin Lite/ })).toHaveAttribute("aria-selected", "true");
-  await expect(form.getByRole("tab", { name: /^Extensions\s*Changed$/ })).toBeVisible();
+  await expect(form.locator("[data-extensions-global]")).toContainText("pinned on its toolbar");
+  await expect(form.getByRole("combobox", { name: "Extensions" })).toHaveCount(0);
 });

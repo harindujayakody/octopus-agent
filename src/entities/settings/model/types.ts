@@ -15,6 +15,8 @@ export type Settings = {
   minimize_to_tray?: boolean;
   /** Appended to every launch, one per line. Applied last, so a repeat wins. */
   extra_args?: string;
+  /** The page every profile opens on when it starts, unless it names its own; "" = the browser's own. */
+  start_url?: string;
   /** Ask the Web Store about linked extensions every 5 h (on when absent). */
   ext_update_check?: boolean;
 };

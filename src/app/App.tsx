@@ -67,6 +67,7 @@ const loadTrash = () => import("../pages/trash");
 const loadSettings = () => import("../pages/settings");
 const loadWhatsNew = () => import("../widgets/WhatsNewDialog");
 const loadAutomation = () => import("../pages/automation");
+const loadAuthenticator = () => import("../pages/authenticator");
 const loadTeam = () => import("../pages/team");
 const ProxiesPage = lazy(() => loadProxies().then((m) => ({ default: m.ProxiesPage })));
 const FingerprintsPage = lazy(() => loadFingerprints().then((m) => ({ default: m.FingerprintsPage })));
@@ -76,6 +77,7 @@ const TrashPage = lazy(() => loadTrash().then((m) => ({ default: m.TrashPage }))
 const SettingsPage = lazy(() => loadSettings().then((m) => ({ default: m.SettingsPage })));
 const WhatsNewDialog = lazy(() => loadWhatsNew().then((m) => ({ default: m.WhatsNewDialog })));
 const AutomationPage = lazy(() => loadAutomation().then((m) => ({ default: m.AutomationPage })));
+const AuthenticatorPage = lazy(() => loadAuthenticator().then((m) => ({ default: m.AuthenticatorPage })));
 const TeamPage = lazy(() => loadTeam().then((m) => ({ default: m.TeamPage })));
 const WARM: Partial<Record<string, () => Promise<unknown>>> = {
   proxies: loadProxies,
@@ -86,6 +88,7 @@ const WARM: Partial<Record<string, () => Promise<unknown>>> = {
   settings: loadSettings,
   "whats-new": loadWhatsNew,
   automation: loadAutomation,
+  authenticator: loadAuthenticator,
   // The space switcher's menu opens the Team page.
   space: loadTeam,
 };
@@ -103,6 +106,7 @@ const LOADING: Partial<Record<Section, { title: (t: ReturnType<typeof useT>) => 
   trash: { title: (t) => t("trash.title"), look: "rows" },
   settings: { title: (t) => t("settings.title"), look: "form" },
   automation: { title: (t) => t("automation.title"), look: "cards" },
+  authenticator: { title: (t) => t("authenticator.title"), look: "rows" },
   team: { title: (t) => t("team.pageTitle"), look: "rows" },
 };
 
@@ -341,6 +345,7 @@ function Shell() {
         {section === "extensions" && <LazyPage section="extensions"><ExtensionsPage /></LazyPage>}
         {section === "bookmarks" && <LazyPage section="bookmarks"><BookmarksPage /></LazyPage>}
         {section === "automation" && <LazyPage section="automation"><AutomationPage /></LazyPage>}
+        {section === "authenticator" && <LazyPage section="authenticator"><AuthenticatorPage /></LazyPage>}
         {section === "trash" && <LazyPage section="trash"><TrashPage /></LazyPage>}
         {section === "settings" && <LazyPage section="settings"><SettingsPage /></LazyPage>}
         {section === "team" && <LazyPage section="team"><TeamPage /></LazyPage>}

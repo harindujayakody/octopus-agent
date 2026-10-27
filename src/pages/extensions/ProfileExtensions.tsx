@@ -8,6 +8,7 @@ import { useProfile } from "../../entities/profile";
 import { NavExtensionsIcon, SearchIcon } from "../../shared/icons";
 import { LoadError, LoadingCards } from "../../shared/ui/ListStates";
 import { toast } from "../../shared/model/toast";
+import { firefoxAddonImportUrl } from "../../features/firefox-addons/api";
 import { useT } from "../../shared/i18n";
 
 /// The extensions profiles installed by themselves, inside their browsers,
@@ -64,7 +65,9 @@ function InProfileCard({ x, inLibrary }: { x: InProfileExtension; inLibrary: boo
   const name = x.name || x.ext_id;
   const add = async () => {
     try {
-      await addProfileExtensionToLibrary(x);
+      // A Firefox add-on comes into the Firefox library from addons.mozilla.org, by its id.
+      if (x.family === "firefox") await firefoxAddonImportUrl(x.ext_id);
+      else await addProfileExtensionToLibrary(x);
       toast.ok(t("extensions.addedFromProfile", { name }));
     } catch (e) {
       toast.fail({ title: t("extensions.addFromProfileFailed", { name }), detail: e, subject: name });
@@ -96,9 +99,7 @@ function InProfileCard({ x, inLibrary }: { x: InProfileExtension; inLibrary: boo
         </p>
       </Tooltip>
       <div className="mt-auto flex items-center justify-end gap-2">
-        {x.family === "firefox" ? (
-          <span className="text-secondary text-text-soft-400">{t("extensions.firefoxStays")}</span>
-        ) : inLibrary ? (
+        {inLibrary ? (
           <Badge size="small" color="success" data-in-library>{t("extensions.inLibrary")}</Badge>
         ) : (
           <Button variant="neutral" mode="stroke" size="xsmall" isLoading={adding} onClick={() => void add()}>

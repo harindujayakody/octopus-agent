@@ -8,7 +8,6 @@ import { rowActionIcons } from "../../../shared/ui/rowActionIcons";
 import type { RowTone } from "../../../shared/ui/rowFill";
 import type { Command } from "../../../shared/commands";
 import { ariaOf, capOf, command, commandsFor, iconOf, labelOf, reasonOf, runCommand } from "../../commands";
-import { useTour } from "../../tour/model/useTour";
 
 const isPin = (c: Command) => c.id === "profile.pin" || c.id === "profile.unpin";
 
@@ -47,7 +46,6 @@ export function ProfileRowActions({ profile, onMore, tabIndex, editing, tone, le
   const isCancelling = useProfile((s) => s.cancelling.has(p.id));
   // Renders again when its session ends: startRefusal reads it.
   useSaving((s) => s.ids.has(p.id));
-  const tourShowsStart = useTour((s) => tourStart && s.run?.steps[s.run.index]?.target === "start");
   const runCmd = command(isRunning ? "profile.stop" : "profile.start");
   const runLabel = labelOf(runCmd.id);
   // A team's: no Start, or another device has it open; a synced one open on another computer,
@@ -64,7 +62,8 @@ export function ProfileRowActions({ profile, onMore, tabIndex, editing, tone, le
     <RowHoverActions
       editing={editing}
       tone={tone}
-      persistFixed={isRunning || isStarting || tourShowsStart}
+      // Start (or Stop) stays in view on every row, not only on hover (owner, 2026-10-27).
+      persistFixed
       lead={built ? lead : undefined}
       fixed={
         <>

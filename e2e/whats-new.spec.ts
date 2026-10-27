@@ -7,7 +7,7 @@ for (const theme of ["dark", "light"] as const) {
     await openApp(page, { theme });
     const dialog = page.getByRole("dialog", { name: /What’s new/ });
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByText(/v2\.2\.0/).first()).toBeVisible();
+    await expect(dialog.getByText(/v2\.5\.0/).first()).toBeVisible();
   });
 
   test(`What's new, ${theme}`, { tag: "@visual" }, async ({ page }) => {

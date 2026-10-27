@@ -3,6 +3,90 @@
   "repoUrl": "https://github.com/harindujayakody/octopus-agent",
   "releases": [
     {
+      "version": "2.5.0",
+      "date": "2026-10-27",
+      "entries": [
+        {
+          "id": "global-extensions",
+          "title": "Extensions in every profile",
+          "lead": "An extension added to the library now loads into every profile and is pinned on its toolbar. Nothing is picked per profile.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Chrome extensions go to every Chromium browser (the Octopus Agent engine, Chrome, Chromium, Brave, Thorium and Helium), Google Chrome included. Firefox add-ons have a library of their own on the Extensions page: paste an addons.mozilla.org link and every Firefox profile gets it."
+            }
+          ]
+        },
+        {
+          "id": "authenticator",
+          "title": "Authenticator",
+          "lead": "Two-factor codes for the accounts your profiles sign in to, in the sidebar.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Save an account with its secret key or otpauth link, tie it to a profile if you like, and copy its code with one click. Saved keys are sealed on this computer. Quick codes make codes for pasted keys and keep nothing."
+            }
+          ]
+        },
+        {
+          "id": "start-page",
+          "title": "Start page",
+          "lead": "Choose the page profiles open on when they start.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Set one for every profile in Settings > Profile defaults, or one for a single profile on its Basics tab. Leave it empty and the browser opens what it would."
+            }
+          ]
+        },
+        {
+          "id": "open-elsewhere",
+          "title": "Open on another computer",
+          "lead": "A synced profile that is open on another computer now says so before you start it here.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Two computers using one profile at once would overwrite each other's cookies and logins. Close it there first. The new guide in the docs folder shows how to run your own sync server, so profiles saved on Windows open on a Mac too."
+            }
+          ]
+        },
+        {
+          "id": "browser-on-basics",
+          "title": "Browser on the Basics tab",
+          "lead": "A new profile's browser can be picked on the Basics tab, next to its name.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "It is still on the Fingerprint tab too. Once the profile is created its browser stays fixed."
+            }
+          ]
+        },
+        {
+          "id": "start-button",
+          "title": "Start always shown",
+          "lead": "Each row's Start button now shows all the time, not only on hover.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The Extensions page's buttons also fit narrow windows now."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "2.4.0",
       "date": "2026-10-27",
       "entries": [

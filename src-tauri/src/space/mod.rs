@@ -900,6 +900,20 @@ pub mod extensions {
         local::load_path(id)
     }
 
+    /// Every extension in this machine's library: each personal profile of the
+    /// Chromium family starts with all of them, none picked per profile.
+    pub fn global_ids() -> Vec<String> {
+        local::list().map(|l| l.into_iter().map(|e| e.id).collect()).unwrap_or_else(|e| {
+            eprintln!("[extensions] library not read: {e:#}");
+            Vec::new()
+        })
+    }
+
+    /// The id Chromium gives the extension loaded from `root` (its key, else its path).
+    pub fn chrome_id(root: &Path) -> Option<String> {
+        local::chrome_id::chrome_id(root).ok()
+    }
+
     /// At launch, before any profile can start: half-done swaps settled, where
     /// each extension came from, approved updates applied.
     pub fn at_launch() {
@@ -909,8 +923,8 @@ pub mod extensions {
     /// Before a personal profile starts: a swap of its extensions is waited
     /// out, and none starts until its browser is tracked (the hold drops).
     pub async fn begin_launch(profile_id: &str) -> Result<local::usage::Hold> {
-        let ids = super::local::profile::load_raw(profile_id)?.meta.extensions;
-        local::usage::begin_launch(profile_id, &ids).await
+        let _ = super::local::profile::load_raw(profile_id)?;
+        local::usage::begin_launch(profile_id, &global_ids()).await
     }
 
     /// A browser closed: updates that waited for it may go in.

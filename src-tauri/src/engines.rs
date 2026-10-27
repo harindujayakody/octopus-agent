@@ -93,6 +93,8 @@ pub struct Plain<'a> {
     pub dir: &'a Path,
     /// The windows' title, the profile's name (Chromium family's `--window-name`), "" for none.
     pub title: &'a str,
+    /// The page to open at start (launch.rs `start_page`), put after every switch.
+    pub start_url: Option<&'a str>,
     pub proxy: Option<&'a ProxyEntry>,
     /// The profile's `webrtc`: "block", "tcp_only" or "auto".
     pub webrtc: &'a str,
@@ -137,6 +139,9 @@ pub fn command_line(engine: Engine, plain: &Plain) -> Vec<String> {
         if plain.headless {
             args.push("-headless".into());
         }
+        if let Some(url) = plain.start_url {
+            args.push(url.to_string());
+        }
         return args;
     }
 
@@ -150,10 +155,16 @@ pub fn command_line(engine: Engine, plain: &Plain) -> Vec<String> {
     if !plain.extensions.is_empty() {
         let joined = plain.extensions.iter().map(|p| p.display().to_string()).collect::<Vec<_>>().join(",");
         if engine == Engine::Chrome {
-            // Branded Chrome stopped reading --load-extension in 137 unless this feature is off.
-            args.push("--disable-features=DisableLoadExtensionCommandLineSwitch".into());
+            // Branded Chrome no longer reads --load-extension (137+, any feature
+            // switch): the launcher loads them over its debugging port instead
+            // (launch.rs `load_over_cdp`).
+            args.push("--enable-unsafe-extension-debugging".into());
+            if !plain.cdp {
+                args.push("--remote-debugging-port=0".into());
+            }
+        } else {
+            args.push(format!("--load-extension={joined}"));
         }
-        args.push(format!("--load-extension={joined}"));
     }
     if let Some(p) = plain.proxy {
         args.push(format!("--proxy-server={}", p.to_proxy_server_arg()));
@@ -171,6 +182,10 @@ pub fn command_line(engine: Engine, plain: &Plain) -> Vec<String> {
         args.push("--headless=new".into());
     }
     args.extend(plain.extra.iter().cloned());
+    // The page to open at start, after every switch.
+    if let Some(url) = plain.start_url {
+        args.push(url.to_string());
+    }
     args
 }
 
@@ -181,6 +196,10 @@ pub fn write_firefox_prefs(plain: &Plain) -> Result<()> {
         ("browser.aboutwelcome.enabled".into(), "false".into()),
         ("datareporting.policy.dataSubmissionPolicyBypassNotification".into(), "true".into()),
         ("toolkit.telemetry.reportingpolicy.firstRun".into(), "false".into()),
+        // The library's add-ons sit in the profile's own folder (firefox_addons.rs):
+        // that scope on, and nothing in it waits for a click to be enabled.
+        ("extensions.enabledScopes".into(), "15".into()),
+        ("extensions.autoDisableScopes".into(), "0".into()),
     ];
     let q = |s: &str| serde_json::to_string(s).unwrap_or_else(|_| "\"\"".into());
     match plain.proxy {
@@ -319,7 +338,7 @@ mod tests {
     }
 
     fn plain<'a>(dir: &'a Path, p: Option<&'a ProxyEntry>, cdp: bool) -> Plain<'a> {
-        Plain { dir, title: "", proxy: p, webrtc: "auto", extensions: &[], cdp, headless: false, extra: Vec::new() }
+        Plain { dir, title: "", start_url: None, proxy: p, webrtc: "auto", extensions: &[], cdp, headless: false, extra: Vec::new() }
     }
 
     #[test]

@@ -5,6 +5,7 @@ import {
   FolderAddIconApp,
   FOLDER_ICON_GLYPHS,
   MoreIcon,
+  AuthenticatorIcon,
   NavAutomationIcon,
   NavBookmarksIcon,
   NavBrowsersIcon,
@@ -1055,6 +1056,7 @@ export function Sidebar() {
           <ExtensionsItem compact={compact} />
           <PageItem id="bookmarks" label={t("sidebar.navBookmarks")} icon={<NavBookmarksIcon className="size-3.5" />} compact={compact} />
           <PageItem id="automation" label={t("sidebar.navProjects")} icon={<NavAutomationIcon className="size-3.5" />} compact={compact} />
+          <PageItem id="authenticator" label={t("sidebar.navAuthenticator")} icon={<AuthenticatorIcon className="size-3.5" />} compact={compact} />
         </div>
         {/* The lists that grow with the user's data scroll on their own. */}
         <ScrollArea>

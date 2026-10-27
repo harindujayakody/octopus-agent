@@ -3,7 +3,7 @@ import { t } from "../../shared/i18n";
 import { siteUrl } from "../../shared/lib/utils";
 import {
   ComputerIcon, FolderAddIconApp, GlobeIcon, HelpCircleIcon, KeyboardIcon, MoonIcon, NavAutomationIcon, NavBookmarksIcon, NavBrowsersIcon,
-  NavExtensionsIcon, NavFingerprintsIcon, NavPatchLogIcon, NavSettingsIcon, NavTrashIcon,
+  NavExtensionsIcon, NavFingerprintsIcon, NavPatchLogIcon, NavSettingsIcon, NavTrashIcon, AuthenticatorIcon,
   RouteIcon, SpaceTeamIcon, StopIcon, SunIcon, AddIcon, SyncedIcon,
 } from "../../shared/icons";
 import type { Section } from "../../shared/types";
@@ -206,6 +206,7 @@ export const APP_COMMANDS: readonly Command[] = [
   { ...APP, id: "nav.bookmarks", group: "navigate", icon: NavBookmarksIcon, label: () => t("sidebar.navBookmarks"), surfaces: ["palette"], run: go("bookmarks") },
   // The pages' names before F5 made titles equal the nav labels still find them.
   { ...APP, id: "nav.automation", group: "navigate", icon: NavAutomationIcon, label: () => t("sidebar.navProjects"), keywords: () => ["projects"], surfaces: ["palette"], run: go("automation") },
+  { ...APP, id: "nav.authenticator", group: "navigate", icon: AuthenticatorIcon, label: () => t("sidebar.navAuthenticator"), keywords: () => ["2fa", "totp", "otp", "two-factor", "code"], surfaces: ["palette"], run: go("authenticator") },
   // In a team: for its admin, and for a member once they see rows of its Trash.
   { ...APP, id: "nav.trash", group: "navigate", icon: NavTrashIcon, label: () => t("sidebar.navTrash"), surfaces: ["palette"], when: () => { const team = activeTeam(useSpace.getState().state); return !team || team.admin || useTeamTrash.getState().seen; }, run: go("trash") },
   // The Team page has no row of its own: the space menu and these reach it.

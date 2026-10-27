@@ -20,15 +20,11 @@ test("a thousand profiles: only the rows on screen are rendered, and the last is
   await expect(row(page, "Profile 1000")).toBeVisible();
 });
 
-test("Start and More actions show while the pointer is over the row", async ({ page }) => {
+test("Start and More actions stay in view on every row, without a hover (owner, 2026-10-27)", async ({ page }) => {
   await openApp(page);
-  // Task 5e: the actions gridcell itself now always stays opaque (it also
-  // hosts the hover-only Pin/Edit/Clone/Move to Trash overlay, which must
-  // never inherit the same opacity as Start/More); Start/More's own reveal
-  // moved to their wrapper, marked `data-fixed-actions`.
+  // Start/More sit in their own wrapper, `data-fixed-actions`, apart from the
+  // hover-only Pin/Edit/Clone/Move to Trash overlay.
   const actions = row(page, "Etsy craft shop").locator("[data-fixed-actions]");
-  await expect(actions).toHaveCSS("opacity", "0");
-  await row(page, "Etsy craft shop").hover();
   await expect(actions).toHaveCSS("opacity", "1");
 });
 
@@ -100,7 +96,7 @@ test("right-click and the More button open the same menu", async ({ page }) => {
   // the registry's (E3).
   const names = [
     "Start", "Open in Peek", "Edit", "Rename", "Clone", "Pin", "Move to folder", "Remove from folder", "Edit tags", "Change proxy",
-    "Copy ID", "Export cookies", "Import cookies", "Move to Trash",
+    "Copy ID", "Export cookies", "Import cookies", "Back up profile", "Clear cache", "Move to Trash",
   ];
   const items = page.getByRole("menuitem");
   await expect(items).toHaveCount(names.length);
@@ -178,6 +174,7 @@ test("the name order reads numbers as numbers", async ({ page }) => {
   });
   await page.reload();
   await waitForIdle(page);
+  await expect(row(page, "Shop 2")).toBeVisible();
   const order = await names(page);
   expect(order.indexOf("Shop 2")).toBeGreaterThanOrEqual(0);
   expect(order.indexOf("Shop 2")).toBeLessThan(order.indexOf("Shop 10"));

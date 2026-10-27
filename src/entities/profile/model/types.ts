@@ -66,6 +66,8 @@ export type ProfileForm = {
   color: string;
   /// The site icon picked to tell it apart (shared/brands), "" = its initials.
   icon: string;
+  /// The page it opens on when it starts; "" = Settings' start page.
+  start_url: string;
   /// Extension ids from the library.
   extensions: string[];
   /// Answer media questions the Android way. Phone profiles only.

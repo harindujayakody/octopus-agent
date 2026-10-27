@@ -1,4 +1,4 @@
-import { Switch, Textarea } from "@proxyshard/shardx-ui-kit";
+import { Input, Switch, Textarea } from "@proxyshard/shardx-ui-kit";
 import { useT } from "../../../shared/i18n";
 import { riskyLaunchArgs, type LaunchArgRisk } from "../../../shared/lib/launchArgs";
 import { SelectField } from "../../../shared/ui/SelectField";
@@ -8,6 +8,23 @@ export function ProfileDefaultsSection({ s, setS, p, setP }: SettingsProps) {
   const t = useT();
   return (
     <SettingsGroup>
+      <SettingRow
+        id="start-page"
+        title={t("settings.startPageTitle")}
+        help={t("settings.startPageHelp")}
+        control={({ labelId, helpId }) => (
+          <div className="w-[240px]">
+            <Input
+              inputSize="xsmall"
+              aria-labelledby={labelId}
+              aria-describedby={helpId}
+              placeholder={t("settings.startPagePlaceholder")}
+              value={s.start_url ?? ""}
+              onChange={(e) => setS({ ...s, start_url: e.target.value })}
+            />
+          </div>
+        )}
+      />
       <SettingRow
         id="geo"
         title={t("settings.geoCheckerTitle")}
