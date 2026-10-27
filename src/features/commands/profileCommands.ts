@@ -5,7 +5,9 @@ import {
 } from "../../shared/icons";
 import { syncConnected, useSync } from "../../entities/sync";
 import { openHereInstead, setProfilesSync } from "../profile-sync";
-import { processList, profileCacheClear, profileFocusWindow } from "../../entities/profile";
+import { processList, profileBackup, profileCacheClear, profileFocusWindow, profileRestore } from "../../entities/profile";
+import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { fmtBytes } from "../../shared/lib/format";
 import { clip } from "../../shared/lib/clipboard";
 import { toast } from "../../shared/model/toast";
@@ -56,6 +58,8 @@ const atRow = (id: string, from: RunFrom, then: () => void): void | Promise<void
 };
 
 const LIST = { area: "profiles", page: "profiles" } as const;
+/** A profile backup's file extension (profile_backup.rs writes a zip). */
+const BACKUP_EXT = "octopus-backup";
 
 /// Why none of `list` may be acted on, or null when one may: a team's rights
 /// on each row, or another device holding it. Those that may are acted on;
@@ -401,6 +405,31 @@ export const PROFILE_COMMANDS: readonly Command[] = [
     run: async (s) => { const p = metas(s)[0]; if (p) await data().importCookies(p); },
   },
   {
+    // The profile and its whole browser data in one file, to keep or move.
+    ...LIST, id: "profile.backup", scope: "active", group: "copy", icon: UploadIcon,
+    label: () => t("commands.backupProfile"),
+    surfaces: ["rowMenu", "paletteActions", "peekMenu"],
+    when: personalRows,
+    disabled: (s) => (s.ids.some(isRunning) ? t("profileRow.stopFirst") : null),
+    run: async (s) => {
+      const p = metas(s)[0];
+      if (!p) return;
+      try {
+        const path = await saveDialog({
+          defaultPath: `${(p.name || p.id).replace(/[^\w.-]+/g, "_")}.${BACKUP_EXT}`,
+          filters: [{ name: t("profileRow.backupFileType"), extensions: [BACKUP_EXT] }],
+        });
+        if (typeof path !== "string") return; // cancelled
+        const bytes = await profileBackup(p.id, path);
+        toast.ok(t("profileRow.backedUp", { name: p.name, size: fmtBytes(bytes) }));
+        // Shown in its folder; reveal never runs a file (SEC-04).
+        try { await revealItemInDir(path); } catch { /* the folder can't be shown: the toast said where */ }
+      } catch (e) {
+        toast.fail({ title: t("profileRow.backupFailed", { name: p.name }), detail: e, subject: p.name });
+      }
+    },
+  },
+  {
     // Only what the browser rebuilds by itself: cookies, logins and history stay.
     ...LIST, id: "profile.clearCache", scope: "active", group: "copy", icon: ClearCacheIcon,
     label: () => t("commands.clearCache"),
@@ -491,6 +520,25 @@ export const PROFILE_COMMANDS: readonly Command[] = [
     disabled: createRefusal,
     run: async () => {
       if (await useNav.getState().setSection("profiles")) openProfileForm({ mode: "create" });
+    },
+  },
+  {
+    // A backup file back into the list, with its cookies and browser data.
+    ...LIST, id: "profile.restoreBackup", scope: "page", group: "create", icon: DownloadIcon,
+    label: () => t("commands.restoreBackup"),
+    surfaces: ["pageMenu", "palette"],
+    when: () => !inTeam(),
+    run: async () => {
+      if (!(await useNav.getState().setSection("profiles"))) return;
+      try {
+        const path = await openDialog({ multiple: false, directory: false, filters: [{ name: t("profileRow.backupFileType"), extensions: [BACKUP_EXT] }] });
+        if (typeof path !== "string") return; // cancelled
+        const row = await profileRestore(path);
+        await useProfile.getState().reload();
+        toast.ok(t("profileRow.restoredBackup", { name: row.name }));
+      } catch (e) {
+        toast.fail({ title: t("profileRow.restoreBackupFailed"), detail: e });
+      }
     },
   },
   {

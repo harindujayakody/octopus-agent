@@ -6,3 +6,4 @@ export * from "./model/name";
 export * from "./model/updates";
 export * from "./lib/useExtensions";
 export * from "./lib/useExtensionUpdates";
+export * from "./lib/useProfileExtensions";

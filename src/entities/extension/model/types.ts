@@ -98,3 +98,21 @@ export type UpdateNews = {
 
 /** The refusal to add what the library holds already (extensions.rs already_in_library). */
 export type AlreadyInLibrary = { entry_id: string; installed: string; separate: boolean };
+
+/** Which browsers load an extension: Chrome, Chromium, Brave, Thorium, Helium
+ *  and the Octopus Agent engine share one kind; Firefox has its own. */
+export type ExtensionFamily = "chromium" | "firefox";
+
+/** An extension a profile installed by itself, inside its browser (extensions.rs `InProfile`). */
+export type InProfileExtension = {
+  /** A Chrome extension's 32 letters, or a Firefox add-on's id. */
+  ext_id: string;
+  name: string;
+  version: string;
+  description: string;
+  icon: string;
+  path: string;
+  family: ExtensionFamily;
+  /** The ids of the profiles that have it. */
+  profiles: string[];
+};

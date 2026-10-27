@@ -1,4 +1,8 @@
-import { AddIcon, DownloadIcon, FolderIcon, GlobeIcon } from "../../../shared/icons";
+import { AdBlockIcon, AddIcon, DownloadIcon, FolderIcon, GlobeIcon } from "../../../shared/icons";
+
+/** uBlock Origin Lite on the Chrome Web Store: the content blocker that runs on
+ *  today's Chromium (Manifest V3), where the full uBlock Origin no longer loads. */
+export const UBLOCK_LITE_ID = "ddkjiahejlhfcafbddmgiahcphecmpfh";
 import { useExtensions } from "../../../entities/extension";
 import { useT } from "../../../shared/i18n";
 import { HeaderMenu } from "../../../widgets/PageHeader/HeaderMenu";
@@ -13,6 +17,8 @@ export function AddExtensionMenu() {
   const importFiles = useExtensions((s) => s.importFiles);
   const importFolder = useExtensions((s) => s.importFolder);
   const setLinkOpen = useExtensions((s) => s.setLinkOpen);
+  const importUrl = useExtensions((s) => s.importUrl);
+  const haveAdBlock = useExtensions((s) => s.items.some((e) => e.source?.kind === "webstore" && e.source.id === UBLOCK_LITE_ID));
   // A team's are added with Create in the team: each way says why it is closed.
   useRightsChange();
   const refused = teamRefusal("create");
@@ -25,6 +31,16 @@ export function AddExtensionMenu() {
         { label: t("extensions.addFromLink"), icon: <GlobeIcon className="size-3.5" />, onSelect: () => setLinkOpen(true), ...closed },
         { label: t("extensions.addFromFile"), icon: <DownloadIcon className="size-3.5" />, disabled: busy, onSelect: () => void importFiles(), ...closed },
         { label: t("extensions.addUnpacked"), icon: <FolderIcon className="size-3.5" />, disabled: busy, onSelect: () => void importFolder(), ...closed },
+        { type: "separator" },
+        // One click: the Web Store's uBlock Origin Lite, kept up to date like any linked extension.
+        {
+          label: t("extensions.addAdBlocker"),
+          icon: <AdBlockIcon className="size-3.5" />,
+          disabled: busy || haveAdBlock,
+          hint: haveAdBlock ? t("extensions.adBlockerAdded") : t("extensions.adBlockerHint"),
+          onSelect: () => void importUrl(UBLOCK_LITE_ID),
+          ...closed,
+        },
       ]}
     />
   );

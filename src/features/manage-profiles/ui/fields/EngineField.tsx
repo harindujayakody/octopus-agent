@@ -3,12 +3,12 @@ import { Button } from "@proxyshard/shardx-ui-kit";
 import { SelectField } from "../../../../shared/ui/SelectField";
 import { EngineIcon } from "../../../../shared/brands";
 import { useT } from "../../../../shared/i18n";
-import type { EngineId } from "../../../../entities/profile";
+import { engineLabel, STOCK_ENGINES, type EngineId } from "../../../../entities/profile";
 import { detectEngines, downloadEngine, isMissing, useEngines } from "../../lib/engineDownloads";
 import { useProfileForm } from "../../../profile-form/model/useProfileForm";
 import type { FieldProps } from "./types";
 
-const ENGINES: EngineId[] = ["shardx", "chrome", "chromium", "firefox"];
+const ENGINES: EngineId[] = ["shardx", ...STOCK_ENGINES];
 
 /// The browser the profile starts in. Only the Octopus Agent engine reads the
 /// fingerprint; the others get the profile's data and proxy, and the line
@@ -18,11 +18,8 @@ const ENGINES: EngineId[] = ["shardx", "chrome", "chromium", "firefox"];
 /// (the backend keeps it on every save too).
 export function EngineField({ f, u }: FieldProps) {
   const t = useT();
-  const nameOf = (id: EngineId) =>
-    id === "chrome" ? t("profileForm.engineChrome")
-    : id === "chromium" ? t("profileForm.engineChromium")
-    : id === "firefox" ? t("profileForm.engineFirefox")
-    : t("profileForm.engineShardx");
+  // The Octopus Agent engine says it applies the fingerprint; the others are named.
+  const nameOf = (id: EngineId) => (id === "shardx" ? t("profileForm.engineShardx") : engineLabel(id, t));
   const found = useEngines((s) => s.found);
   const downloads = useEngines((s) => s.downloads);
   useEffect(() => { void detectEngines(); }, []);

@@ -3,6 +3,90 @@
   "repoUrl": "https://github.com/harindujayakody/octopus-agent",
   "releases": [
     {
+      "version": "2.4.0",
+      "date": "2026-10-27",
+      "entries": [
+        {
+          "id": "chrome-stable",
+          "title": "Google Chrome Stable",
+          "lead": "The Google Chrome option now installs official Chrome Stable, the same build people use every day, instead of Chrome for Testing.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "It plays protected video and every codec, and its About page says Google Chrome. It is downloaded from Google and unpacked into Octopus Agent's folder; nothing is installed on the computer. A copy installed before this version keeps working until you update it in Settings > Browsers."
+            }
+          ]
+        },
+        {
+          "id": "more-browsers",
+          "title": "Brave, Thorium and Helium",
+          "lead": "Three more Chromium browsers can be installed from Settings > Browsers and picked for a profile.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Each comes from its own GitHub releases and is checked for updates like the others. Thorium is the build for this processor (AVX2, AVX or SSE). Brave changes some fingerprint values on its own, so its profiles do not look as consistent as the Octopus Agent engine's."
+            }
+          ]
+        },
+        {
+          "id": "profile-backup",
+          "title": "Back up and restore a profile",
+          "lead": "A profile and all its browser data, cookies and logins included, fit in one file.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Back up profile is in a profile's menu; Restore from backup is in the Profiles page's menu. A backup restores under its own id, or as a copy when that profile is still here. Caches are left out, and the profile has to be closed."
+            }
+          ]
+        },
+        {
+          "id": "profile-extensions",
+          "title": "Extensions installed in profiles",
+          "lead": "Extensions a profile installed inside its browser now show on the Extensions page.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Switch to In profiles to see them and which profiles have them. Add to library puts a Chrome extension in the library, from the Web Store when it is there so it keeps updating."
+            }
+          ]
+        },
+        {
+          "id": "extension-kinds",
+          "title": "Chromium and Firefox extensions apart",
+          "lead": "Extensions are marked Chromium or Firefox and can be filtered by kind.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A Firefox profile no longer offers the library's Chrome extensions, which it can't load; its add-ons stay inside its Firefox."
+            }
+          ]
+        },
+        {
+          "id": "ad-blocker",
+          "title": "One-click ad blocker",
+          "lead": "Add extension > Add ad blocker puts uBlock Origin Lite in the library.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "It comes from the Chrome Web Store and updates with the other linked extensions. Assign it to the profiles that should block ads."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "2.3.0",
       "date": "2026-10-27",
       "entries": [

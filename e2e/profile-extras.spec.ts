@@ -44,3 +44,35 @@ test("the Browser column is in Display and shows each profile's browser", async 
   await expect(row(page, "Sandbox").locator("[data-cell='engine']")).toHaveText("Octopus Agent");
   await expect(row(page, "Sandbox").locator("[data-cell='engine'] [data-engine-icon='shardx']")).toBeVisible();
 });
+
+test("Brave, Thorium and Helium are on the Browsers page, each with Install", async ({ page }) => {
+  await openApp(page, { section: "settings" });
+  await page.getByRole("tablist", { name: "Settings sections" }).getByRole("tab", { name: "Browsers" }).click();
+  for (const id of ["brave", "thorium", "helium"]) {
+    await expect(page.locator(`[data-browser-status='${id}']`)).toHaveText("Not installed");
+    await expect(page.locator(`[data-setting='browser-${id}']`).getByRole("button", { name: "Install" })).toBeVisible();
+  }
+});
+
+test("a profile backs up from its menu and comes back as a copy from the page menu", async ({ page }) => {
+  await openApp(page);
+  await row(page, "Sandbox").getByRole("button", { name: "More actions" }).click();
+  await page.getByRole("menuitem", { name: "Back up profile" }).click();
+  await expect(page.locator("[data-toast]").filter({ hasText: /Backed up “Sandbox”/ })).toBeVisible();
+  await page.locator("header").getByRole("button", { name: "More actions" }).click();
+  await page.getByRole("menuitem", { name: "Restore from backup" }).click();
+  await expect(page.locator("[data-toast]").filter({ hasText: /Restored “Sandbox \(restored\)”/ })).toBeVisible();
+  await expect(row(page, "Sandbox (restored)")).toBeVisible();
+});
+
+test("Extensions shows the ones profiles installed, Chromium or Firefox, and adds one to the library", async ({ page }) => {
+  await openApp(page, { section: "extensions" });
+  await page.getByRole("radio", { name: "In profiles" }).click();
+  await expect(page.locator("[data-in-profile]")).toHaveCount(3);
+  await expect(page.locator("[data-in-profile='hlkenndednhfkekhgcdicdfddnkalmdm'] [data-in-library]")).toBeVisible();
+  await expect(page.locator("[data-family='firefox']")).toContainText("Stays with its Firefox profiles");
+  await page.getByRole("radio", { name: "Firefox" }).click();
+  await expect(page.locator("[data-in-profile]")).toHaveCount(1);
+  await page.getByRole("radio", { name: "Chromium" }).click();
+  await expect(page.locator("[data-in-profile]")).toHaveCount(2);
+});

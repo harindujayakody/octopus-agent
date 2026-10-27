@@ -20,7 +20,7 @@ async function openBrowsers(page: Page) {
 
 test("the Browsers tab lists Chrome, Chromium and Firefox with what each has", async ({ page }) => {
   await openBrowsers(page);
-  await expect(page.locator("main [data-setting^='browser-']")).toHaveCount(3);
+  await expect(page.locator("main [data-setting^='browser-']")).toHaveCount(6);
   await expect(browserRow(page, "chrome")).toContainText("Google Chrome");
   await expect(browserRow(page, "chromium")).toContainText("Chromium");
   await expect(browserRow(page, "firefox")).toContainText("Firefox");

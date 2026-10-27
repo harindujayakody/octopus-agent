@@ -73,6 +73,16 @@ Configuration details are available in [Usage](#usage).
 * **A profile keeps its browser.** The browser is chosen when a profile is
   made and stays fixed after that, so a profile's data is never opened by a
   different browser.
+* **Official browsers, kept up to date.** *Settings → Browsers* installs
+  Google Chrome Stable (not Chrome for Testing), Chromium, Firefox, Brave,
+  Thorium and Helium into Octopus Agent's folder, and tells you when one has
+  an update.
+* **Profile backups.** Back up a profile with its cookies, logins and
+  browser data to one file, and restore it on this or another computer.
+* **Extensions from profiles.** Extensions a profile installed inside its
+  browser show on the Extensions page, marked Chromium or Firefox, and a
+  Chrome one can be added to the library. *Add extension → Add ad blocker*
+  adds uBlock Origin Lite in one click.
 * **Profile icons.** Give a profile the icon of the site it is for
   (Facebook, Pinterest, TikTok and 30 more) and spot it in the list at a glance.
 * **Browser column.** *Display → Browser* shows which browser each profile
@@ -983,5 +993,5 @@ under their own terms, which include:
 Permitted uses include personal projects, web scraping,
 multi-accounting and integration with the launcher's automation API.
 Contact the ShardBrowser team before building a commercial product on
-top of the engine. Stock Chrome, Chromium and Firefox come under their
+top of the engine. Chrome, Chromium, Firefox, Brave, Thorium and Helium come under their
 vendors' own licenses.

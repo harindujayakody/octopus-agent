@@ -5,10 +5,11 @@ import {
   checkEngineUpdates, downloadEngine, hasUpdate, removeEngine, useEngines, type StockEngine,
 } from "../../../features/manage-profiles/lib/engineDownloads";
 import { SettingRow, SettingsGroup } from "../SettingRow";
+import { engineLabel, STOCK_ENGINES } from "../../../entities/profile";
+import { EngineIcon } from "../../../shared/brands";
 
-const BROWSERS: StockEngine[] = ["chrome", "chromium", "firefox"];
 
-/// Browsers: Google Chrome, Chromium and Firefox, each installed on its own
+/// Browsers: Google Chrome, Chromium, Firefox, Brave, Thorium and Helium, each installed on its own
 /// into the launcher's folder. A profile only ever starts the copy installed
 /// here, never one the computer has, so its version is the one shown here.
 /// Each row installs, updates or removes its browser; opening the page checks the vendors for newer
@@ -24,7 +25,7 @@ export function BrowsersSection() {
   useEffect(check, []);
   return (
     <SettingsGroup help={t("browsers.help")}>
-      {BROWSERS.map((id) => <BrowserRow key={id} id={id} />)}
+      {STOCK_ENGINES.map((id) => <BrowserRow key={id} id={id} />)}
       <div className="flex justify-end py-3">
         <Button variant="neutral" mode="stroke" size="xsmall" disabled={checking} onClick={check}>
           {checking ? t("browsers.checking") : t("browsers.checkNow")}
@@ -41,7 +42,7 @@ function BrowserRow({ id }: { id: StockEngine }) {
   const latest = useEngines((s) => s.latest[id]);
   const update = useEngines((s) => hasUpdate(s, id));
   const removing = useEngines((s) => !!s.removing[id]);
-  const name = id === "chrome" ? t("profileForm.engineChrome") : id === "chromium" ? t("profileForm.engineChromium") : t("profileForm.engineFirefox");
+  const name = engineLabel(id, t);
   const busy = !!d && !("error" in d);
 
   const status = busy
@@ -55,7 +56,7 @@ function BrowserRow({ id }: { id: StockEngine }) {
   return (
     <SettingRow
       id={`browser-${id}`}
-      title={name}
+      title={<span className="inline-flex items-center gap-2"><EngineIcon engine={id} size={16} />{name}</span>}
       help={<span role={busy ? "status" : undefined} data-browser-status={id}>{status}</span>}
       control={() => (
         <div className="flex items-center gap-2">

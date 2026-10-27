@@ -2,6 +2,7 @@ import type { ProfileForm, NoiseMode } from "./types";
 import type { FingerprintEntry } from "../../fingerprint/model/types";
 import { AUTO_TZ, AUTO_LANG, DEFAULT_BLOCKED_PORTS, WEBGL_NOISE_INTENSITY, CLIENT_RECTS_MAX_OFFSET } from "../../../shared/constants";
 import { deriveAcceptLanguage, deriveLanguagesArray } from "../../../shared/lib/utils";
+import { engineOf } from "../lib/engineName";
 
 export const defaultForm = (): ProfileForm => ({
   id: "",
@@ -71,7 +72,7 @@ export function fromStored(stored: any): ProfileForm {
   f.extensions = Array.isArray(stored?._meta?.extensions) ? stored._meta.extensions : [];
   f.android_media = stored?._meta?.android_media === true;
   const engine = stored?._meta?.engine;
-  f.engine = engine === "chrome" || engine === "chromium" || engine === "firefox" ? engine : "shardx";
+  f.engine = engineOf(engine);
   // Empty for legacy profiles; snapped by useEffect.
   f.gpu_preset_id = stored?._meta?.gpu_preset_id ?? "";
   f.real_gpu = stored?._meta?.real_gpu === true;

@@ -39,6 +39,7 @@ import {
   InformationCircleIcon,
   ArrowDown01Icon,
   CleanIcon,
+  Shield01Icon,
   Delete02Icon,
   Globe02Icon,
   Clock01Icon,
@@ -188,6 +189,8 @@ export const BackIcon = make(ArrowLeft01Icon);
 export const DeleteIcon = make(Delete02Icon);
 /** Empties a profile's browser cache. */
 export const ClearCacheIcon = make(CleanIcon);
+/** An ad blocker (Extensions > Add extension). */
+export const AdBlockIcon = make(Shield01Icon);
 export const GlobeIcon = make(Globe02Icon);
 export const ClockIcon = make(Clock01Icon);
 export const BuildingIcon = make(Building02Icon);

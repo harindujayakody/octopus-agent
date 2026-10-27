@@ -20,11 +20,15 @@ pub enum Engine {
     Chrome,
     Chromium,
     Firefox,
+    Brave,
+    Thorium,
+    Helium,
 }
 
 impl Engine {
-    /// The ones found on this computer rather than downloaded.
-    pub const STOCK: [Engine; 3] = [Engine::Chrome, Engine::Chromium, Engine::Firefox];
+    /// The browsers installed from the Browsers page.
+    pub const STOCK: [Engine; 6] =
+        [Engine::Chrome, Engine::Chromium, Engine::Firefox, Engine::Brave, Engine::Thorium, Engine::Helium];
 
     /// `_meta.engine` as written; absent or unknown is the ShardX engine.
     pub fn of(name: Option<&str>) -> Engine {
@@ -32,6 +36,9 @@ impl Engine {
             Some("chrome") => Engine::Chrome,
             Some("chromium") => Engine::Chromium,
             Some("firefox") => Engine::Firefox,
+            Some("brave") => Engine::Brave,
+            Some("thorium") => Engine::Thorium,
+            Some("helium") => Engine::Helium,
             _ => Engine::ShardX,
         }
     }
@@ -42,6 +49,9 @@ impl Engine {
             Engine::Chrome => "chrome",
             Engine::Chromium => "chromium",
             Engine::Firefox => "firefox",
+            Engine::Brave => "brave",
+            Engine::Thorium => "thorium",
+            Engine::Helium => "helium",
         }
     }
 
@@ -51,6 +61,9 @@ impl Engine {
             Engine::Chrome => "Google Chrome",
             Engine::Chromium => "Chromium",
             Engine::Firefox => "Firefox",
+            Engine::Brave => "Brave",
+            Engine::Thorium => "Thorium",
+            Engine::Helium => "Helium",
         }
     }
 

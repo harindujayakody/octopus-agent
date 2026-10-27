@@ -7,6 +7,10 @@ export const profileGet = (id: string) => invoke<any>("profile_get", { id });
 export const profileCacheSize = (id: string) => invoke<number>("profile_cache_size", { id });
 /** Empties the profile's browser cache; cookies, logins and history stay. Returns the bytes freed. */
 export const profileCacheClear = (id: string) => invoke<number>("profile_cache_clear", { id });
+/** Writes the profile and its whole browser data (cookies, logins, history) to `path` (profile_backup.rs). Returns its size. */
+export const profileBackup = (id: string, path: string) => invoke<number>("profile_backup", { id, path });
+/** Restores a backup: under its own id when free, else as a copy. Returns its row. */
+export const profileRestore = (path: string) => invoke<ProfileMeta>("profile_restore", { path });
 export const profileSave = (payload: any) => invoke<ProfileMeta>("profile_save", { payload });
 export const profileDelete = (id: string) => invoke("profile_delete", { id });
 export const profileClone = (id: string) => invoke<ProfileMeta>("profile_clone", { id });

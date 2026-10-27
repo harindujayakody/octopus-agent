@@ -827,7 +827,15 @@ pub mod extensions {
     use std::path::{Path, PathBuf};
 
     pub use local::updates::{Done as UpdateDone, ExtensionUpdate, Linked as LinkDone, News as UpdateNews};
-    pub use local::{import_each, ExtensionEntry, Imported};
+    pub use local::{import_each, ExtensionEntry, Imported, InProfile};
+
+    /// The extensions the personal profiles installed inside their browsers; none in a team.
+    pub fn in_profiles() -> Result<Vec<InProfile>> {
+        match team_now() {
+            Some(_) => Ok(Vec::new()),
+            None => local::in_profiles(),
+        }
+    }
 
     /// Updates of a team's extensions come later (design v2).
     const TEAM_UPDATES_NOT_YET: &str = "not offered for a team's extensions yet";

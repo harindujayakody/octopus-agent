@@ -1,5 +1,5 @@
 import {
-  siAirbnb, siAliexpress, siApple, siBinance, siBluesky, siCoinbase, siDiscord, siEbay, siEtsy, siFacebook,
+  siAirbnb, siAliexpress, siApple, siBinance, siBluesky, siBrave, siCoinbase, siDiscord, siEbay, siEtsy, siFacebook,
   siFirefoxbrowser, siGithub, siGmail, siGoogle, siGooglechrome, siInstagram, siKick, siKucoin, siMedium,
   siNetflix, siOnlyfans, siPaypal, siPinterest, siQuora, siReddit, siShopify, siSnapchat, siSpotify,
   siTelegram, siThreads, siTiktok, siTinder, siTwitch, siUber, siVk, siWhatsapp, siX, siYoutube,
@@ -7,7 +7,7 @@ import {
 } from "simple-icons";
 import { OctopusLogo } from "../icons";
 /** The browsers a profile can start in (entities/profile `EngineId`). */
-type EngineId = "shardx" | "chrome" | "chromium" | "firefox";
+type EngineId = "shardx" | "chrome" | "chromium" | "firefox" | "brave" | "thorium" | "helium";
 
 /// Brand marks from Simple Icons (CC0): the sites a profile is for, picked in
 /// its editor to tell it apart in the list, and the browsers it starts in.
@@ -98,12 +98,25 @@ export function ProfileIcon({ id, size = 14 }: { id: string | null | undefined; 
 /** Chromium's mark: Chrome's shape in Chromium's blue (Simple Icons has no Chromium). */
 const CHROMIUM_HEX = "4587F3";
 
+/** A browser Simple Icons has no mark for: its initial on a disc of its color. */
+function LetterMark({ letter, hex, size }: { letter: string; hex: string; size: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" focusable="false" className="shrink-0">
+      <circle cx="12" cy="12" r="12" fill={`#${hex}`} />
+      <text x="12" y="16.5" textAnchor="middle" fontSize="13" fontWeight="700" fill="#fff" fontFamily="system-ui, sans-serif">{letter}</text>
+    </svg>
+  );
+}
+
 /** The logo of the browser a profile starts in. */
 export function EngineIcon({ engine, size = 14 }: { engine: EngineId; size?: number }) {
   const mark =
     engine === "chrome" ? <BrandMark path={siGooglechrome.path} hex={siGooglechrome.hex} size={size} />
     : engine === "chromium" ? <BrandMark path={siGooglechrome.path} hex={CHROMIUM_HEX} size={size} />
     : engine === "firefox" ? <BrandMark path={siFirefoxbrowser.path} hex={siFirefoxbrowser.hex} size={size} />
+    : engine === "brave" ? <BrandMark path={siBrave.path} hex={siBrave.hex} size={size} />
+    : engine === "thorium" ? <LetterMark letter="T" hex="1E6FD9" size={size} />
+    : engine === "helium" ? <LetterMark letter="H" hex="111827" size={size} />
     : <OctopusLogo size={size} />;
   return <span data-engine-icon={engine} className="inline-flex shrink-0">{mark}</span>;
 }

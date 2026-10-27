@@ -1,7 +1,9 @@
 import { invoke } from "../../../shared/api/invoke";
-import type { ExtensionEntry, ExtensionImport, ExtensionUpdate, LinkResult, UpdateResult } from "./types";
+import type { ExtensionEntry, ExtensionImport, ExtensionUpdate, InProfileExtension, LinkResult, UpdateResult } from "./types";
 
 export const extensionList = () => invoke<ExtensionEntry[]>("extension_list");
+/** The extensions the personal profiles installed inside their browsers (extensions.rs `in_profiles`). */
+export const extensionsInProfiles = () => invoke<InProfileExtension[]>("extensions_in_profiles");
 /** Takes .crx, .zip or unpacked folders; returns what went in and each file refused.
  *  `separate`: a copy beside one the library holds already. */
 export const extensionImport = (paths: string[], separate = false) =>

@@ -146,7 +146,7 @@ test("a row's menu: one idle profile gets Start, Open in Peek, Change proxy and 
   expect(labels).toEqual([
     "Start", "Open in Peek", "Edit", "Rename", "Clone", "Pin",
     "Move to folder", "Edit tags", "Change proxy",
-    "Copy ID", "Export cookies", "Import cookies",
+    "Copy ID", "Export cookies", "Import cookies", "Back up profile", "Clear cache",
     "Move to Trash",
   ]);
   const byLabel = Object.fromEntries(rows.map((r) => [r.label, r]));

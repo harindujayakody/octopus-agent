@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Badge, Button, DataList, DialogModal, EmptyState, Input, Tooltip, useLatched, type MenuItem } from "@proxyshard/shardx-ui-kit";
+import { Badge, Button, DataList, DialogModal, EmptyState, Input, SegmentControl, Tooltip, useLatched, type MenuItem } from "@proxyshard/shardx-ui-kit";
 import { PageBody, PageHeader } from "../../widgets/PageHeader";
 import { AddExtensionMenu, LinkStoreDialog, UpdateConfirmDialog, UpdateStatus, stopAndUpdate } from "../../features/manage-extensions";
 import { useStoreChanged } from "../../shared/hooks/useStoreChanged";
@@ -10,7 +10,7 @@ import { LoadError, LoadingCards } from "../../shared/ui/ListStates";
 import { rowActionIcons } from "../../shared/ui/rowActionIcons";
 import {
   canUpdate, extensionKey, extensionLinkAllowed, extensionName, goneFromStore, iconSrc, installCounts, isStoreLink, normalizeExtensionLink, storeIdOf,
-  useExtensionUpdates, useExtensions, versionAtLeast, type ExtensionEntry, type ExtensionUpdate,
+  useExtensionUpdates, useExtensions, versionAtLeast, type ExtensionEntry, type ExtensionFamily, type ExtensionUpdate,
 } from "../../entities/extension";
 import { useGpuCompat } from "../../shared/model/gpuCompat";
 import { teamRefusal, useRightsChange } from "../../entities/space";
@@ -20,6 +20,7 @@ import { useT } from "../../shared/i18n";
 import { useScrollMemory } from "../../shared/model/scrollMemory";
 import { refocusPageFilter } from "../../shared/lib/focus";
 import { showMeAround } from "../../features/tour";
+import { ProfileExtensions } from "./ProfileExtensions";
 
 /** `copies`: how many times it is installed, by Web Store item or else name and version (1 when once).
  *  `update`: where its Web Store update stands, when it has a record. */
@@ -183,6 +184,9 @@ function useUpdateMenu() {
 
 export function ExtensionsPage() {
   const t = useT();
+  // The library, or the extensions profiles installed by themselves (with a Chromium / Firefox filter).
+  const [view, setView] = useState<"library" | "profiles">("library");
+  const [family, setFamily] = useState<"all" | ExtensionFamily>("all");
   // The grid scrolls itself; it keeps its place across page switches (WIG-06).
   const scrollRef = useRef<HTMLDivElement>(null);
   useScrollMemory(scrollRef, "extensions");
@@ -255,7 +259,34 @@ export function ExtensionsPage() {
         title={t("extensions.title")}
         count={!loading && status === "ready" && !empty ? shown.length : undefined}
         help={{ title: t("pageHelp.extensions.title"), body: t("pageHelp.extensions.body"), onTour: () => showMeAround("extensions") }}
-        filter={empty ? undefined : { value: search, onChange: setSearch }}
+        filter={empty && view === "library" ? undefined : { value: search, onChange: setSearch }}
+        after={
+          <div className="flex flex-wrap items-center gap-2">
+            <SegmentControl
+              size="xsmall"
+              aria-label={t("extensions.viewLabel")}
+              value={view}
+              items={[
+                { value: "library", label: t("extensions.viewLibrary") },
+                { value: "profiles", label: t("extensions.inProfiles") },
+              ]}
+              onChange={(v) => setView(v as "library" | "profiles")}
+            />
+            {view === "profiles" && (
+              <SegmentControl
+                size="xsmall"
+                aria-label={t("extensions.familyLabel")}
+                value={family}
+                items={[
+                  { value: "all", label: t("extensions.familyAll") },
+                  { value: "chromium", label: t("extensions.familyChromium") },
+                  { value: "firefox", label: t("extensions.familyFirefox") },
+                ]}
+                onChange={(v) => setFamily(v as "all" | ExtensionFamily)}
+              />
+            )}
+          </div>
+        }
         actions={
           <>
             {/* Its words in a tooltip only while a narrow header shows its icon alone. */}
@@ -283,6 +314,7 @@ export function ExtensionsPage() {
           above and below, Remove in a card's menu and on the Delete key (it
           asks first). The states center in the same tile a table sits on. */}
       <PageBody scroll={false}>
+        {view === "profiles" ? <ProfileExtensions family={family} search={search} /> : (
         <DataList<ExtensionEntry>
           variant="grid"
           // Wide enough for a name and its version on a line (a narrower card cuts both).
@@ -317,6 +349,7 @@ export function ExtensionsPage() {
             ];
           }}
         />
+        )}
       </PageBody>
 
       {linkLife.mounted && <LinkDialog key={linkLife.session} open={linkOpen} onClose={() => setLinkOpen(false)} />}

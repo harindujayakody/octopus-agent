@@ -35,9 +35,10 @@ fn udd(id: &str) -> Result<PathBuf> {
 }
 
 /// Every cache folder the profile has, across the engines it may have run in.
-fn cache_dirs(udd: &Path) -> Vec<PathBuf> {
+pub fn cache_dirs(udd: &Path) -> Vec<PathBuf> {
     let mut out = Vec::new();
-    let chromium_roots = [udd.to_path_buf(), udd.join("engines").join("chrome"), udd.join("engines").join("chromium")];
+    let mut chromium_roots = vec![udd.to_path_buf()];
+    chromium_roots.extend(["chrome", "chromium", "brave", "thorium", "helium"].iter().map(|e| udd.join("engines").join(e)));
     for root in &chromium_roots {
         out.extend(CHROMIUM.iter().map(|rel| root.join(rel)));
     }

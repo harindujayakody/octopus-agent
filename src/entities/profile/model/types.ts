@@ -53,7 +53,7 @@ export type ProfileRight = keyof ProfileRights;
 export type OpenOn = { device_name: string; member_name: string; this_device: boolean; since: number; until: number };
 
 /** The browser a profile starts in; only "shardx" applies the fingerprint (engines.rs). */
-export type EngineId = "shardx" | "chrome" | "chromium" | "firefox";
+export type EngineId = "shardx" | "chrome" | "chromium" | "firefox" | "brave" | "thorium" | "helium";
 
 export type ProfileForm = {
   id: string;

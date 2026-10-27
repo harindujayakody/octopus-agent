@@ -827,3 +827,152 @@ fn copy_dir(src: &Path, dst: &Path) -> Result<()> {
 
 #[cfg(test)]
 mod tests;
+
+/// An extension a profile installed by itself, inside its browser (the Web
+/// Store, or Firefox's add-ons site), rather than from the library.
+#[derive(Debug, Clone, Serialize)]
+pub struct InProfile {
+    /// The browser's own id: a Chrome extension's 32 letters, or a Firefox add-on's id.
+    pub ext_id: String,
+    pub name: String,
+    pub version: String,
+    pub description: String,
+    /// Its icon as a `data:` URL; empty when none could be read.
+    pub icon: String,
+    /// Where it sits, for adding it to the library (a Chrome extension's folder).
+    pub path: String,
+    /// "chromium" (Chrome, Chromium, Brave, Thorium, Helium, the Octopus Agent
+    /// engine) or "firefox": the two never load each other's extensions.
+    pub family: String,
+    /// The profiles that have it.
+    pub profiles: Vec<String>,
+}
+
+/// A Chrome extension id: 32 letters from a to p.
+fn chrome_ext_id(s: &str) -> bool {
+    s.len() == 32 && s.bytes().all(|b| (b'a'..=b'p').contains(&b))
+}
+
+/// The newest version folder of an installed Chrome extension.
+fn newest_version(dir: &Path) -> Option<PathBuf> {
+    let mut vers: Vec<PathBuf> = fs::read_dir(dir).ok()?.flatten().map(|e| e.path()).filter(|p| p.join("manifest.json").is_file()).collect();
+    vers.sort_by_key(|p| {
+        p.file_name()
+            .and_then(|n| n.to_str())
+            .map(|n| n.split(['.', '_']).map(|x| x.parse::<u64>().unwrap_or(0)).collect::<Vec<_>>())
+            .unwrap_or_default()
+    });
+    vers.pop()
+}
+
+/// A Firefox add-on's manifest, read out of its `.xpi`.
+fn read_xpi(path: &Path) -> Option<InProfile> {
+    let mut zip = zip::ZipArchive::new(fs::File::open(path).ok()?).ok()?;
+    let manifest: serde_json::Value = {
+        let mut f = zip.by_name("manifest.json").ok()?;
+        let mut s = String::new();
+        f.read_to_string(&mut s).ok()?;
+        serde_json::from_str(&s).ok()?
+    };
+    let msgs = manifest
+        .get("default_locale")
+        .and_then(|v| v.as_str())
+        .and_then(|loc| {
+            let mut f = zip.by_name(&format!("_locales/{loc}/messages.json")).ok()?;
+            let mut s = String::new();
+            f.read_to_string(&mut s).ok()?;
+            serde_json::from_str(&s).ok()
+        })
+        .unwrap_or(serde_json::Value::Null);
+    let sv = |key: &str| resolve_msg(manifest.get(key).and_then(|v| v.as_str()).unwrap_or(""), &msgs);
+    let id = manifest
+        .pointer("/browser_specific_settings/gecko/id")
+        .or_else(|| manifest.pointer("/applications/gecko/id"))
+        .and_then(|v| v.as_str())
+        .map(str::to_string)
+        .unwrap_or_else(|| path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default());
+    // The largest declared icon, from inside the package.
+    let icon = manifest.get("icons").and_then(|v| v.as_object()).and_then(|icons| {
+        let (_, rel) = icons.iter().filter_map(|(k, v)| Some((k.parse::<u64>().unwrap_or(0), v.as_str()?))).max_by_key(|(s, _)| *s)?;
+        let mut f = zip.by_name(rel.trim_start_matches('/')).ok()?;
+        let mut bytes = Vec::new();
+        f.read_to_end(&mut bytes).ok()?;
+        let mime = if rel.ends_with(".svg") { "image/svg+xml" } else { "image/png" };
+        Some(format!("data:{mime};base64,{}", base64::engine::general_purpose::STANDARD.encode(bytes)))
+    });
+    Some(InProfile {
+        ext_id: id,
+        name: sv("name"),
+        version: sv("version"),
+        description: sv("description"),
+        icon: icon.unwrap_or_default(),
+        path: path.display().to_string(),
+        family: "firefox".into(),
+        profiles: Vec::new(),
+    })
+}
+
+/// Every extension the personal profiles installed by themselves, one entry
+/// per extension with the profiles that have it.
+pub(in crate::space) fn in_profiles() -> Result<Vec<InProfile>> {
+    let root = store::user_data_root()?;
+    let mut found: Vec<InProfile> = Vec::new();
+    let mut add = |mut e: InProfile, profile: &str| {
+        if let Some(have) = found.iter_mut().find(|x| x.ext_id == e.ext_id && x.family == e.family) {
+            if !have.profiles.iter().any(|p| p == profile) {
+                have.profiles.push(profile.to_string());
+            }
+        } else {
+            e.profiles = vec![profile.to_string()];
+            found.push(e);
+        }
+    };
+    let Ok(rd) = fs::read_dir(&root) else { return Ok(found) };
+    for p in rd.flatten() {
+        let pdir = p.path();
+        if !pdir.is_dir() {
+            continue;
+        }
+        let pid = p.file_name().to_string_lossy().to_string();
+        // The Octopus Agent engine's folder, then each Chromium-family browser's own.
+        let mut bases = vec![pdir.clone()];
+        bases.extend(["chrome", "chromium", "brave", "thorium", "helium"].iter().map(|e| pdir.join("engines").join(e)));
+        for base in bases {
+            let Ok(exts) = fs::read_dir(base.join("Default").join("Extensions")) else { continue };
+            for x in exts.flatten() {
+                let cid = x.file_name().to_string_lossy().to_string();
+                if !chrome_ext_id(&cid) {
+                    continue;
+                }
+                let Some(ver) = newest_version(&x.path()) else { continue };
+                let Ok(entry) = read_at(&ver, &cid) else { continue };
+                add(
+                    InProfile {
+                        ext_id: cid,
+                        name: entry.name,
+                        version: entry.version,
+                        description: entry.description,
+                        icon: entry.icon,
+                        path: entry.path,
+                        family: "chromium".into(),
+                        profiles: Vec::new(),
+                    },
+                    &pid,
+                );
+            }
+        }
+        if let Ok(xpis) = fs::read_dir(pdir.join("engines").join("firefox").join("extensions")) {
+            for x in xpis.flatten() {
+                let path = x.path();
+                if path.extension().and_then(|s| s.to_str()) != Some("xpi") {
+                    continue;
+                }
+                if let Some(e) = read_xpi(&path) {
+                    add(e, &pid);
+                }
+            }
+        }
+    }
+    found.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    Ok(found)
+}

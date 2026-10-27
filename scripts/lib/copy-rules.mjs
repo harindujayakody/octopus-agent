@@ -11,7 +11,7 @@
  *  capitalizes (6.2), the What's new dialog, products, platforms and keys. */
 export const PROPER = new Set([
   "Trash", "Settings", "Peek", "What’s", "What's",
-  "Octopus", "Agent", "ShardBrowser", "Helper", "Launcher", "GitHub", "Mozilla", "Firefox", "Google", "Chrome", "Chromium", "Web", "Store", "Widevine",
+  "Octopus", "Agent", "ShardBrowser", "Helper", "Launcher", "GitHub", "Mozilla", "Firefox", "Origin", "Lite", "Brave", "Thorium", "Helium", "Google", "Chrome", "Chromium", "Web", "Store", "Widevine",
   "Node.js", "README", "PowerShell", "Finder", "Explorer", "Microsoft", "Apple", "Intel", "Edge",
   "macOS", "Windows", "Linux", "Android", "iOS",
   "Cmd", "Ctrl", "Shift", "Alt", "Option", "Enter", "Esc", "Tab", "Space", "Backspace", "Delete", "Home", "End",

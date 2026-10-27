@@ -356,8 +356,16 @@ const stockEngines: { id: string; name: string; path: string | null; managed: bo
   { id: "chrome", name: "Google Chrome", path: null, managed: false, version: null },
   { id: "chromium", name: "Chromium", path: null, managed: false, version: null },
   { id: "firefox", name: "Firefox", path: "/Users/you/Library/Application Support/octopus-agent/runtime/stock/firefox/Firefox.app/Contents/MacOS/firefox", managed: true, version: "140.0" },
+  { id: "brave", name: "Brave", path: null, managed: false, version: null },
+  { id: "thorium", name: "Thorium", path: null, managed: false, version: null },
+  { id: "helium", name: "Helium", path: null, managed: false, version: null },
 ];
-const latestEngines: Record<string, string> = { chrome: "142.0.7444.59", chromium: "r1529133", firefox: "144.0.2" };
+const latestEngines: Record<string, string> = {
+  chrome: "156.0.8078.48", chromium: "r1529133", firefox: "144.0.2", brave: "1.98.60", thorium: "156.0.8078.28", helium: "0.20.1.1",
+};
+
+/** Profile backups written this session, by path (profile_backup.rs); a restore of an unknown path takes the last. */
+const backups = new Map<string, StoredProfile>();
 
 export const handlers: Record<string, Handler> = {
   // ---- runtime, host, launcher ---------------------------------------------
@@ -390,6 +398,41 @@ export const handlers: Record<string, Handler> = {
     (p._meta as { cacheCleared?: boolean }).cacheCleared = true;
     ctx.save();
     return freed;
+  },
+  // Extensions profiles installed inside their browsers: one the library has
+  // (Cookie-Editor), one it hasn't (Grammarly), and a Firefox add-on.
+  extensions_in_profiles: async ({}, { state }) => {
+    await sleep(150);
+    const ids = Object.keys(state.profiles);
+    const some = (n: number) => ids.slice(0, n);
+    return [
+      { ext_id: "hlkenndednhfkekhgcdicdfddnkalmdm", name: "Cookie-Editor", version: "1.13.0", description: "Simple yet powerful Cookie Editor.", icon: "", path: "/mock/user-data/a/Default/Extensions/hlkenndednhfkekhgcdicdfddnkalmdm/1.13.0_0", family: "chromium", profiles: some(1) },
+      { ext_id: "kbfnbcaeplbcioakkpcpgfkobkghlhen", name: "Grammarly: AI Writing Assistant", version: "14.1223.0", description: "Improve your writing with Grammarly.", icon: "", path: "/mock/user-data/b/Default/Extensions/kbfnbcaeplbcioakkpcpgfkobkghlhen/14.1223.0_0", family: "chromium", profiles: some(2) },
+      { ext_id: "uBlock0@raymondhill.net", name: "uBlock Origin", version: "1.62.0", description: "Finally, an efficient blocker.", icon: "", path: "/mock/user-data/c/engines/firefox/extensions/uBlock0@raymondhill.net.xpi", family: "firefox", profiles: some(1) },
+    ];
+  },
+  profile_backup: async ({ id, path }, { state }) => {
+    await sleep(300);
+    const p = state.profiles[String(id)];
+    if (!p) throw `no profile ${id} in your own space`;
+    if (state.running[String(id)]) throw "Close the profile first: a running browser holds its cookies and logins open.";
+    backups.set(String(path), structuredClone(p));
+    return 18_400_000;
+  },
+  profile_restore: async ({ path }, ctx) => {
+    await sleep(300);
+    const kept = backups.get(String(path)) ?? [...backups.values()].at(-1);
+    if (!kept) throw "This file is not an Octopus Agent profile backup.";
+    const p = structuredClone(kept);
+    if (ctx.state.profiles[p._meta.id]) {
+      p._meta.id = newId();
+      p.name = `${p.name} (restored)`;
+    }
+    p._meta.pinned = false;
+    ctx.state.profiles[p._meta.id] = p;
+    ctx.state.order.push(p._meta.id);
+    ctx.save();
+    return metaOf(p);
   },
   engines_latest: async ({ id }) => { await sleep(150); return latestEngines[String(id)] ?? ""; },
   engines_remove: async ({ id }) => {

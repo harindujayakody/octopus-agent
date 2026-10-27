@@ -2,6 +2,8 @@
 
 mod profile_icon;
 mod profile_cache;
+mod profile_backup;
+mod profile_extensions;
 mod api;
 mod fingerprints;
 mod gpu_caps;
@@ -2376,6 +2378,9 @@ pub fn run() {
             engines::engines_remove,
             profile_cache::profile_cache_size,
             profile_cache::profile_cache_clear,
+            profile_backup::profile_backup,
+            profile_backup::profile_restore,
+            profile_extensions::extensions_in_profiles,
             profile_list,
             profile_get,
             profile_save,
