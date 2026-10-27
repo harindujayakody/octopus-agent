@@ -115,14 +115,16 @@ png = "0.17"
 tokio-tungstenite = { version = "0.24", default-features = false, features = ["connect"] }
 futures-util = { version = "0.3" }
 wasmtime = { version = "48.0.1", optional = true }
+# AES-256-GCM and a random source: Windows cookie crypto, and the
+# authenticator's sealed secrets on every system.
+aes-gcm = "0.10"
+getrandom = "0.2"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
 
-# Windows cookie crypto: AES-256-GCM + DPAPI key from Local State.
+# Windows cookie crypto: DPAPI key from Local State.
 [target.'cfg(windows)'.dependencies]
-aes-gcm = "0.10"
-getrandom = "0.2"
 windows-sys = { version = "0.59", features = [
     "Win32_Foundation",            # HLOCAL + LocalFree live here in 0.59
     "Win32_Security",              # CreateJobObjectW's attributes
