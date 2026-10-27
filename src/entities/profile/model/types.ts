@@ -29,6 +29,8 @@ export type ProfileMeta = {
   engine?: EngineId | null;
   /** The site icon picked for it (shared/brands); absent = its initials. */
   icon?: string | null;
+  /** The bookmark sets it takes, by name. */
+  bookmark_sets?: string[];
   /// Extension ids from the library, loaded at launch.
   extensions: string[];
   /// Phone/tablet fingerprint, decided in Rust by the core's own rule.
@@ -68,6 +70,8 @@ export type ProfileForm = {
   icon: string;
   /// The page it opens on when it starts; "" = Settings' start page.
   start_url: string;
+  /** The bookmark sets it takes (`_meta.bookmark_sets`). */
+  bookmark_sets: string[];
   /// Extension ids from the library.
   extensions: string[];
   /// Answer media questions the Android way. Phone profiles only.

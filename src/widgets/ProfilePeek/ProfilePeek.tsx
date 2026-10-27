@@ -11,6 +11,7 @@ import { may, profileStatus, proxyMissing, settingsRefusal, startRefusal, usePro
 import { usePeekForm } from "./usePeekForm";
 import { FingerprintDetails, ProfileDetails } from "./rows/DetailRows";
 import { ActivityLine } from "./rows/ActivityLine";
+import { UsageLine } from "./rows/UsageLine";
 import { capOf, command, labelOf, menuItemsFor } from "../../features/commands";
 import { openProfileForm, type ProfileFormTab } from "../../features/profile-form";
 import { openHereInstead } from "../../features/profile-sync";
@@ -84,6 +85,12 @@ export function ProfilePeek() {
           <PeekSection id="activity" title={t("peek.activity")}>
             <ActivityLine profile={shown} />
           </PeekSection>
+          {/* A team's profile keeps its data on the server between starts: no usage here. */}
+          {shown.origin !== "team" && (
+            <PeekSection id="usage" title={t("peek.usage")}>
+              <UsageLine id={shown.id} />
+            </PeekSection>
+          )}
         </PropertySheet>
       </PeekBody>
     </PeekPanel>

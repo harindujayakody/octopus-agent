@@ -31,9 +31,11 @@ test("Clear cache empties a closed profile's cache and the editor shows its size
 
   await row(page, "TikTok creator").locator("[data-cell='name']").click();
   await page.locator("aside[data-peek] [data-peek-edit]").click();
-  await expect(page.locator("[data-cache-size]")).toHaveText(/MB$/);
+  await expect(page.locator("[data-cache-size]")).toHaveText(/MB of 2\sGB$/);
+  await expect(page.locator("[data-cache-cleared]")).toHaveText("Never cleared");
   await page.locator("[data-cache-clear]").click();
-  await expect(page.locator("[data-cache-size]")).toHaveText(/^0\sB$/);
+  await expect(page.locator("[data-cache-size]")).toHaveText(/^0\sB of 2\sGB$/);
+  await expect(page.locator("[data-cache-cleared]")).toHaveText(/^Last cleared /);
 });
 
 test("the Browser column is in Display and shows each profile's browser", async ({ page }) => {

@@ -228,6 +228,7 @@ pub(in crate::space) fn restore(id: &str) -> Result<profile::ProfileMeta> {
         engine: stored.meta.engine.clone(),
         icon: stored.meta.icon.clone(),
         extensions: stored.meta.extensions.clone(),
+        bookmark_sets: stored.meta.bookmark_sets.clone(),
         mobile: profile::claims_mobile(&stored.config),
         android_media: false,
         origin: profile::Origin::Personal,

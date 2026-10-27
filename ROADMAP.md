@@ -6,6 +6,15 @@ move or be dropped.
 
 ## Shipped
 
+### 2.6.0
+
+* **Check for updates in What’s new.** Check, and install a new version after closing open profiles safely.
+* **Disk usage.** Settings › Storage shows what Octopus Agent takes, by kind, and Clear all caches empties every closed profile’s cache.
+* **A 2 GB cache limit.** A profile’s cache is emptied by itself before it starts past 2 GB; the editor shows it as a bar with the last cleared date.
+* **Bookmark sets.** Group bookmarks into sets and pick the sets each profile gets; import from any browser’s HTML export.
+* **Usage in Peek.** Disk, cache and cache limit under Activity.
+* **Signed macOS app.** No more “damaged” on Apple Silicon; Open Anyway on first launch.
+
 ### 2.5.0
 
 * **Extensions in every profile.** An extension added to the library loads into every profile and is pinned on its toolbar; nothing is picked per profile. Chrome extensions go to every Chromium browser, Google Chrome included.

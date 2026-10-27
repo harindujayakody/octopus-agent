@@ -289,6 +289,7 @@ export function metaOf(p: StoredProfile): ProfileMeta {
     ...((p._meta as { engine?: string }).engine ? { engine: (p._meta as { engine?: EngineId }).engine } : {}),
     ...((p._meta as { icon?: string }).icon ? { icon: (p._meta as { icon?: string }).icon } : {}),
     extensions: p._meta.extensions,
+    bookmark_sets: (p._meta as { bookmark_sets?: string[] }).bookmark_sets ?? [],
     mobile: /android/i.test(ua),
     ...(sync ? { sync } : {}),
   };

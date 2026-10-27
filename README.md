@@ -87,6 +87,15 @@ Configuration details are available in [Usage](#usage).
   an update.
 * **Profile backups.** Back up a profile with its cookies, logins and
   browser data to one file, and restore it on this or another computer.
+* **Updates without losing a session.** The version in the sidebar opens
+  What's new with *Check for updates*; *Install* closes open profiles safely
+  first, then restarts into the new version.
+* **Disk usage.** *Settings → Storage* shows what Octopus Agent takes, by
+  kind, and *Clear all caches* empties every closed profile's cache.
+* **A 2 GB cache limit.** A profile's cache is emptied by itself before it
+  starts once it passes 2 GB; the profile editor and Peek show it as a bar.
+* **Bookmark sets.** Group bookmarks into sets (Facebook, Pinterest…) and
+  pick the sets each profile gets; import from any browser's HTML export.
 * **Extensions in every profile.** An extension added to the library loads
   into every profile and is pinned on its toolbar: Chrome extensions in every
   Chromium browser (Google Chrome included), Firefox add-ons from
@@ -458,15 +467,17 @@ Windows, and `.AppImage` or `.deb` for Linux.
 The release is not code-signed with Apple Developer ID or Authenticode,
 so the operating system may show a warning on first launch:
 
-* **macOS:** Gatekeeper may report that Apple cannot verify the app.
-  On macOS 14 and later, it may instead report that the app is damaged
-  and should be moved to the Trash. Both messages can be resolved by
-  removing the quarantine attribute once in Terminal:
+* **macOS:** from 2.6.0 the app is ad-hoc signed, so macOS no longer
+  calls it damaged. On first launch it says Apple cannot verify the
+  developer: open *System Settings > Privacy & Security*, scroll to the
+  message about Octopus Agent and select **Open Anyway**, then confirm.
+  Later launches do not ask again.
+  If an older build (2.5.0 and before) says *"Octopus Agent is damaged
+  and can't be opened"*, remove the quarantine flag once in Terminal and
+  open it again:
   ```bash
-  xattr -dr com.apple.quarantine "/Applications/Octopus Agent.app"
+  xattr -cr "/Applications/Octopus Agent.app"
   ```
-  The app should then open normally. For the developer verification
-  warning, right-click the app, select *Open* and confirm once.
 * **Windows:** SmartScreen may show *"Windows protected your PC"*.
   Select **More info**, then **Run anyway**. Later launches do not show
   the same prompt.

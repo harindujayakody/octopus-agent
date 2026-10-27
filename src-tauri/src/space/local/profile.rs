@@ -77,6 +77,9 @@ pub struct ProfileMeta {
     /// Extension ids from the library, loaded at launch.
     #[serde(default)]
     pub extensions: Vec<String>,
+    /// The bookmark sets it takes (bookmarks.rs `set`), by name.
+    #[serde(default)]
+    pub bookmark_sets: Vec<String>,
     /// Phone/tablet fingerprint, by the core's own rule. Sync groups must not
     /// mix classes, so the bulk bar reads it.
     #[serde(default)]
@@ -170,6 +173,9 @@ pub struct StoredMeta {
     /// The page it opens on when it starts, over Settings' own; absent = Settings'.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub start_url: Option<String>,
+    /// The bookmark sets it takes, by name; a bookmark of no set reaches it anyway.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub bookmark_sets: Vec<String>,
     /// Extension ids from the library.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub extensions: Vec<String>,
@@ -309,6 +315,7 @@ pub(in crate::space) fn list_all() -> Result<Vec<ProfileMeta>> {
             engine: stored.meta.engine,
             icon: stored.meta.icon,
             extensions: stored.meta.extensions,
+            bookmark_sets: stored.meta.bookmark_sets,
             mobile: claims_mobile(&stored.config),
             android_media: stored.meta.android_media,
             origin: Origin::Personal,
@@ -632,6 +639,7 @@ pub(in crate::space) fn clone_profile(id: &str) -> Result<ProfileMeta> {
         engine: src.meta.engine,
         icon: src.meta.icon,
         extensions: src.meta.extensions,
+        bookmark_sets: src.meta.bookmark_sets,
         mobile: claims_mobile(&src.config),
         android_media: src.meta.android_media,
         origin: Origin::Personal,

@@ -86,7 +86,7 @@ const key = (d: ProfileFormDraft) => JSON.stringify({
 const sameTags = (a: ProfileFormDraft, b: ProfileFormDraft) =>
   JSON.stringify([[...a.tagIds].sort(), [...a.newTags].sort()]) === JSON.stringify([[...b.tagIds].sort(), [...b.newTags].sort()]);
 
-const BASICS = new Set<keyof ProfileForm>(["name", "color", "icon", "start_url", "notes"]);
+const BASICS = new Set<keyof ProfileForm>(["name", "color", "icon", "start_url", "bookmark_sets", "notes"]);
 const PROXY = new Set<keyof ProfileForm>(["proxy_id"]);
 const EXTENSIONS = new Set<keyof ProfileForm>(["extensions"]);
 /** Not the person's to change: never counted as a change. */

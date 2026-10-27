@@ -6,6 +6,7 @@ import { ChevronRightIcon, LockedIcon, StarOutlineIcon } from "../../shared/icon
 import { SelectField } from "../../shared/ui/SelectField";
 import { useWhatsNew } from "../../shared/model/whatsNew";
 import { takeTheTour } from "../../features/tour";
+import { checkAppUpdate, installAppUpdate, useAppUpdate } from "../../features/app-update/appUpdate";
 import { useOnboarding } from "../../features/onboarding";
 import type { RtUpdate } from "../../shared/types";
 import { withUtm } from "../../shared/lib/utils";
@@ -250,6 +251,53 @@ function EntryRow({ entry }: { entry: Entry }): ReactNode {
   );
 }
 
+/// Check for updates, and Install when there is one: the open profiles are
+/// closed first (appUpdate.ts asks with their names). Without a signed update
+/// but with a newer release, its page opens instead.
+function UpdateBar({ fallbackUrl }: { fallbackUrl: string | null }) {
+  const t = useT();
+  const available = useAppUpdate((s) => s.available);
+  const phase = useAppUpdate((s) => s.phase);
+  const percent = useAppUpdate((s) => s.percent);
+  const checkedAt = useAppUpdate((s) => s.checkedAt);
+  const busy = phase === "closing" || phase === "downloading" || phase === "installing";
+  useEffect(() => { void checkAppUpdate({ notify: false }); }, []);
+  const status = phase === "checking"
+    ? t("appUpdate.checking")
+    : available
+      ? t("appUpdate.available", { v: available.version })
+      : phase === "error"
+        ? t("appUpdate.checkFailed")
+        : checkedAt
+          ? t("appUpdate.upToDate")
+          : t("appUpdate.checking");
+  return (
+    <div data-update-bar className="flex flex-wrap items-center gap-2 rounded-tile bg-bg-on-tile px-cell py-2">
+      <span className={`min-w-0 flex-1 text-secondary ${available ? "text-warning-text" : "text-text-sub-600"}`}>
+        {status}
+      </span>
+      {available ? (
+        <Button variant="primary" mode="filled" size="xsmall" disabled={busy} onClick={() => void installAppUpdate()}>
+          {phase === "closing"
+            ? t("appUpdate.closing")
+            : phase === "downloading"
+              ? (percent === null ? t("appUpdate.downloading") : t("appUpdate.downloadingPercent", { percent }))
+              : phase === "installing" ? t("appUpdate.installing") : t("appUpdate.installVersion", { v: available.version })}
+        </Button>
+      ) : fallbackUrl ? (
+        <Button variant="primary" mode="filled" size="xsmall" onClick={() => openUrl(fallbackUrl).catch(() => {})}>
+          {t("settings.aboutGetUpdate")}
+        </Button>
+      ) : null}
+      {!available && (
+        <Button variant="neutral" mode="stroke" size="xsmall" isLoading={phase === "checking"} onClick={() => void checkAppUpdate({ notify: false })}>
+          {t("appUpdate.check")}
+        </Button>
+      )}
+    </div>
+  );
+}
+
 /// The release notes (patchlog.json) in a dialog. Opens by itself after an
 /// update (WhatsNewGate), or from the sidebar's version item.
 export function WhatsNewDialog() {
@@ -298,16 +346,7 @@ export function WhatsNewDialog() {
         // reached only by the open, never by Tab (MP4 review, I1).
         className="-mx-2 -my-1.5 flex max-h-[calc(var(--viewport-h)*0.7)] flex-col gap-3 overflow-y-auto px-2 py-1.5 outline-hidden"
       >
-        {update?.update_available && update.release_url && (
-          <Button
-            mode="link"
-            size="2xsmall"
-            className="self-start"
-            onClick={() => openUrl(update.release_url!).catch(() => {})}
-          >
-            {t("sidebar.updateStatus", { v: update.latest ?? "" })}
-          </Button>
-        )}
+        <UpdateBar fallbackUrl={update?.update_available ? update.release_url ?? null : null} />
 
         <div className="flex items-center gap-2.5">
           <div className="w-[196px]">

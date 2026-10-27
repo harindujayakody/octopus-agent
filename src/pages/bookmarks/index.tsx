@@ -12,11 +12,12 @@ import { useListLayout, type ListColumnDef } from "../../shared/ui/listHeader";
 import { rowActionIcons } from "../../shared/ui/rowActionIcons";
 import { isFullUrl, readableUrl } from "../../shared/lib/utils";
 import {
-  useBookmarks, emptyBookmark, bookmarkName, BookmarkFolderSelect, type Bookmark,
+  useBookmarks, emptyBookmark, bookmarkName, BookmarkFolderSelect, bookmarkSets, type Bookmark,
   BOOKMARK_TAB_ALL as TAB_ALL, BOOKMARK_TAB_ANY as TAB_ANY, bookmarkFolderTab as folderTab, bookmarkTabFolder as tabFolder,
+  bookmarkSetTab as setTab, bookmarkTabSet as tabSet,
 } from "../../entities/bookmark";
 import { useFolders, useProfile } from "../../entities/profile";
-import { teamRefusal, useRightsChange } from "../../entities/space";
+import { teamRefusal, useInTeam, useRightsChange } from "../../entities/space";
 import { translate, useLang, useT } from "../../shared/i18n";
 import { useScrollMemory } from "../../shared/model/scrollMemory";
 import { refocusPageFilter } from "../../shared/lib/focus";
@@ -57,10 +58,14 @@ const BOOKMARK_COLUMNS: readonly ListColumnDef<BookmarkColumn, BookmarkRow>[] = 
 /** The row's quiet actions: Edit and More (24 px each), 4 apart. */
 const ACTIONS_TRACK = 52;
 
-function Editor({ open, initial, folders, onClose }: {
+function Editor({ open, initial, folders, sets, team, onClose }: {
   open: boolean;
   initial: Bookmark;
   folders: string[];
+  /** The sets the bookmarks name already, offered as one-click picks. */
+  sets: string[];
+  /** A team's bookmarks have no sets. */
+  team: boolean;
   onClose: () => void;
 }) {
   const t = useT();
@@ -70,7 +75,7 @@ function Editor({ open, initial, folders, onClose }: {
   useRightsChange();
   const refused = teamRefusal(initial.id ? "edit" : "create");
   // Any field other than it opened with: Esc, the close button and Cancel ask first.
-  const dirty = b.url !== initial.url || b.title !== initial.title || b.folder !== initial.folder;
+  const dirty = b.url !== initial.url || b.title !== initial.title || b.folder !== initial.folder || (b.set ?? "") !== (initial.set ?? "");
   // An unfinished address ("https://goog") is said on Save, in the field; the
   // message stays until the address is whole, and goes as soon as it is. An
   // address that was saved and not touched is never judged: the backend took
@@ -124,6 +129,25 @@ function Editor({ open, initial, folders, onClose }: {
           folders={folders}
           onChange={(v) => setB({ ...b, folder: v })}
         />
+        {!team && (
+          <div className="flex flex-col gap-1.5">
+            <Field
+              label={t("bookmarks.setLabel")}
+              value={b.set ?? ""}
+              onChange={(v) => setB({ ...b, set: v })}
+              placeholder={t("bookmarks.setPlaceholder")}
+            />
+            {sets.length > 0 && (
+              <div role="group" aria-label={t("bookmarks.setPick")} className="flex flex-wrap gap-1.5">
+                {sets.map((s) => (
+                  <Button key={s} variant={b.set === s ? "primary" : "neutral"} mode={b.set === s ? "lighter" : "stroke"} size="3xsmall" aria-pressed={b.set === s} onClick={() => setB({ ...b, set: b.set === s ? "" : s })}>
+                    {s}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <p className="m-0 text-secondary text-text-soft-400">
           {t.rich("bookmarks.hint", { b: (s) => <strong>{s}</strong> })}
         </p>
@@ -149,6 +173,7 @@ export function BookmarksPage() {
   const folder = useBookmarks((s) => s.folder);
   const setFolder = useBookmarks((s) => s.setFolder);
 
+  const inTeam = useInTeam();
   const initProfiles = useProfile((s) => s.init);
   const folders = useFolders();
   const profiles = useProfile((s) => s.profiles);
@@ -162,7 +187,9 @@ export function BookmarksPage() {
     const q = search.trim().toLowerCase();
     return items.filter(
       (b) =>
-        (folder === TAB_ALL || b.folder === (folder === TAB_ANY ? "" : tabFolder(folder))) &&
+        (folder === TAB_ALL
+          || (tabSet(folder) !== null ? (b.set ?? "") === tabSet(folder)
+            : folder === TAB_ANY ? b.folder === "" && !b.set : b.folder === tabFolder(folder))) &&
         (!q || b.title.toLowerCase().includes(q) || b.url.toLowerCase().includes(q) || readableUrl(b.url).toLowerCase().includes(q)),
     );
   }, [items, search, folder]);
@@ -174,10 +201,15 @@ export function BookmarksPage() {
   const showsIn = useCallback((b: Bookmark) => {
     // The language's words, by a literal t("…") so check:i18n sees the keys.
     const t = (key: string, vars: Record<string, string | number>) => translate(lang, key, vars);
+    if (b.set) {
+      const n = profiles.filter((p) => p.bookmark_sets?.includes(b.set!) && (!b.folder || p.folder === b.folder)).length;
+      return t("bookmarks.setProfileCount", { set: b.set, n });
+    }
     if (!b.folder) return t("bookmarks.everyProfileCount", { n: profiles.length });
     const n = profiles.filter((p) => p.folder === b.folder).length;
     return n === 1 ? t("bookmarks.folderProfileCountOne", { folder: b.folder }) : t("bookmarks.folderProfileCount", { folder: b.folder, n });
   }, [profiles, lang]);
+  const sets = useMemo(() => bookmarkSets(items), [items]);
   const rows = useMemo(() => shown.map((b): BookmarkRow => ({ bookmark: b, shows: showsIn(b) })), [shown, showsIn]);
   const allRows = useMemo(() => items.map((b): BookmarkRow => ({ bookmark: b, shows: showsIn(b) })), [items, showsIn]);
 
@@ -185,6 +217,7 @@ export function BookmarksPage() {
     { id: TAB_ALL, label: t("bookmarks.tabAll") },
     { id: TAB_ANY, label: t("bookmarks.tabEveryProfile") },
     ...folders.map((f) => ({ id: folderTab(f), label: f })),
+    ...sets.map((s) => ({ id: setTab(s), label: t("bookmarks.setTab", { set: s }) })),
   ];
 
   const loading = useHeldLoading(status === "idle" || status === "loading");
@@ -203,9 +236,9 @@ export function BookmarksPage() {
   // checked (Pair 28 review M4, PC-083's shape). Only once the profiles are
   // loaded, so a first render with no Folders yet never resets a real choice.
   useEffect(() => {
-    if (!profilesReady || folder === TAB_ALL || folder === TAB_ANY || folders.includes(tabFolder(folder) ?? "")) return;
+    if (!profilesReady || folder === TAB_ALL || folder === TAB_ANY || folders.includes(tabFolder(folder) ?? "") || sets.includes(tabSet(folder) ?? "\u0000")) return;
     setFolder(TAB_ALL);
-  }, [profilesReady, folder, folders, setFolder]);
+  }, [profilesReady, folder, folders, sets, setFolder]);
 
   const list = useListLayout({
     storageKey: "shardx.bookmarks.layout",
@@ -232,7 +265,7 @@ export function BookmarksPage() {
   useRightsChange();
   const noCreate = teamRefusal("create");
   const noDelete = teamRefusal("delete");
-  const newBookmark = () => { if (!noCreate) setEditing(emptyBookmark(tabFolder(folder) ?? "")); };
+  const newBookmark = () => { if (!noCreate) setEditing(emptyBookmark(tabFolder(folder) ?? "", tabSet(folder) ?? "")); };
   // The registry's Import from Chrome: a file picker, then its dialog.
   const importChrome = () => void runCommand(command("bookmark.import"), { ids: [] }, { from: "pageMenu" });
 
@@ -355,9 +388,9 @@ export function BookmarksPage() {
       </PageBody>
 
       {editLife.mounted && editingShown && (
-        <Editor key={editLife.session} open={editing != null} initial={editingShown} folders={folders} onClose={() => setEditing(null)} />
+        <Editor key={editLife.session} open={editing != null} initial={editingShown} folders={folders} sets={sets} team={inTeam} onClose={() => setEditing(null)} />
       )}
-      <ImportBookmarksDialog folders={folders} />
+      <ImportBookmarksDialog folders={folders} sets={sets} team={inTeam} />
     </>
   );
 }

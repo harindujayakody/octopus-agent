@@ -82,7 +82,7 @@ fn forbidden(right: &'static str) -> Option<CmdError> {
 }
 
 fn mark(id: &str, title: &str, url: &str, folder: &str) -> bookmarks::Bookmark {
-    bookmarks::Bookmark { id: id.into(), title: title.into(), url: url.into(), folder: folder.into() }
+    bookmarks::Bookmark { id: id.into(), title: title.into(), url: url.into(), folder: folder.into(), set: String::new() }
 }
 
 #[tokio::test]

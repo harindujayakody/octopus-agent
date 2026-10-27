@@ -4,6 +4,7 @@ import { DeleteAllData, KeptIn, ShowBackupButton } from "../../../features/delet
 import { appResetBackup } from "../../../entities/settings";
 import { useT } from "../../../shared/i18n";
 import { SettingRow, SettingsGroup } from "../SettingRow";
+import { StorageUsageCard } from "./StorageUsageCard";
 
 export function StorageSection() {
   const t = useT();
@@ -17,6 +18,11 @@ export function StorageSection() {
   }, [asked]);
   return (
     <div className="flex flex-col gap-[32px]">
+      <SettingsGroup title={t("settings.storageTitle")}>
+        <div className="py-3">
+          <StorageUsageCard />
+        </div>
+      </SettingsGroup>
       <SettingsGroup title={t("settings.dataLocationTitle")}>
         <div className="py-3">
           <DataRootCard />

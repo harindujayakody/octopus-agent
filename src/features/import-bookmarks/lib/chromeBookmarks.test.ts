@@ -1,7 +1,7 @@
 // node --test: reading Chrome's bookmarks file (`npm run test:unit`).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { newMarks, readChromeBookmarks, urlKey } from "./chromeBookmarks.ts";
+import { newMarks, readBookmarksFile, readChromeBookmarks, readHtmlBookmarks, urlKey } from "./chromeBookmarks.ts";
 
 const url = (name: string, u: string) => ({ type: "url", name, url: u, date_added: "13300000000000000", id: "1" });
 const folder = (name: string, children: unknown[]) => ({ type: "folder", name, children });
@@ -72,4 +72,26 @@ test("addresses compare as URLs, and an unparsable one as written", () => {
   assert.equal(urlKey(" https://a.example/x "), "https://a.example/x");
   assert.notEqual(urlKey("https://a.example/x"), urlKey("https://a.example/x/"));
   assert.equal(urlKey("not a url"), "not a url");
+});
+
+test("an exported HTML file: every link in its order, entities read, bookmarklets skipped", () => {
+  const html = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>Bookmarks</TITLE>
+<DL><p>
+  <DT><H3>Ads</H3>
+  <DL><p>
+    <DT><A HREF="https://business.facebook.com/" ADD_DATE="1">Meta &amp; Ads</A>
+    <DT><A HREF="javascript:alert(1)">Tool</A>
+  </DL><p>
+  <DT><A HREF="https://pinterest.com/?a=1&amp;b=2">Pinterest</A>
+</DL><p>`;
+  const got = readHtmlBookmarks(html);
+  assert.deepEqual(got, {
+    marks: [mark("Meta & Ads", "https://business.facebook.com/"), mark("Pinterest", "https://pinterest.com/?a=1&b=2")],
+    found: 3,
+    skipped: 1,
+  });
+  assert.deepEqual(readBookmarksFile(html), got);
+  assert.equal(readHtmlBookmarks("{}"), null);
 });

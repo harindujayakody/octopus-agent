@@ -606,6 +606,17 @@ async fn start_plain(input: LaunchInput, opts: &LaunchOpts<'_>) -> Result<Launch
     if engine.chromium_family() {
         crate::ext_pin::pin_new(&dir, &input.extensions);
     }
+    // A cache past 2 GB is emptied before the browser opens it.
+    crate::profile_cache::trim_before_start(&input.udd);
+    // Its folder's and its sets' bookmarks, as the Octopus Agent engine gets them (Firefox keeps its own).
+    if engine.chromium_family() {
+        let meta = &input.stored.meta;
+        match bookmarks::apply_to_profile(&dir, &meta.folder, &meta.bookmark_sets, &input.bookmarks) {
+            Ok(n) if n > 0 => eprintln!("[launcher] {n} bookmark(s) applied"),
+            Ok(_) => {}
+            Err(e) => eprintln!("[launcher] bookmarks skipped: {e}"),
+        }
+    }
     if over_cdp.is_some() {
         let _ = std::fs::remove_file(dir.join("DevToolsActivePort"));
     }
@@ -848,7 +859,7 @@ async fn start_browser(bin: &Path, input: LaunchInput, opts: &LaunchOpts<'_>) ->
 
     // Folder bookmarks, written before the browser reads the file: the space's
     // own, so this machine's are never written into a team's profile.
-    let bookmarked = bookmarks::apply_to_profile(&input.udd, &input.stored.meta.folder, &input.bookmarks);
+    let bookmarked = bookmarks::apply_to_profile(&input.udd, &input.stored.meta.folder, &input.stored.meta.bookmark_sets, &input.bookmarks);
     match bookmarked {
         Ok(n) if n > 0 => eprintln!("[launcher] {n} folder bookmark(s) applied"),
         Ok(_) => {}
@@ -889,6 +900,8 @@ async fn start_browser(bin: &Path, input: LaunchInput, opts: &LaunchOpts<'_>) ->
     let udd = input.udd.clone();
     // Every library extension pinned on the toolbar the first time it comes.
     crate::ext_pin::pin_new(&udd, &input.extensions);
+    // A cache past 2 GB is emptied before the browser opens it.
+    crate::profile_cache::trim_before_start(&udd);
     spawn_tracked(bin, args, input, udd, "the browser engine").await
 }
 

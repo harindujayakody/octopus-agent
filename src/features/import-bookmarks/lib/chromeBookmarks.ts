@@ -57,6 +57,38 @@ export function readChromeBookmarks(text: string): ChromeFile | null {
   return { marks, found, skipped };
 }
 
+const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
+const decode = (s: string) =>
+  s.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, e: string) => {
+    if (e[0] === "#") {
+      const n = e[1] === "x" || e[1] === "X" ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10);
+      return Number.isFinite(n) ? String.fromCodePoint(n) : m;
+    }
+    return ENTITIES[e.toLowerCase()] ?? m;
+  });
+
+/** The bookmarks of an HTML bookmarks file (the NETSCAPE-Bookmark-file-1
+ *  format every browser exports: Chrome, Firefox, Edge, Safari), folders
+ *  flattened in their order, or null when the text is not one. */
+export function readHtmlBookmarks(text: string): ChromeFile | null {
+  if (!/<!DOCTYPE\s+NETSCAPE-Bookmark-file-1>/i.test(text) && !/<DT>\s*<A\s/i.test(text)) return null;
+  const marks: ChromeMark[] = [];
+  let found = 0;
+  let skipped = 0;
+  const re = /<A\s([^>]*)>([\s\S]*?)<\/A>/gi;
+  for (let m = re.exec(text); m; m = re.exec(text)) {
+    found++;
+    const href = /\bHREF\s*=\s*"([^"]*)"/i.exec(m[1])?.[1] ?? /\bHREF\s*=\s*'([^']*)'/i.exec(m[1])?.[1] ?? "";
+    const url = decode(href).trim();
+    if (!url || !opensAPage(url)) { skipped++; continue; }
+    marks.push({ title: decode(m[2].replace(/<[^>]*>/g, "")).trim(), url });
+  }
+  return { marks, found, skipped };
+}
+
+/** Chrome's own file, else an exported HTML file; null when it is neither. */
+export const readBookmarksFile = (text: string): ChromeFile | null => readChromeBookmarks(text) ?? readHtmlBookmarks(text);
+
 /** An address as it compares: the parsed URL ("https://a.com" is "https://a.com/"), else as written. */
 export function urlKey(url: string): string {
   const u = url.trim();

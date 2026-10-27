@@ -27,6 +27,10 @@ pub struct Bookmark {
     /// Launcher folder this belongs to; empty means every profile.
     #[serde(default)]
     pub folder: String,
+    /// The bookmark set it is in ("Facebook", "Pinterest"…); a profile takes
+    /// the sets it picks. Empty: in no set, so every profile its folder reaches.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub set: String,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -73,6 +77,7 @@ pub(in crate::space) fn cleaned(mut b: Bookmark) -> Result<Bookmark> {
     b.title = b.title.trim().to_string();
     b.url = normalise_url(&b.url);
     b.folder = b.folder.trim().to_string();
+    b.set = b.set.trim().to_string();
     if b.url.is_empty() {
         anyhow::bail!("a bookmark needs a URL");
     }
@@ -138,8 +143,11 @@ fn max_id(node: &Value, cur: &mut u64) {
 
 /// Rewrite `<udd>/Default/Bookmarks` so it carries exactly the bookmarks of
 /// `all` this launcher folder defines, leaving everything the operator added untouched.
-pub(in crate::space) fn apply_to_profile(udd: &Path, folder: &str, all: &[Bookmark]) -> Result<usize> {
-    let wanted: Vec<&Bookmark> = all.iter().filter(|b| b.folder.is_empty() || b.folder == folder).collect();
+pub(in crate::space) fn apply_to_profile(udd: &Path, folder: &str, sets: &[String], all: &[Bookmark]) -> Result<usize> {
+    let wanted: Vec<&Bookmark> = all
+        .iter()
+        .filter(|b| (b.folder.is_empty() || b.folder == folder) && (b.set.is_empty() || sets.iter().any(|s| s == &b.set)))
+        .collect();
 
     let default_dir = udd.join("Default");
     let path = default_dir.join("Bookmarks");

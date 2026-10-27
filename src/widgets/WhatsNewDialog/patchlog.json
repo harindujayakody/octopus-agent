@@ -3,6 +3,90 @@
   "repoUrl": "https://github.com/harindujayakody/octopus-agent",
   "releases": [
     {
+      "version": "2.6.0",
+      "date": "2026-10-27",
+      "entries": [
+        {
+          "id": "bookmark-sets",
+          "title": "Bookmark sets",
+          "lead": "Group bookmarks into sets, such as Facebook or Pinterest, and pick the sets each profile gets.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A profile's sets are on its Basics tab. Import bookmarks now reads an HTML bookmarks file exported from any browser too, into a set if you like. Bookmarks now reach every Chromium browser, not only the Octopus Agent engine."
+            }
+          ]
+        },
+        {
+          "id": "update-check",
+          "title": "Check for updates in What's new",
+          "lead": "The version in the sidebar now opens What's new with Check for updates, and Install when a new version is out.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Before it installs, Octopus Agent closes your open profiles the way their close buttons would, so cookies, logins and tabs are saved, and then restarts into the new version."
+            }
+          ]
+        },
+        {
+          "id": "disk-usage",
+          "title": "Disk usage",
+          "lead": "Settings > Storage shows what Octopus Agent takes on this computer, by kind, with a bar and a legend.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Profiles, their caches, the installed browsers, extensions, the Trash and the rest each have their size. Clear all caches empties every closed profile's cache; cookies, logins and history stay."
+            }
+          ]
+        },
+        {
+          "id": "cache-limit",
+          "title": "A 2 GB cache limit",
+          "lead": "A profile's cache is now emptied by itself before it starts once it passes 2 GB.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The profile editor shows the cache as a bar against that limit, with the date it was last cleared."
+            }
+          ]
+        },
+        {
+          "id": "usage-in-peek",
+          "title": "Usage in Peek",
+          "lead": "A profile's Peek shows how much disk it takes, its cache and how full its 2 GB limit is, under Activity.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Its Extensions row now says every library extension loads, pinned."
+            }
+          ]
+        },
+        {
+          "id": "mac-open",
+          "title": "Opens on Apple Silicon Macs",
+          "lead": "The macOS app is now signed, so macOS no longer reports it as damaged.",
+          "tag": "new",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "On first launch, choose Open Anyway in System Settings > Privacy & Security. Apple's notarization still needs a paid developer account."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "2.5.0",
       "date": "2026-10-27",
       "entries": [

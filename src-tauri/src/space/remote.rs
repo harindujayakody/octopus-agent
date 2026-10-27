@@ -154,6 +154,7 @@ pub fn meta(team: &str, row: &ProfileRow, detail: Option<&StoredProfile>, device
         engine: detail.and_then(|d| d.meta.engine.clone()),
         icon: detail.and_then(|d| d.meta.icon.clone()),
         extensions: detail.map(|d| d.meta.extensions.clone()).unwrap_or_default(),
+        bookmark_sets: detail.map(|d| d.meta.bookmark_sets.clone()).unwrap_or_default(),
         mobile: detail.is_some_and(|d| claims_mobile(&d.config)),
         android_media: detail.is_some_and(|d| d.meta.android_media),
         origin: Origin::Team,

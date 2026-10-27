@@ -416,6 +416,7 @@ pub mod profile {
             engine: stored.meta.engine.clone(),
             icon: stored.meta.icon.clone(),
             extensions: stored.meta.extensions.clone(),
+            bookmark_sets: stored.meta.bookmark_sets.clone(),
             mobile: claims_mobile(&stored.config),
             android_media: stored.meta.android_media,
             origin: Origin::Personal,
@@ -813,9 +814,9 @@ pub mod bookmarks {
         items::bookmarks_for(team, profile_id).await
     }
 
-    /// Writes the bookmarks of `all` the folder takes into a profile's browser data.
-    pub fn apply_to_profile(udd: &Path, folder: &str, all: &[Bookmark]) -> Result<usize> {
-        local::apply_to_profile(udd, folder, all)
+    /// Writes the bookmarks of `all` the folder and the sets take into a profile's browser data.
+    pub fn apply_to_profile(udd: &Path, folder: &str, sets: &[String], all: &[Bookmark]) -> Result<usize> {
+        local::apply_to_profile(udd, folder, sets, all)
     }
 }
 

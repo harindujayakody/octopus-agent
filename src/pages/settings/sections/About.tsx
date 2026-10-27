@@ -30,7 +30,7 @@ export function AboutSection() {
   const signed = useAppUpdate((s) => s.available);
   const phase = useAppUpdate((s) => s.phase);
   const percent = useAppUpdate((s) => s.percent);
-  const installing = phase === "downloading" || phase === "installing";
+  const installing = phase === "closing" || phase === "downloading" || phase === "installing";
 
   const releaseUrl = info?.update_available ? info.release_url : null;
   const status = failed
@@ -79,7 +79,9 @@ export function AboutSection() {
       <div className="flex flex-wrap items-center gap-2">
         {signed ? (
           <Button variant="primary" mode="filled" size="xsmall" disabled={installing} onClick={() => void installAppUpdate()}>
-            {phase === "downloading"
+            {phase === "closing"
+              ? t("appUpdate.closing")
+              : phase === "downloading"
               ? (percent === null ? t("appUpdate.downloading") : t("appUpdate.downloadingPercent", { percent }))
               : phase === "installing" ? t("appUpdate.installing") : t("appUpdate.installVersion", { v: signed.version })}
           </Button>

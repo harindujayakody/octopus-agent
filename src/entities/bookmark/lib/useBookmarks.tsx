@@ -12,12 +12,17 @@ import { bookmarkName } from "./name";
 // A bookmark deleted behind its Undo toast stays out of every read until the toast goes.
 const living = (items: Bookmark[]) => items.filter((x) => !isPendingDelete(`bookmark:${x.id}`));
 
-export const emptyBookmark = (folder = ""): Bookmark => ({
+export const emptyBookmark = (folder = "", set = ""): Bookmark => ({
   id: "",
   title: "",
   url: "",
   folder,
+  set,
 });
+
+/** Every set the bookmarks name, sorted. */
+export const bookmarkSets = (items: Bookmark[]): string[] =>
+  [...new Set(items.map((b) => (b.set ?? "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
 // The page's tabs: All, Every profile, one per Folder. A Folder's tab has a
 // prefix, so a Folder named "all" is still a tab of its own.
@@ -26,6 +31,9 @@ export const BOOKMARK_TAB_ANY = "any";
 export const bookmarkFolderTab = (name: string) => `folder:${name}`;
 /** The Folder a tab shows, or null on All and Every profile. */
 export const bookmarkTabFolder = (tab: string) => (tab.startsWith("folder:") ? tab.slice(7) : null);
+export const bookmarkSetTab = (name: string) => `set:${name}`;
+/** The set a tab shows, or null on any other tab. */
+export const bookmarkTabSet = (tab: string) => (tab.startsWith("set:") ? tab.slice(4) : null);
 
 export type BookmarkStore = {
   status: "idle" | "loading" | "ready" | "error";

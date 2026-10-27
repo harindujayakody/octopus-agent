@@ -3,8 +3,22 @@ import type { ProfileMeta } from "./types";
 
 export const profileList = () => invoke<ProfileMeta[]>("profile_list");
 export const profileGet = (id: string) => invoke<any>("profile_get", { id });
-/** Bytes the profile's browser cache takes on disk (profile_cache.rs). */
-export const profileCacheSize = (id: string) => invoke<number>("profile_cache_size", { id });
+/** A profile's cache against its 2 GB limit, when it was last emptied, and all its data (profile_cache.rs). */
+export type CacheInfo = { bytes: number; limit: number; cleared_at: number | null; data_bytes: number };
+export const profileCacheInfo = (id: string) => invoke<CacheInfo>("profile_cache_info", { id });
+/** What Octopus Agent keeps on this computer, by kind (profile_cache.rs `StorageUsage`). */
+export type StorageUsage = {
+  profiles: number;
+  cache: number;
+  browsers: number;
+  extensions: number;
+  trash: number;
+  other: number;
+  profile_count: number;
+};
+export const storageUsage = () => invoke<StorageUsage>("storage_usage");
+/** Empties every closed profile's cache; running ones are skipped. */
+export const cacheClearAll = () => invoke<{ freed: number; cleared: number; skipped_running: number }>("cache_clear_all");
 /** Empties the profile's browser cache; cookies, logins and history stay. Returns the bytes freed. */
 export const profileCacheClear = (id: string) => invoke<number>("profile_cache_clear", { id });
 /** Writes the profile and its whole browser data (cookies, logins, history) to `path` (profile_backup.rs). Returns its size. */

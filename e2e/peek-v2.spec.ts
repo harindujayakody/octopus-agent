@@ -279,12 +279,13 @@ test("the Profile section is rows of label and value (O4)", async ({ page }) => 
   // Folder, Tags, Color and Notes are text; Proxy and Extensions open the form.
   for (const id of ["folder", "tags", "color", "notes"]) await expect(prop(page, id).locator("button"), id).toHaveCount(0);
   await expect(prop(page, "proxy").locator("button")).toHaveAccessibleName("Proxy No proxy");
-  await expect(prop(page, "extensions").locator("button")).toHaveAccessibleName("Extensions No extensions");
+  // Every library extension loads into every profile: Extensions counts them all.
+  await expect(prop(page, "extensions").locator("button")).toHaveAccessibleName(/^Extensions All \d+, pinned$/);
 });
 
-test("Extensions says how many are on", async ({ page }) => {
+test("Extensions says every library extension is on, pinned", async ({ page }) => {
   await openProfilePeek(page, "Amazon US seller");
-  await expect(prop(page, "extensions").locator("button")).toContainText(/^1 of \d+$/);
+  await expect(prop(page, "extensions").locator("button")).toContainText(/^All \d+, pinned$/);
 });
 
 // Task 15: the Fingerprint rows and the activity rows.

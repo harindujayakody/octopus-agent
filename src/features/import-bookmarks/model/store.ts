@@ -4,7 +4,7 @@ import { toast } from "../../../shared/model/toast";
 import { FileTooBig, MB, pickTextFile } from "../../../shared/lib/pickFile";
 import { BOOKMARK_TAB_ALL, bookmarkSave, useBookmarks } from "../../../entities/bookmark";
 import { teamError } from "../../../entities/team";
-import { newMarks, readChromeBookmarks, type ChromeFile } from "../lib/chromeBookmarks";
+import { newMarks, readBookmarksFile, type ChromeFile } from "../lib/chromeBookmarks";
 
 /** Chrome's file for a few thousand bookmarks is a few MB. */
 const MAX_BYTES = 50 * MB;
@@ -22,6 +22,8 @@ type ImportState = {
   problem: string | null;
   /** The profile Folder they show in; "" is every profile. */
   folder: string;
+  /** The bookmark set they go in; "" is none. */
+  set: string;
   /** Set while the bookmarks are being saved. */
   progress: ImportProgress | null;
   stopping: boolean;
@@ -31,6 +33,7 @@ type ImportState = {
   /** Asks for the file and opens the dialog on it; false when the pick was cancelled. */
   pick: () => Promise<boolean>;
   setFolder: (folder: string) => void;
+  setSet: (set: string) => void;
   run: () => Promise<void>;
   /** Closes, or stops a running import once the bookmark in flight is saved
    *  (Esc and a press on the backdrop too: it stops, it never closes). */
@@ -46,6 +49,7 @@ export const useImportBookmarks = create<ImportState>((set, get) => ({
   file: null,
   problem: null,
   folder: "",
+  set: "",
   progress: null,
   stopping: false,
   failure: null,
@@ -62,7 +66,7 @@ export const useImportBookmarks = create<ImportState>((set, get) => ({
       return true;
     }
     if (!picked) return false;
-    const file = readChromeBookmarks(picked.text);
+    const file = readBookmarksFile(picked.text);
     set({
       open: true,
       fileName: picked.name,
@@ -70,6 +74,7 @@ export const useImportBookmarks = create<ImportState>((set, get) => ({
       problem: file ? null : t("importBookmarks.notChrome", { name: picked.name }),
       // A new import starts on every profile; another file in the same dialog keeps the choice.
       folder: get().open ? get().folder : "",
+      set: get().open ? get().set : "",
       failure: null,
       stopped: null,
     });
@@ -79,9 +84,11 @@ export const useImportBookmarks = create<ImportState>((set, get) => ({
   },
 
   setFolder: (folder) => set({ folder }),
+  setSet: (name) => set({ set: name }),
 
   run: async () => {
     const { file, folder } = get();
+    const bookmarkSet = get().set.trim();
     if (!file || get().progress) return;
     set({ progress: { done: 0, total: 0 }, stopping: false, failure: null, stopped: null });
     // Against the list as it is now, so a second import adds nothing.
@@ -100,7 +107,7 @@ export const useImportBookmarks = create<ImportState>((set, get) => ({
     for (const m of fresh) {
       if (get().stopping) break;
       try {
-        await bookmarkSave({ id: "", title: m.title, url: m.url, folder });
+        await bookmarkSave({ id: "", title: m.title, url: m.url, folder, ...(bookmarkSet ? { set: bookmarkSet } : {}) });
       } catch (e) {
         failure = { done, total, reason: reasonOf(e) };
         break;

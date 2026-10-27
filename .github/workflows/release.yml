@@ -33,7 +33,9 @@
 # releases/latest/download/latest.json and offers Install and restart.
 #
 # No Apple Developer ID / Authenticode cert in this repo, so the bundles are
-# unsigned / not notarized.  macOS users clear the quarantine flag
+# not notarized. The macOS app is ad-hoc signed (tauri.macos.conf.json:
+# signingIdentity "-"), which turns Apple Silicon's "is damaged" into the
+# Open Anyway prompt; users who still see "damaged" clear the quarantine flag
 # (`xattr -dr com.apple.quarantine`) on first launch; README + the release
 # notes document the Gatekeeper / SmartScreen steps.
 
@@ -262,6 +264,17 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npx tauri build --target ${{ matrix.target }}
 
+      # Without a signature at all, Apple Silicon calls a downloaded app
+      # "damaged" and offers no way to open it. The ad-hoc one must be there.
+      - name: Check the app is signed
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          app=$(find "src-tauri/target/${{ matrix.target }}/release/bundle/macos" -maxdepth 1 -name '*.app' -print -quit)
+          [ -n "$app" ] || { echo "::error::no .app to check"; exit 1; }
+          codesign --verify --deep --strict --verbose=2 "$app"
+          codesign -dv "$app" 2>&1 | grep -E '^(Signature|Authority|Identifier)=' || true
+
       - name: Collect bundles
         shell: bash
         run: |
@@ -388,7 +401,7 @@ jobs:
           body: |
             ## Install
 
-            * **macOS** (Apple Silicon — M1/M2/M3/M4) — download the `.dmg` and drag *Octopus Agent.app* to Applications.  The build isn't notarized (no Apple Developer ID), so macOS blocks it on first launch — clear the quarantine flag in Terminal, then open it normally: `xattr -dr com.apple.quarantine "/Applications/Octopus Agent.app"`  (alternative: *System Settings → Privacy & Security → Open Anyway*).
+            * **macOS** (Apple Silicon — M1/M2/M3/M4) — download the `.dmg` and drag *Octopus Agent.app* to Applications.  The build is ad-hoc signed but not notarized (no Apple Developer ID), so the first launch is blocked: open *System Settings → Privacy & Security* and choose *Open Anyway*.  If macOS says the app "is damaged", clear the quarantine flag in Terminal and open it again: `xattr -cr "/Applications/Octopus Agent.app"`.
             * **Windows** — `.msi` installer, or the installer-free **portable** `Octopus-Agent-portable-win-x64.exe` (just run it — needs the Evergreen WebView2 runtime, preinstalled on Windows 10/11).  SmartScreen will warn: *More info* → *Run anyway* (the build isn't signed with Authenticode).
             * **Linux** — `.AppImage` (`chmod +x` and run) or `.deb` (`sudo apt install ./...deb`).
 

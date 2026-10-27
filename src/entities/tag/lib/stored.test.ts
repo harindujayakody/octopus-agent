@@ -28,11 +28,14 @@ test("a broken copy, or one of another version, hands over nothing", () => {
   assert.deepEqual(fromLegacy(kept({ version: 1, tags: "A" }), COLORS), none);
 });
 
-test("only whole tags of a palette color, and only their ids on profiles, each once", () => {
+test("only whole tags of a palette or hex color, and only their ids on profiles, each once", () => {
   const got = whole(
-    [{ id: "t-a", name: "A", color: "blue" }, { id: "t-b", name: "B", color: "#ff0000" }, { name: "No id", color: "blue" }, null],
-    { p1: ["t-a", "t-b", "t-a", 7], p2: ["t-b"], p3: "t-a" },
+    [{ id: "t-a", name: "A", color: "blue" }, { id: "t-b", name: "B", color: "not a color" }, { id: "t-c", name: "C", color: "#ff0000" }, { name: "No id", color: "blue" }, null],
+    { p1: ["t-a", "t-b", "t-a", 7, "t-c"], p2: ["t-b"], p3: "t-a" },
     COLORS,
   );
-  assert.deepEqual(got, { tags: [{ id: "t-a", name: "A", color: "blue" }], byProfile: { p1: ["t-a"] } });
+  assert.deepEqual(got, {
+    tags: [{ id: "t-a", name: "A", color: "blue" }, { id: "t-c", name: "C", color: "#ff0000" }],
+    byProfile: { p1: ["t-a", "t-c"] },
+  });
 });

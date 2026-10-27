@@ -13,6 +13,7 @@ export const defaultForm = (): ProfileForm => ({
   color: "",
   icon: "",
   start_url: "",
+  bookmark_sets: [],
   extensions: [],
   android_media: false,
   engine: "shardx",
@@ -71,6 +72,7 @@ export function fromStored(stored: any): ProfileForm {
   f.color = stored?._meta?.color ?? "";
   f.icon = typeof stored?._meta?.icon === "string" ? stored._meta.icon : "";
   f.start_url = typeof stored?._meta?.start_url === "string" ? stored._meta.start_url : "";
+  f.bookmark_sets = Array.isArray(stored?._meta?.bookmark_sets) ? stored._meta.bookmark_sets.filter((s: unknown): s is string => typeof s === "string") : [];
   f.extensions = Array.isArray(stored?._meta?.extensions) ? stored._meta.extensions : [];
   f.android_media = stored?._meta?.android_media === true;
   const engine = stored?._meta?.engine;
@@ -146,6 +148,7 @@ export function toStored(f: ProfileForm, lib: FingerprintEntry | null, prev?: an
     ...(f.icon ? { icon: f.icon } : {}),
     // Absent: Settings' start page.
     ...(f.start_url.trim() ? { start_url: f.start_url.trim() } : {}),
+    ...(f.bookmark_sets.length > 0 ? { bookmark_sets: f.bookmark_sets } : {}),
     extensions: f.extensions,
     ...(f.android_media ? { android_media: true } : {}),
     // Absent is the ShardX engine, so profiles that never chose stay as they were.

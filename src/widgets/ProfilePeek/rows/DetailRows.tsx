@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ACCENT_HEX, AUTO_LANG, AUTO_TZ, LABEL_COLORS, LOCALES, OS_OPTIONS, osIdFor } from "../../../shared/constants";
 import { AlertIcon } from "../../../shared/icons";
 import { HOST_OS } from "../../../shared/lib/utils";
@@ -10,6 +10,7 @@ import { PropertyButton, PropertyRow, PropertyValue as Value } from "../../../sh
 import { ProtocolPill } from "../../../shared/ui/ProtocolPill";
 import { TagChip } from "../../../shared/ui/TagChip";
 import { useT } from "../../../shared/i18n";
+import { firefoxAddonList } from "../../../features/firefox-addons/api";
 import { openElsewhere, proxyHidden, proxyMissing, useFolderLook, useProfile, type ProfileForm, type ProfileMeta, type ProfileRight } from "../../../entities/profile";
 import { rightName } from "../../../entities/space";
 import { useExtensions } from "../../../entities/extension";
@@ -134,13 +135,22 @@ function ExtensionsDetail({ profile }: { profile: ProfileMeta }) {
   const ready = useExtensions((s) => s.status === "ready");
   const init = useExtensions((s) => s.init);
   useEffect(() => { void init(); }, [init]);
-  const n = profile.extensions.length;
+  const team = profile.origin === "team";
+  // A personal profile loads the whole library (Firefox: the add-ons library);
+  // a team's still loads the ones the team picked for it.
+  const firefox = profile.engine === "firefox";
+  const [addons, setAddons] = useState<number | null>(null);
+  useEffect(() => {
+    if (!team && firefox) firefoxAddonList().then((l) => setAddons(l.length), () => setAddons(0));
+  }, [team, firefox]);
+  const n = team ? profile.extensions.length : firefox ? addons ?? 0 : items.length;
   // A team's the member's list does not show (rights on its folder only) still come at start;
   // "N of M" would count them among the M they do see.
-  const unseen = profile.origin === "team" && (!ready || profile.extensions.some((id) => !items.some((e) => e.id === id)));
+  const unseen = team && (!ready || profile.extensions.some((id) => !items.some((e) => e.id === id)));
   const words = n === 0 ? t("peek.noExtensions")
-    : unseen ? (n === 1 ? t("peek.teamExtensionsOne") : t("peek.teamExtensions", { n }))
-      : t("peek.extensionsCount", { n, total: items.length });
+    : !team ? t("peek.extensionsAll", { n })
+      : unseen ? (n === 1 ? t("peek.teamExtensionsOne") : t("peek.teamExtensions", { n }))
+        : t("peek.extensionsCount", { n, total: items.length });
   return (
     <PropertyRow id="extensions" label={t("peek.extensions")}>
       {(labelId) => (

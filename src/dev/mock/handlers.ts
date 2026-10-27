@@ -364,6 +364,9 @@ const latestEngines: Record<string, string> = {
   chrome: "156.0.8078.48", chromium: "r1529133", firefox: "144.0.2", brave: "1.98.60", thorium: "156.0.8078.28", helium: "0.20.1.1",
 };
 
+/** The mock's cache: a steady size per profile id, up to about 140 MB. */
+const CACHE_LIMIT = 2 * 1024 * 1024 * 1024;
+const mockCacheBytes = (id: string) => 40_000_000 + (id.charCodeAt(0) % 9) * 12_500_000;
 const firefoxAddons: { id: string; name: string; version: string; source: string; added_at: number }[] = [];
 /** The mock's authenticator: accounts kept for the session; codes follow the
  *  clock and the secret, not RFC 6238 (the backend's own tests cover that). */
@@ -395,21 +398,39 @@ export const handlers: Record<string, Handler> = {
     return { ...e };
   },
   // A profile's browser cache: a steady size per id, nothing once cleared.
-  profile_cache_size: ({ id }, { state }) => {
+  profile_cache_info: ({ id }, { state }) => {
     const p = state.profiles[String(id)];
-    if (!p) return 0;
-    if ((p._meta as { cacheCleared?: boolean }).cacheCleared) return 0;
-    return 40_000_000 + (String(id).charCodeAt(0) % 9) * 12_500_000;
+    const meta = (p?._meta ?? {}) as { cacheCleared?: number };
+    const bytes = !p || meta.cacheCleared ? 0 : mockCacheBytes(String(id));
+    return { bytes, limit: CACHE_LIMIT, cleared_at: meta.cacheCleared ?? null, data_bytes: bytes + 180_000_000 };
   },
   profile_cache_clear: async ({ id }, ctx) => {
     await sleep(200);
     const p = ctx.state.profiles[String(id)];
     if (!p) throw `profile ${id} not found`;
     if (ctx.state.running[String(id)]) throw "Close the profile first: a running browser keeps its cache open.";
-    const freed = (p._meta as { cacheCleared?: boolean }).cacheCleared ? 0 : 40_000_000 + (String(id).charCodeAt(0) % 9) * 12_500_000;
-    (p._meta as { cacheCleared?: boolean }).cacheCleared = true;
+    const meta = p._meta as { cacheCleared?: number };
+    const freed = meta.cacheCleared ? 0 : mockCacheBytes(String(id));
+    meta.cacheCleared = Math.floor(Date.now() / 1000);
     ctx.save();
     return freed;
+  },
+  storage_usage: ({}, { state }) => {
+    const ids = Object.keys(state.profiles);
+    const cache = ids.reduce((n, id) => n + ((state.profiles[id]._meta as { cacheCleared?: number }).cacheCleared ? 0 : mockCacheBytes(id)), 0);
+    return { profiles: ids.length * 180_000_000, cache, browsers: 1_450_000_000, extensions: 24_000_000, trash: 61_000_000, other: 9_000_000, profile_count: ids.length };
+  },
+  cache_clear_all: async ({}, ctx) => {
+    await sleep(300);
+    let freed = 0, cleared = 0, skipped_running = 0;
+    for (const [id, p] of Object.entries(ctx.state.profiles)) {
+      if (ctx.state.running[id]) { skipped_running++; continue; }
+      const meta = p._meta as { cacheCleared?: number };
+      if (!meta.cacheCleared) { freed += mockCacheBytes(id); cleared++; }
+      meta.cacheCleared = Math.floor(Date.now() / 1000);
+    }
+    ctx.save();
+    return { freed, cleared, skipped_running };
   },
   // Extensions profiles installed inside their browsers: one the library has
   // (Cookie-Editor), one it hasn't (Grammarly), and a Firefox add-on.

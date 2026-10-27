@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { DialogModal, ProgressBar, useLatched } from "@proxyshard/shardx-ui-kit";
+import { Button, DialogModal, ProgressBar, useLatched } from "@proxyshard/shardx-ui-kit";
+import { Field } from "../../../shared/ui/Field";
 import { useT } from "../../../shared/i18n";
 import { useDialogLife } from "../../../shared/lib/useDialogLife";
 import { BookmarkFolderSelect, useBookmarks } from "../../../entities/bookmark";
@@ -8,25 +9,26 @@ import { useImportBookmarks } from "../model/store";
 
 /// Import from Chrome: what the picked file holds, where it will show, and
 /// the import itself, with its progress and any refusal in place.
-export function ImportBookmarksDialog({ folders }: { folders: string[] }) {
+export function ImportBookmarksDialog({ folders, sets = [], team = false }: { folders: string[]; sets?: string[]; team?: boolean }) {
   const open = useImportBookmarks((s) => s.open);
   // Stays mounted through its exit (FEEL-01).
   const life = useDialogLife(open);
   if (!life.mounted) return null;
-  return <ImportDialog key={life.session} open={open} folders={folders} />;
+  return <ImportDialog key={life.session} open={open} folders={folders} sets={sets} team={team} />;
 }
 
-function ImportDialog({ open, folders }: { open: boolean; folders: string[] }) {
+function ImportDialog({ open, folders, sets, team }: { open: boolean; folders: string[]; sets: string[]; team: boolean }) {
   const t = useT();
   const fileName = useImportBookmarks((s) => s.fileName);
   const file = useImportBookmarks((s) => s.file);
   const problem = useImportBookmarks((s) => s.problem);
   const folder = useImportBookmarks((s) => s.folder);
+  const bookmarkSet = useImportBookmarks((s) => s.set);
   const progress = useImportBookmarks((s) => s.progress);
   const stopping = useImportBookmarks((s) => s.stopping);
   const failure = useImportBookmarks((s) => s.failure);
   const stopped = useImportBookmarks((s) => s.stopped);
-  const { pick, setFolder, run, close } = useImportBookmarks.getState();
+  const { pick, setFolder, setSet, run, close } = useImportBookmarks.getState();
   const items = useBookmarks((s) => s.items);
   const busy = progress != null;
 
@@ -88,6 +90,20 @@ function ImportDialog({ open, folders }: { open: boolean; folders: string[] }) {
               </p>
             )}
             <BookmarkFolderSelect label={t("importBookmarks.showsIn")} value={folder} folders={folders} onChange={setFolder} disabled={busy} />
+            {!team && (
+              <div className="flex flex-col gap-1.5">
+                <Field label={t("bookmarks.setLabel")} value={bookmarkSet} onChange={setSet} placeholder={t("bookmarks.setPlaceholder")} />
+                {sets.length > 0 && (
+                  <div role="group" aria-label={t("bookmarks.setPick")} className="flex flex-wrap gap-1.5">
+                    {sets.map((s) => (
+                      <Button key={s} variant={bookmarkSet === s ? "primary" : "neutral"} mode={bookmarkSet === s ? "lighter" : "stroke"} size="3xsmall" aria-pressed={bookmarkSet === s} disabled={busy} onClick={() => setSet(bookmarkSet === s ? "" : s)}>
+                        {s}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <p className="m-0 text-secondary text-text-soft-400">{t("importBookmarks.flatHint")}</p>
             {progress && progress.total > 0 && (
               <div className="flex flex-col gap-1.5" data-import-progress>

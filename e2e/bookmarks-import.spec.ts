@@ -21,12 +21,12 @@ const NEW_IN_ORDER = [
 ];
 
 const bookmarks = (page: Page) => page.evaluate(() => (window as unknown as Mock).__shardxMock.state.bookmarks);
-const dialog = (page: Page) => page.getByRole("dialog", { name: "Import from Chrome" });
+const dialog = (page: Page) => page.getByRole("dialog", { name: "Import bookmarks" });
 
 /** Import from Chrome in the header, answering the file picker with `file`. */
 async function startImport(page: Page, file: string | { name: string; mimeType: string; buffer: Buffer }, from = page.locator("main header")) {
   const chooser = page.waitForEvent("filechooser");
-  await from.getByRole("button", { name: "Import from Chrome" }).click();
+  await from.getByRole("button", { name: "Import bookmarks" }).click();
   await (await chooser).setFiles(file);
   await expect(dialog(page)).toHaveAttribute("data-state", "open");
 }
@@ -80,7 +80,7 @@ test("a file that is not Chrome's says so in the dialog, and another can be pick
   const own = { name: "bookmarks.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify({ bookmarks: [{ id: "x", title: "X", url: "https://x.example", folder: "" }] })) };
   await startImport(page, own);
   const d = dialog(page);
-  await expect(d.getByRole("alert")).toHaveText("“bookmarks.json” isn’t a Chrome bookmarks file.");
+  await expect(d.getByRole("alert")).toHaveText("“bookmarks.json” isn’t a bookmarks file.");
   await expect(d).toContainText("chrome://version");
   const chooser = page.waitForEvent("filechooser");
   await d.getByRole("button", { name: "Choose another file" }).click();

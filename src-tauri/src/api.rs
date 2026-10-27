@@ -885,6 +885,8 @@ struct BookmarkReq {
     title: Option<String>,
     /// Launcher folder; "" (or absent) means every profile.
     folder: Option<String>,
+    /// Bookmark set; "" (or absent) means none, so every profile of its folder.
+    set: Option<String>,
 }
 
 /// Upsert. Profiles pick the change up on their next launch, not immediately —
@@ -895,6 +897,7 @@ async fn save_bookmark(Extension(t): Extension<Ticket>, Json(body): Json<Bookmar
         title: body.title.unwrap_or_default(),
         url: body.url,
         folder: body.folder.unwrap_or_default(),
+        set: body.set.unwrap_or_default(),
     };
     let saved = crate::space::bookmarks::save(Door("POST /bookmarks"), &t, mark)
         .await

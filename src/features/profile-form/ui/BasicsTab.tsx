@@ -3,7 +3,7 @@ import { Input } from "@proxyshard/shardx-ui-kit";
 import { PropertySheet } from "../../../shared/ui/peek";
 import { useT } from "../../../shared/i18n";
 import { addTagName, patchDraft, patchForm, problemsOf, useProfileForm, type ProfileFormDraft } from "../model/useProfileForm";
-import { CacheRow, ColorRow, CookiesRow, IconRow, NotesRow, StartPageRow } from "./fields";
+import { BookmarkSetsRow, CacheRow, ColorRow, CookiesRow, IconRow, NotesRow, StartPageRow } from "./fields";
 import { FolderField } from "./FolderField";
 import { teamRefusal, useInTeam, useRightsChange } from "../../../entities/space";
 import { TagsField } from "./TagsField";
@@ -57,6 +57,7 @@ export function BasicsTab({ draft, nameRef }: { draft: ProfileFormDraft; nameRef
           <IconRow value={f.icon} onChange={(icon) => patchForm({ icon })} />
           <ColorRow value={f.color} onChange={(color) => patchForm({ color })} />
           <StartPageRow value={f.start_url} onChange={(start_url) => patchForm({ start_url })} />
+          {!team && <BookmarkSetsRow value={f.bookmark_sets} onChange={(bookmark_sets) => patchForm({ bookmark_sets })} />}
           <NotesRow value={f.notes} onChange={(notes) => patchForm({ notes })} />
           {!team && <CookiesRow value={draft.cookies} onChange={(cookies) => patchDraft({ cookies })} />}
           {/* An existing profile's cache on this computer: its size, and Clear. */}
