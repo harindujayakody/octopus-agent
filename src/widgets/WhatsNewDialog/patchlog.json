@@ -3,6 +3,25 @@
   "repoUrl": "https://github.com/harindujayakody/octopus-agent",
   "releases": [
     {
+      "version": "2.6.1",
+      "date": "2026-10-27",
+      "entries": [
+        {
+          "id": "stray-browser",
+          "title": "Profiles start even when a browser was left open",
+          "lead": "A profile whose browser was left open by an earlier run of Octopus Agent now starts instead of refusing.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "That leftover browser is closed first, the way Stop closes one, so cookies, logins and tabs are saved, and the profile then starts fresh under Octopus Agent."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "2.6.0",
       "date": "2026-10-27",
       "entries": [

@@ -302,19 +302,6 @@ pub fn launch_input(start: &Granted<Start>, cdp: Option<&Granted<Cookies>>) -> R
     let stored = profile::load_raw(profile_id)?;
     let udd = profile::user_data_dir(profile_id)?;
 
-    // A browser left over from an earlier run of the launcher holds the
-    // profile's lock but is in nobody's tracker. Starting another one does
-    // not open a second window: Chromium's singleton hands the command line
-    // to the browser already there and the new process exits at once, so the
-    // profile looked like it refused to start while its window sat open on
-    // the desktop. Say what is actually happening instead.
-    if crate::reset::lock_is_live(&udd) {
-        anyhow::bail!(
-            "profile {profile_id} is already open in a browser this launcher did not start \
-             — close that window, then start it again"
-        );
-    }
-
     let proxy = bound_proxy(&stored, profile_id, proxy::get)?;
     // Every extension in the library, for every profile; one whose files are gone is skipped.
     let (ext_ids, extensions) = extensions::global_ids()
@@ -497,6 +484,16 @@ async fn launch_using(
             let bin = if shardx(&profile::load_raw(profile_id)?) { Some(binary()?) } else { None };
             // An extension swap is waited out; none starts until the browser is tracked.
             _held = Some(extensions::begin_launch(profile_id).await?);
+            // A browser left over from an earlier run of the launcher holds the
+            // profile's lock but is in nobody's tracker. Chromium's singleton
+            // would hand the new start to it and exit at once, so it is closed
+            // first, the way Stop closes one (asked, then taken), and the
+            // profile starts fresh.
+            let udd = profile::user_data_dir(profile_id)?;
+            if crate::reset::lock_is_live(&udd) {
+                eprintln!("[launcher] {profile_id}: closing a browser an earlier run left open");
+                crate::process::end_browser(&udd, None).await;
+            }
             let mut input = launch_input(&start, cookies.as_ref())?;
             // Synced: under the lease of the person's space, its session brought up to date.
             if let Some(hand) = crate::space::sync::open_for_start(profile_id, &input.udd, opts.enable_cdp).await? {
