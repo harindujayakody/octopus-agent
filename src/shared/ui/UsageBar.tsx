@@ -20,7 +20,7 @@ export function UsageBar({ parts, total, label }: { parts: UsagePart[]; total?: 
   const sum = parts.reduce((n, p) => n + p.value, 0);
   const whole = Math.max(total ?? sum, 1);
   return (
-    <div role="img" aria-label={label} data-usage-bar className="flex h-2 w-full overflow-hidden rounded-full bg-bg-on-tile">
+    <div role="img" aria-label={label} data-usage-bar className="flex h-[8px] w-full overflow-hidden rounded-full bg-bg-on-tile">
       {parts.filter((p) => p.value > 0).map((p) => (
         <span
           key={p.id}
@@ -35,5 +35,5 @@ export function UsageBar({ parts, total, label }: { parts: UsagePart[]; total?: 
 
 /** A legend's color dot, in a part's tone. */
 export function UsageDot({ tone }: { tone: UsageTone }) {
-  return <span aria-hidden="true" className={cn("inline-block size-2 shrink-0 rounded-full", TONE[tone])} />;
+  return <span aria-hidden="true" className={cn("inline-block size-[8px] shrink-0 rounded-full", TONE[tone])} />;
 }
