@@ -49,12 +49,12 @@
   },
   "dependencies": {
     "adm-zip": "^0.6.1",
-    "patchright": "^1.49.0",
+    "patchright": "^1.64.3",
     "socks-proxy-agent": "^8.0.4",
     "undici": "^6.19.0"
   },
   "devDependencies": {
-    "@types/adm-zip": "^0.5.7",
+    "@types/adm-zip": "^0.6.0",
     "@types/node": "^20",
     "typescript": "^5.4"
   }
