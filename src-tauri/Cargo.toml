@@ -108,7 +108,7 @@ zip = { version = "9", default-features = false, features = ["deflate"] }
 # Per-profile window icon: superellipse + text. Pure Rust, no C deps.
 tiny-skia = "0.12"
 ab_glyph = "0.2"
-png = "0.17"
+png = "0.18"
 # Not optional: besides the automation's CDP client, the GPU-capability
 # probe speaks the devtools protocol to decide which fingerprints this machine
 # can wear, and that has nothing to do with the automation being built in.
