@@ -161,7 +161,7 @@ pub fn query(name: &str, statement: &str) -> Result<(Vec<String>, Vec<Value>)> {
     match handle {
         Handle::Sqlite(c) => {
             let mut stmt = c.prepare(statement)?;
-            let cols: Vec<String> = stmt.column_names().iter().map(|s| s.to_string()).collect();
+            let cols: Vec<String> = stmt.column_names().map(str::to_string).collect();
             let mapped = stmt.query_map([], |row| {
                 let mut obj = Map::new();
                 for (i, col) in cols.iter().enumerate() {

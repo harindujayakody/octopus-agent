@@ -389,7 +389,7 @@ mod tests {
 
     fn names(zip_path: &Path) -> Vec<String> {
         let mut z = zip::ZipArchive::new(fs::File::open(zip_path).unwrap()).unwrap();
-        (0..z.len()).map(|i| z.by_index(i).unwrap().name().to_string()).collect()
+        (0..z.len()).map(|i| z.by_index(i).unwrap().name().unwrap().to_string()).collect()
     }
 
     #[test]

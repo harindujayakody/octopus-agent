@@ -1,6 +1,6 @@
 [package]
 name = "octopus-agent"
-version = "2.6.1"
+version = "2.6.2"
 description = "Octopus Agent: an anti-detect browser for profiles, proxies, fingerprints and automation."
 authors = ["Harindu Jayakody"]
 edition = "2021"
@@ -90,7 +90,7 @@ jsonwebtoken = "9"
 # MCP bootstrap: download the server tarball from GitHub + extract.
 flate2 = "1"
 tar = "0.4"
-rusqlite = { version = "0.32", features = ["bundled"] }
+rusqlite = { version = "0.43", features = ["bundled"] }
 aes = "0.8"
 cbc = { version = "0.1", features = ["alloc"] }
 pbkdf2 = "0.12"
@@ -100,10 +100,10 @@ sha2 = "0.10"
 # Extension updates: CRX3 signatures as Chrome checks them, and the Web Store's
 # update2 answers. Both already in the tree (rustls, plist).
 ring = "0.17"
-quick-xml = "0.39"
+quick-xml = "0.42"
 # Self-bootstrapping runtime: zip extraction of the chrome bundle
 # downloaded from Cloudflare R2 on first launch (src/runtime.rs).
-zip = { version = "2", default-features = false, features = ["deflate"] }
+zip = { version = "9", default-features = false, features = ["deflate"] }
 
 # Per-profile window icon: superellipse + text. Pure Rust, no C deps.
 tiny-skia = "0.11"

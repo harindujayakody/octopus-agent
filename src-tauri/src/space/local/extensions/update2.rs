@@ -5,12 +5,12 @@ use super::chrome_id::is_id;
 use super::version::Version;
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::name::{Namespace, ResolveResult};
-use quick_xml::NsReader;
+use quick_xml::{NsReader, XmlVersion};
 
 pub const WEBSTORE_UPDATE: &str = "https://clients2.google.com/service/update2/crx";
 /// `kExtensionsManifestMaxURLSize`; the first item goes in whatever its length.
 pub const URL_BUDGET: usize = 2000;
-const GUPDATE_NS: &[u8] = b"http://www.google.com/update2/response";
+const GUPDATE_NS: &str = "http://www.google.com/update2/response";
 
 /// The launcher says what it is; the store answers it as it answers Chrome.
 pub fn user_agent() -> String {
@@ -122,22 +122,22 @@ pub fn parse(body: &[u8]) -> Result<Vec<AppAnswer>, String> {
         match ev {
             Event::Start(ref e) | Event::Empty(ref e) => {
                 let empty = matches!(ev, Event::Empty(_));
-                let name = e.local_name().as_ref().to_vec();
+                let name = e.local_name().as_ref().to_owned();
                 match depth {
                     0 => {
-                        if !in_ns || name != b"gupdate" || attr(&r, e, "protocol").as_deref() != Some("2.0") {
+                        if !in_ns || name != "gupdate" || attr(e, "protocol").as_deref() != Some("2.0") {
                             return Err("not a gupdate response".into());
                         }
                         root = true;
                     }
-                    1 if in_ns && name == b"app" => {
-                        let id = attr(&r, e, "appid").unwrap_or_default();
-                        let status = attr(&r, e, "status").unwrap_or_default();
+                    1 if in_ns && name == "app" => {
+                        let id = attr(e, "appid").unwrap_or_default();
+                        let status = attr(e, "status").unwrap_or_default();
                         app = Some((id, status, vec![]));
                     }
-                    2 if in_ns && name == b"updatecheck" => {
+                    2 if in_ns && name == "updatecheck" => {
                         if let Some((_, _, checks)) = app.as_mut() {
-                            checks.push(attrs(&r, e));
+                            checks.push(attrs(e));
                         }
                     }
                     _ => {}
@@ -168,19 +168,19 @@ pub fn parse(body: &[u8]) -> Result<Vec<AppAnswer>, String> {
 
 type Attrs = Vec<(String, String)>;
 
-fn attrs(r: &NsReader<&[u8]>, e: &BytesStart) -> Attrs {
+fn attrs(e: &BytesStart) -> Attrs {
     e.attributes()
         .flatten()
         .filter_map(|a| {
-            let k = String::from_utf8(a.key.local_name().as_ref().to_vec()).ok()?;
-            let v = a.decode_and_unescape_value(r.decoder()).ok()?.into_owned();
+            let k = a.key.local_name().as_ref().to_owned();
+            let v = a.normalized_value(XmlVersion::Implicit1_0).ok()?.into_owned();
             Some((k, v))
         })
         .collect()
 }
 
-fn attr(r: &NsReader<&[u8]>, e: &BytesStart, key: &str) -> Option<String> {
-    attrs(r, e).into_iter().find(|(k, _)| k == key).map(|(_, v)| v)
+fn attr(e: &BytesStart, key: &str) -> Option<String> {
+    attrs(e).into_iter().find(|(k, _)| k == key).map(|(_, v)| v)
 }
 
 fn finish((id, status, checks): (String, String, Vec<Attrs>)) -> AppAnswer {

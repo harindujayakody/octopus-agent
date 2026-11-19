@@ -73,7 +73,7 @@ fn read_xpi(bytes: &[u8]) -> Result<(Option<String>, String, String)> {
     let id = gecko.and_then(|g| g.get("id")).and_then(|v| v.as_str()).map(str::to_owned);
     let name = m.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let version = m.get("version").and_then(|v| v.as_str()).unwrap_or("").to_string();
-    if !zip.file_names().any(|n| n.starts_with("META-INF/")) {
+    if !zip.file_names().any(|n| n.is_ok_and(|n| n.starts_with("META-INF/"))) {
         bail!("this .xpi is not signed by Mozilla, and Firefox only loads signed add-ons. Add it from its addons.mozilla.org page instead.");
     }
     Ok((id, name, version))

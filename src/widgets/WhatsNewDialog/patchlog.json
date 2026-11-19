@@ -3,6 +3,29 @@
   "repoUrl": "https://github.com/harindujayakody/octopus-agent",
   "releases": [
     {
+      "version": "2.6.2",
+      "date": "2026-11-20",
+      "entries": [
+        {
+          "id": "security-updates",
+          "title": "Security updates",
+          "lead": "Octopus Agent's own components are updated to versions with known security problems fixed.",
+          "tag": "fix",
+          "scope": "launcher",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "This covers the code that unpacks extensions, add-ons and browser downloads, the secure connections to sync and team servers, the built-in database, and the automation runtime. Nothing changes in how you use the app, and profiles start and sync as before."
+            },
+            {
+              "type": "p",
+              "text": "The fixes close ways a crafted zip file could write outside its folder, make the app use too much memory, or slip a weakened connection past the checks. The project now checks its components for known problems on every change, so updates like this one come sooner."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "2.6.1",
       "date": "2026-10-27",
       "entries": [

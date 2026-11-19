@@ -401,7 +401,7 @@ fn index(archive: &Path, layout: &Layout) -> Result<Index> {
         let f = zip.by_index_raw(i)?;
         unpacked = unpacked.saturating_add(f.size());
         // Zips made on Windows write backslashes.
-        let name = f.name().replace('\\', "/");
+        let name = f.name()?.replace('\\', "/");
         if name.starts_with(&top) && !name.ends_with('/') && !f.is_dir() {
             files.push(name);
         }

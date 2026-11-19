@@ -1,0 +1,21 @@
+version: 2
+updates:
+  # Minor and patch updates come grouped, one pull request per ecosystem a week.
+  - package-ecosystem: npm
+    directories: ["/", "/ui-kit", "/mcp", "/sdks/node"]
+    schedule:
+      interval: weekly
+    groups:
+      npm:
+        update-types: [minor, patch]
+  - package-ecosystem: cargo
+    directories: ["/src-tauri", "/team-server"]
+    schedule:
+      interval: weekly
+    groups:
+      cargo:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

@@ -291,7 +291,7 @@ fn zipped_names(dir: &Path) -> Vec<String> {
     let out = dir.parent().unwrap().join(format!("{}.zip", uuid::Uuid::new_v4().simple()));
     zip_dir(dir, &out).unwrap();
     let z = zip::ZipArchive::new(std::fs::File::open(&out).unwrap()).unwrap();
-    let mut names: Vec<String> = z.file_names().map(str::to_string).collect();
+    let mut names: Vec<String> = z.file_names().map(|n| n.unwrap().to_string()).collect();
     names.sort();
     let _ = std::fs::remove_file(out);
     names

@@ -1,0 +1,70 @@
+name: Bug report
+description: Something does not work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Found a security problem? Do not file it here: see [SECURITY.md](https://github.com/harindujayakody/octopus-agent/blob/main/SECURITY.md)."
+  - type: input
+    id: version
+    attributes:
+      label: Octopus Agent version
+      description: Settings › About.
+      placeholder: "2.6.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [Windows, macOS (Apple Silicon), Linux]
+    validations:
+      required: true
+  - type: input
+    id: os-version
+    attributes:
+      label: OS version
+      placeholder: "Windows 11 24H2, macOS 15.2, Ubuntu 24.04…"
+  - type: dropdown
+    id: browser
+    attributes:
+      label: The profile's browser
+      options: [Octopus Agent engine, Chrome, Chromium, Firefox, Not about a profile]
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Profiles, Fingerprint or detection, Proxies, Extensions, Bookmarks, Sync or team server, Automation, API, MCP or SDK, Updates and install, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Create a profile with …
+        2. Start it
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+      description: The exact error text, and a screenshot if it helps. Remove proxy passwords, tokens and invites.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Optional. Remove anything secret before pasting.
+      render: text
