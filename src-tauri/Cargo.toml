@@ -117,7 +117,7 @@ futures-util = { version = "0.3" }
 wasmtime = { version = "48.0.1", optional = true }
 # AES-256-GCM and a random source: Windows cookie crypto, and the
 # authenticator's sealed secrets on every system.
-aes-gcm = "0.10"
+aes-gcm = "0.11"
 getrandom = "0.2"
 
 [target.'cfg(unix)'.dependencies]
