@@ -929,7 +929,7 @@ mod harness {
             if let Some(s) = session {
                 msg["sessionId"] = json!(s);
             }
-            self.ws.send(Message::Text(msg.to_string())).await.map_err(e2s)?;
+            self.ws.send(Message::Text(msg.to_string().into())).await.map_err(e2s)?;
             let until = Instant::now() + self.wait;
             loop {
                 let left = until.saturating_duration_since(Instant::now());

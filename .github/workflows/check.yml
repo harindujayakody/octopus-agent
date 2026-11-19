@@ -36,3 +36,44 @@ jobs:
           tool: cargo-audit
       - run: cargo audit --file src-tauri/Cargo.lock
       - run: cargo audit --file team-server/Cargo.lock
+
+  # The Rust side on every system it ships for, with every feature: Windows-
+  # only, macOS-only and automation code is only compiled here, so a
+  # dependency bump that breaks it fails a pull request, not the release.
+  rust:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-15, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            ui-kit/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: check-${{ matrix.os }}-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: check-${{ matrix.os }}-
+      - name: Install Linux build deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libssl-dev
+      - run: npm ci
+      # generate_context! embeds the built UI, so it has to exist.
+      - run: npm run build
+      - run: cargo check --locked --all-targets
+        working-directory: src-tauri
+      - run: cargo test --locked
+        if: runner.os == 'Linux'
+        working-directory: team-server

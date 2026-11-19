@@ -645,7 +645,7 @@ async fn load_over_cdp(dir: PathBuf, roots: Vec<PathBuf>) {
     };
     for (i, root) in roots.iter().enumerate() {
         let msg = serde_json::json!({ "id": i + 1, "method": "Extensions.loadUnpacked", "params": { "path": root } });
-        if ws.send(Message::Text(msg.to_string())).await.is_err() {
+        if ws.send(Message::Text(msg.to_string().into())).await.is_err() {
             return;
         }
     }

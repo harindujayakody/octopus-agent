@@ -189,7 +189,7 @@ async fn evaluate_in_core(port: u16) -> Result<String> {
         },
     });
     socket
-        .send(tokio_tungstenite::tungstenite::Message::Text(msg.to_string()))
+        .send(tokio_tungstenite::tungstenite::Message::Text(msg.to_string().into()))
         .await?;
     // A closed socket ends the wait; the old loop spun on it until its deadline.
     while let Some(msg) = socket.next().await {

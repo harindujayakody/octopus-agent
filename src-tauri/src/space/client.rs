@@ -458,11 +458,7 @@ impl TeamClient {
                 return Err(TeamError::Garbled(format!("{} answered the live channel wrongly", self.base)));
             }
             let raw = hyper::upgrade::on(resp).await.map_err(|e| TeamError::Offline(plain(&e, false)))?;
-            let cfg = WebSocketConfig {
-                max_message_size: Some(LIVE_MAX_IN),
-                max_frame_size: Some(LIVE_MAX_IN),
-                ..Default::default()
-            };
+            let cfg = WebSocketConfig::default().max_message_size(Some(LIVE_MAX_IN)).max_frame_size(Some(LIVE_MAX_IN));
             let ws = WebSocketStream::from_raw_socket(TokioIo::new(raw), Role::Client, Some(cfg)).await;
             Ok(LiveSocket { ws })
         };
@@ -1063,7 +1059,7 @@ impl LiveSocket {
 
     /// False once the socket cannot be written to.
     pub async fn ping(&mut self) -> bool {
-        self.ws.send(Message::Ping(Vec::new())).await.is_ok()
+        self.ws.send(Message::Ping(Default::default())).await.is_ok()
     }
 }
 

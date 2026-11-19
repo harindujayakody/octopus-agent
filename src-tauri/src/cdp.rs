@@ -75,7 +75,7 @@ impl Session {
             msg["sessionId"] = json!(s);
         }
         self.out
-            .send(Message::Text(msg.to_string()))
+            .send(Message::Text(msg.to_string().into()))
             .map_err(|_| anyhow!("cdp connection closed"))?;
 
         match tokio::time::timeout(std::time::Duration::from_secs(120), rx).await {
@@ -197,7 +197,7 @@ where
                             if let Some(s) = sid {
                                 m["sessionId"] = json!(s);
                             }
-                            let _ = out_tx.send(Message::Text(m.to_string()));
+                            let _ = out_tx.send(Message::Text(m.to_string().into()));
                         }
                         let md = p.get("metadata").cloned().unwrap_or(Value::Null);
                         let num = |k: &str| md.get(k).and_then(|x| x.as_f64()).unwrap_or(0.0);

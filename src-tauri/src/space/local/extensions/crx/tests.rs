@@ -114,7 +114,7 @@ fn just(id: Option<&str>) -> Expect<'_> {
 #[test]
 fn fixture_built_elsewhere_verifies() {
     let bytes = fixture();
-    let sha = format!("{:x}", Sha256::digest(&bytes));
+    let sha: String = Sha256::digest(&bytes).iter().map(|b| format!("{b:02x}")).collect();
     let expect = Expect { id: Some(FIXTURE_ID), publisher: Some(hash32(FIXTURE_PUBLISHER)), sha256: Some(&sha), size: Some(bytes.len() as u64) };
     let v = verify(&bytes, &expect).unwrap();
     assert_eq!(v.crx_id, FIXTURE_ID);
@@ -161,7 +161,7 @@ fn hash_size_and_id_from_the_answer() {
     let bytes = fixture();
     let zeros = "0".repeat(64);
     assert_eq!(verify(&bytes, &Expect { sha256: Some(&zeros), ..Default::default() }).unwrap_err(), Reject::WrongHash);
-    let upper = format!("{:X}", Sha256::digest(&bytes));
+    let upper: String = Sha256::digest(&bytes).iter().map(|b| format!("{b:02X}")).collect();
     assert!(verify(&bytes, &Expect { sha256: Some(&upper), ..Default::default() }).is_ok());
     assert_eq!(
         verify(&bytes, &Expect { size: Some(1), ..Default::default() }).unwrap_err(),

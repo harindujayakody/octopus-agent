@@ -136,7 +136,7 @@ fn snapshot(dir: &Path) -> BTreeMap<String, String> {
                 out.insert(rel, "dir".into());
                 walk(base, &p, out);
             } else {
-                out.insert(rel, format!("{:x}", Sha256::digest(fs::read(&p).unwrap())));
+                out.insert(rel, Sha256::digest(fs::read(&p).unwrap()).iter().map(|b| format!("{b:02x}")).collect());
             }
         }
     }

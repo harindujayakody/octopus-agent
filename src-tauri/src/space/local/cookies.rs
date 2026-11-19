@@ -177,7 +177,7 @@ mod win {
 
     fn rand_bytes<const N: usize>() -> [u8; N] {
         let mut b = [0u8; N];
-        getrandom::getrandom(&mut b).expect("getrandom");
+        getrandom::fill(&mut b).expect("getrandom");
         b
     }
 
