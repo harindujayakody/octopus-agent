@@ -112,7 +112,7 @@ png = "0.17"
 # Not optional: besides the automation's CDP client, the GPU-capability
 # probe speaks the devtools protocol to decide which fingerprints this machine
 # can wear, and that has nothing to do with the automation being built in.
-tokio-tungstenite = { version = "0.24", default-features = false, features = ["connect"] }
+tokio-tungstenite = { version = "0.30", default-features = false, features = ["connect"] }
 futures-util = { version = "0.3" }
 wasmtime = { version = "48.0.1", optional = true }
 # AES-256-GCM and a random source: Windows cookie crypto, and the
