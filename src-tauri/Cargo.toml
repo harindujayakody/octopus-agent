@@ -94,7 +94,7 @@ rusqlite = { version = "0.43", features = ["bundled"] }
 aes = "0.8"
 cbc = { version = "0.1", features = ["alloc"] }
 pbkdf2 = "0.12"
-hmac = "0.12"
+hmac = "0.13"
 sha1 = "0.10"
 sha2 = "0.10"
 # Extension updates: CRX3 signatures as Chrome checks them, and the Web Store's
