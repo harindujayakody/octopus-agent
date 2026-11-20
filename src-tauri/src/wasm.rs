@@ -1003,7 +1003,7 @@ pub fn digest(path: &PathBuf) -> String {
         Ok(bytes) => {
             let mut h = Sha256::new();
             h.update(&bytes);
-            format!("{:x}", h.finalize())
+            h.finalize().iter().map(|b| format!("{b:02x}")).collect()
         }
         Err(_) => String::new(),
     }

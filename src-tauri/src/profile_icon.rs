@@ -404,8 +404,8 @@ fn mark_pixmap() -> Option<&'static Pixmap> {
     static CACHE: std::sync::OnceLock<Option<Pixmap>> = std::sync::OnceLock::new();
     CACHE
         .get_or_init(|| {
-            let mut reader = png::Decoder::new(MARK).read_info().ok()?;
-            let mut buf = vec![0; reader.output_buffer_size()];
+            let mut reader = png::Decoder::new(std::io::Cursor::new(MARK)).read_info().ok()?;
+            let mut buf = vec![0; reader.output_buffer_size()?];
             let info = reader.next_frame(&mut buf).ok()?;
             if info.color_type != png::ColorType::Rgba || info.bit_depth != png::BitDepth::Eight {
                 return None;

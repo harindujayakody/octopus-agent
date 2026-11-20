@@ -454,7 +454,7 @@ mod tests {
             let mut socket = tokio_tungstenite::accept_async(tcp).await.unwrap();
             let Some(Ok(Message::Text(asked))) = socket.next().await else { panic!("no ask") };
             let _ = socket.send(Message::Text(reply.into())).await;
-            asked
+            asked.to_string()
         });
         (ws, served)
     }

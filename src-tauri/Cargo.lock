@@ -408,7 +408,7 @@ dependencies = [
  "sha1 0.10.7",
  "sync_wrapper",
  "tokio",
- "tokio-tungstenite",
+ "tokio-tungstenite 0.24.0",
  "tower",
  "tower-layer",
  "tower-service",
@@ -1601,7 +1601,6 @@ checksum = "9ed9a281f7bc9b7576e61468ba615a66a5c8cfdff42420a70aa82701a3b1e292"
 dependencies = [
  "block-buffer 0.10.4",
  "crypto-common 0.1.7",
- "subtle",
 ]
 
 [[package]]
@@ -2715,15 +2714,6 @@ dependencies = [
 
 [[package]]
 name = "hmac"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c49c37c09c17a53d937dfbb742eb3a961d65a994e6bcdcf37e7399d0cc8ab5e"
-dependencies = [
- "digest 0.10.7",
-]
-
-[[package]]
-name = "hmac"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6303bc9732ae41b04cb554b844a762b4115a61bfaa81e3e83050991eeb56863f"
@@ -2918,7 +2908,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d75e94d66081e4d8dcd098bd8dc5254800fea14a26389b298410158d834de167"
 dependencies = [
  "byteorder",
- "png 0.18.1",
+ "png",
 ]
 
 [[package]]
@@ -3047,7 +3037,7 @@ dependencies = [
  "byteorder-lite",
  "moxcms",
  "num-traits",
- "png 0.18.1",
+ "png",
  "tiff",
 ]
 
@@ -3804,12 +3794,12 @@ dependencies = [
  "hickory-net",
  "hickory-proto",
  "hickory-resolver",
- "hmac 0.13.0",
+ "hmac",
  "macro_magic",
  "md-5",
  "mongocrypt",
  "mongodb-internal-macros",
- "pbkdf2 0.13.0",
+ "pbkdf2",
  "percent-encoding",
  "rand 0.9.5",
  "rustc_version_runtime",
@@ -3869,7 +3859,7 @@ dependencies = [
  "objc2-core-foundation",
  "objc2-foundation",
  "once_cell",
- "png 0.18.1",
+ "png",
  "serde",
  "thiserror 2.0.21",
  "windows-sys 0.61.2",
@@ -4336,8 +4326,8 @@ dependencies = [
  "ed25519-dalek",
  "flate2",
  "futures-util",
- "getrandom 0.2.17",
- "hmac 0.12.1",
+ "getrandom 0.4.3",
+ "hmac",
  "http-body",
  "http-body-util",
  "httparse",
@@ -4349,8 +4339,8 @@ dependencies = [
  "mongodb",
  "mysql",
  "octopus-agent-team-server",
- "pbkdf2 0.12.2",
- "png 0.17.16",
+ "pbkdf2",
+ "png",
  "postgres",
  "quick-xml 0.42.0",
  "rand 0.8.8",
@@ -4360,8 +4350,8 @@ dependencies = [
  "rustls",
  "serde",
  "serde_json",
- "sha1 0.10.7",
- "sha2 0.10.9",
+ "sha1 0.11.0",
+ "sha2 0.11.1",
  "tar",
  "tauri",
  "tauri-build",
@@ -4377,7 +4367,7 @@ dependencies = [
  "tiny-skia",
  "tokio",
  "tokio-rustls",
- "tokio-tungstenite",
+ "tokio-tungstenite 0.30.0",
  "tower",
  "tower-service",
  "url",
@@ -4561,21 +4551,12 @@ dependencies = [
 
 [[package]]
 name = "pbkdf2"
-version = "0.12.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8ed6a7761f76e3b9f92dfb0a60a6a6477c61024b775147ff0973a02653abaf2"
-dependencies = [
- "digest 0.10.7",
- "hmac 0.12.1",
-]
-
-[[package]]
-name = "pbkdf2"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "112d82ceb8c5bf524d9af484d4e4970c9fd5a0cc15ba14ad93dccd28873b0629"
 dependencies = [
  "digest 0.11.3",
+ "hmac",
 ]
 
 [[package]]
@@ -4788,19 +4769,6 @@ dependencies = [
 
 [[package]]
 name = "png"
-version = "0.17.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82151a2fc869e011c153adc57cf2789ccb8d9906ce52c0b39a6b5697749d7526"
-dependencies = [
- "bitflags 1.3.2",
- "crc32fast",
- "fdeflate",
- "flate2",
- "miniz_oxide 0.8.9",
-]
-
-[[package]]
-name = "png"
 version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "60769b8b31b2a9f263dae2776c37b1b28ae246943cf719eb6946a1db05128a61"
@@ -4888,7 +4856,7 @@ dependencies = [
  "byteorder",
  "bytes",
  "fallible-iterator 0.2.0",
- "hmac 0.13.0",
+ "hmac",
  "md-5",
  "memchr",
  "rand 0.10.4",
@@ -6571,7 +6539,7 @@ dependencies = [
  "ico",
  "json-patch",
  "plist",
- "png 0.18.1",
+ "png",
  "proc-macro2",
  "quote",
  "semver",
@@ -7047,7 +7015,7 @@ dependencies = [
  "bytemuck",
  "cfg-if",
  "log",
- "png 0.18.1",
+ "png",
  "tiny-skia-path",
 ]
 
@@ -7182,7 +7150,19 @@ dependencies = [
  "futures-util",
  "log",
  "tokio",
- "tungstenite",
+ "tungstenite 0.24.0",
+]
+
+[[package]]
+name = "tokio-tungstenite"
+version = "0.30.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17a073bfed563fa236697a068031408a93cd9522e08abf9933ead3e73411bd71"
+dependencies = [
+ "futures-util",
+ "log",
+ "tokio",
+ "tungstenite 0.30.0",
 ]
 
 [[package]]
@@ -7451,7 +7431,7 @@ dependencies = [
  "objc2-core-graphics",
  "objc2-foundation",
  "once_cell",
- "png 0.18.1",
+ "png",
  "serde",
  "thiserror 2.0.21",
  "windows-sys 0.61.2",
@@ -7496,6 +7476,22 @@ dependencies = [
  "sha1 0.10.7",
  "thiserror 1.0.69",
  "utf-8",
+]
+
+[[package]]
+name = "tungstenite"
+version = "0.30.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e48ac77174b19c110a50ab2128b24215ac9cb40e0e12e093fb602d175c569d22"
+dependencies = [
+ "bytes",
+ "data-encoding",
+ "http",
+ "httparse",
+ "log",
+ "rand 0.10.4",
+ "sha1 0.11.0",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

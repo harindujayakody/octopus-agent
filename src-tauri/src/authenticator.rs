@@ -131,17 +131,17 @@ fn code_at(p: &Params, unix: u64) -> String {
     let counter = (unix / p.period).to_be_bytes();
     let mac: Vec<u8> = match p.algorithm {
         Algorithm::Sha1 => {
-            let mut m = <Hmac<sha1::Sha1> as Mac>::new_from_slice(&p.secret).expect("any key length");
+            let mut m = <Hmac<sha1::Sha1> as KeyInit>::new_from_slice(&p.secret).expect("any key length");
             m.update(&counter);
             m.finalize().into_bytes().to_vec()
         }
         Algorithm::Sha256 => {
-            let mut m = <Hmac<sha2::Sha256> as Mac>::new_from_slice(&p.secret).expect("any key length");
+            let mut m = <Hmac<sha2::Sha256> as KeyInit>::new_from_slice(&p.secret).expect("any key length");
             m.update(&counter);
             m.finalize().into_bytes().to_vec()
         }
         Algorithm::Sha512 => {
-            let mut m = <Hmac<sha2::Sha512> as Mac>::new_from_slice(&p.secret).expect("any key length");
+            let mut m = <Hmac<sha2::Sha512> as KeyInit>::new_from_slice(&p.secret).expect("any key length");
             m.update(&counter);
             m.finalize().into_bytes().to_vec()
         }
@@ -227,7 +227,7 @@ fn vault_key() -> Result<[u8; 32]> {
         return raw.try_into().map_err(|_| anyhow::anyhow!("the authenticator's key is damaged"));
     }
     let mut key = [0u8; 32];
-    getrandom::getrandom(&mut key).map_err(|e| anyhow::anyhow!("no random source: {e}"))?;
+    getrandom::fill(&mut key).map_err(|e| anyhow::anyhow!("no random source: {e}"))?;
     #[cfg(target_os = "windows")]
     let stored = dpapi(&key, true)?;
     #[cfg(not(target_os = "windows"))]
@@ -243,7 +243,7 @@ fn vault_key() -> Result<[u8; 32]> {
 
 fn seal(key: &[u8; 32], plain: &[u8]) -> Result<String> {
     let mut nonce = [0u8; 12];
-    getrandom::getrandom(&mut nonce).map_err(|e| anyhow::anyhow!("no random source: {e}"))?;
+    getrandom::fill(&mut nonce).map_err(|e| anyhow::anyhow!("no random source: {e}"))?;
     let ct = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(key))
         .encrypt(Nonce::from_slice(&nonce), plain)
         .map_err(|_| anyhow::anyhow!("sealing the secret failed"))?;
