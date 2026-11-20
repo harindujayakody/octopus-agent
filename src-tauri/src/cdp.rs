@@ -178,7 +178,7 @@ where
                 let method = v.get("method").and_then(|m| m.as_str()).unwrap_or("");
                 // The whole event, not just its name: a caller waiting on a
                 // navigation needs the URL that arrived with it.
-                let _ = session.events.send(text.clone());
+                let _ = session.events.send(text.to_string());
 
                 match Some(method) {
                     Some("Page.screencastFrame") => {
