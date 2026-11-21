@@ -2,7 +2,7 @@
   <img src="docs/screenshots/octopus-agent-logo.png" alt="Octopus Agent" width="160">
 </p>
 
-<h1 align="center">Octopus Agent</h1>
+<h1 align="center">Octopus Agent - Anti Detect Browser</h1>
 
 <p align="center">
   <strong>A free, open-source anti-detect browser for web scraping and multi-accounting.</strong><br>
