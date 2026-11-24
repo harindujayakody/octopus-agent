@@ -19,7 +19,7 @@
 <p align="center">
   <a href="#what-it-is">Overview</a> ·
   <a href="#launcher-features">Features</a> ·
-  <a href="#quick-start">Install</a> ·
+  <a href="#quick-start">How to Install</a> ·
   <a href="#usage">Usage</a> ·
   <a href="#credits">Credits</a>
 </p>
