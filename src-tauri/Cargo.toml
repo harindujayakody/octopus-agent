@@ -26,7 +26,7 @@ tower = { version = "0.5", features = ["util"] }
 # A real team server in-process, for the team client's tests.
 shardbrowser_team_server = { package = "octopus-agent-team-server", path = "../team-server" }
 # Team keys made per test, as the team server makes them.
-ed25519-dalek = { version = "2", features = ["pkcs8", "rand_core"] }
+ed25519-dalek = { version = "3", features = ["pkcs8", "rand_core"] }
 rand = "0.8"
 
 [build-dependencies]
