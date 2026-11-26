@@ -26,7 +26,7 @@ tokio-test = "0.4"
 tower-http = { version = "0.6", features = ["trace", "limit"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-jsonwebtoken = "9"
+jsonwebtoken = "12"
 # `blob`: sessions and packages are written and read in place, not copied twice.
 rusqlite = { version = "0.43", features = ["bundled", "blob"] }
 uuid = { version = "1", features = ["v4", "serde"] }
