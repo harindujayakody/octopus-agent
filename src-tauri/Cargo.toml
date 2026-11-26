@@ -91,7 +91,7 @@ jsonwebtoken = "9"
 flate2 = "1"
 tar = "0.4"
 rusqlite = { version = "0.43", features = ["bundled"] }
-aes = "0.8"
+aes = "0.9"
 cbc = { version = "0.1", features = ["alloc"] }
 pbkdf2 = "0.13"
 hmac = "0.13"
