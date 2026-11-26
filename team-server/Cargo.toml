@@ -36,7 +36,7 @@ base64 = "0.22"
 anyhow = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-ed25519-dalek = { version = "2", features = ["pkcs8", "pem", "rand_core"] }
+ed25519-dalek = { version = "3", features = ["pkcs8", "pem", "rand_core"] }
 # The encrypted link, shared with the launcher; TLS on the ring the JWTs already use.
 team-wire = { path = "../crates/team-wire" }
 tokio-rustls = { version = "0.26", default-features = false, features = ["ring"] }
