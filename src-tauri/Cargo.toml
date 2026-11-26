@@ -83,7 +83,7 @@ webpki-roots = "1"
 base64 = "0.22"
 # Local automation HTTP API (axum) + JWT bearer auth.
 axum = "0.7"
-jsonwebtoken = "9"
+jsonwebtoken = "12"
 # Cookie import/export from the profile's Chromium Cookies SQLite DB.
 # Values are v10 (AES-128-CBC) with a SHA-256 domain prefix; the OSCrypt
 # key is fixed because ShardX runs with --use-mock-keychain (patch 0041).
