@@ -320,7 +320,7 @@ jobs:
           ls -la staging/
 
       - name: Upload to workflow artifacts (intermediate)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: octopus-agent-${{ matrix.label }}
           path: staging/*
@@ -486,7 +486,7 @@ jobs:
           ls -la staging/
 
       - name: Upload to workflow artifacts (intermediate)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: team-server-bin-${{ matrix.label }}
           path: staging/*
@@ -632,7 +632,7 @@ jobs:
           touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
 
       - name: Upload the digest
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: team-server-digest-${{ matrix.arch }}
           path: ${{ runner.temp }}/digests/*
