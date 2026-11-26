@@ -45,17 +45,6 @@ dependencies = [
 
 [[package]]
 name = "aes"
-version = "0.8.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b169f7a6d4742236a0a00c541b845991d0ac43e546831af1249753ab4c3aa3a0"
-dependencies = [
- "cfg-if",
- "cipher 0.4.4",
- "cpufeatures 0.2.17",
-]
-
-[[package]]
-name = "aes"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc0fc36d7440d015b45468ba08a21e80e056ebbd014c611c6298bb7503e04bd1"
@@ -72,7 +61,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f2b8006a0c83f52b62ba44a97b58bf76fe2f70a329e588f67f89691d93d498f"
 dependencies = [
  "aead",
- "aes 0.9.4",
+ "aes",
  "cipher 0.5.2",
  "ctr",
  "ctutils",
@@ -4316,7 +4305,7 @@ name = "octopus-agent"
 version = "2.6.2"
 dependencies = [
  "ab_glyph",
- "aes 0.8.4",
+ "aes",
  "aes-gcm",
  "anyhow",
  "axum",
